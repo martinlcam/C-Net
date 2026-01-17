@@ -3,17 +3,12 @@ A full-stack, self-hosted dashboard to monitor and manage a homelab environment,
 
 Features:
 
-Real-time metrics and service health monitoring via WebSockets and REST API.
-
-Full control of Proxmox VMs/LXC containers and storage pools.
-
-Automated recurring tasks: backups, service checks, and metrics collection.
-
-Audit logging of all infrastructure changes for transparency and debugging.
-
-NAS integration for storage monitoring, snapshots, and media/library management.
-
-OAuth-based authentication and encrypted service credentials.
+- Real-time metrics and service health monitoring via WebSockets and REST API.
+- Full control of Proxmox VMs/LXC containers and storage pools.
+- Automated recurring tasks: backups, service checks, and metrics collection.
+- Audit logging of all infrastructure changes for transparency and debugging.
+- NAS integration for storage monitoring, snapshots, and media/library management.
+- OAuth-based authentication and encrypted service credentials.
 
 Learning Highlights:
 
