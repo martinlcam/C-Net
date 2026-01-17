@@ -12,19 +12,12 @@ Features:
 
 Learning Highlights:
 
-End-to-end full-stack development (frontend + backend + workers).
-
-Designing and building a custom server architecture to manage real infrastructure.
-
-Working with real APIs (Proxmox, TrueNAS) and orchestrating service communication.
-
-Asynchronous job scheduling and queue management with BullMQ.
-
-Real-time data streaming with WebSockets and frontend state management with Zustand + TanStack Query.
-
-Database design for metrics, audit logs, and service health tracking.
-
-Secure authentication flows with OAuth and encrypted credentials.
-
-Hands-on experience with deployment, containerization, and managing a self-hosted server environment.
+- End-to-end full-stack development (frontend + backend + workers).
+- Designing and building a custom server architecture to manage real infrastructure.
+- Working with real APIs (Proxmox, TrueNAS) and orchestrating service communication.
+- Asynchronous job scheduling and queue management with BullMQ.
+- Real-time data streaming with WebSockets and frontend state management with Zustand + TanStack Query.
+- Database design for metrics, audit logs, and service health tracking.
+- Secure authentication flows with OAuth and encrypted credentials.
+- Hands-on experience with deployment, containerization, and managing a self-hosted server environment.
 
