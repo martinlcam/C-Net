@@ -1,0 +1,15 @@
+[install]
+# Use lockb for faster installs
+lockfile = "bun.lockb"
+
+[test]
+root = "test"
+preload = ["./test/setup.ts"]
+
+[build]
+# Optimize for production
+minify = true
+sourcemap = "linked"
+
+[define]
+process.env.NODE_ENV = "\"development\""
