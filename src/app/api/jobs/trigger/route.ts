@@ -23,7 +23,7 @@ const triggerJobSchema = z.object({
     QUEUE_NAMES.SERVICE_INTEGRATIONS,
   ]),
   jobName: z.string(),
-  data: z.record(z.unknown()),
+  data: z.record(z.string(), z.unknown()),
 })
 
 export async function POST(request: Request) {

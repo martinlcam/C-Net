@@ -37,6 +37,16 @@ export default async function CNetLayout({
                 Monitoring
               </Button>
             </Link>
+            <div className="pt-4 mt-4 border-t border-neutral-30">
+              <p className="px-3 text-xs font-semibold text-neutral-70 uppercase tracking-wider mb-2">
+                Settings
+              </p>
+              <Link href="/cnet/dashboard/settings/integrations">
+                <Button variant="ghost" className="w-full justify-start">
+                  Integrations
+                </Button>
+              </Link>
+            </div>
           </nav>
         </aside>
 
