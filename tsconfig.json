@@ -18,33 +18,17 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/components/*": [
-        "./src/components/*"
-      ],
-      "@/lib/*": [
-        "./src/lib/*"
-      ],
-      "@/db/*": [
-        "./src/db/*"
-      ],
-      "@/api/*": [
-        "./src/app/api/*"
-      ],
-      "@/services/*": [
-        "./src/services/*"
-      ],
-      "@/types/*": [
-        "./src/types/*"
-      ],
-      "@/hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@/stores/*": [
-        "./src/stores/*"
-      ]
+      "@/*": ["./*"],
+      "@/app/*": ["./app/*"],
+      "@/components/*": ["./components/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/db/*": ["./lib/db/*"],
+      "@/services/*": ["./lib/services/*"],
+      "@/types/*": ["./lib/types/*"],
+      "@/workers/*": ["./lib/workers/*"],
+      "@/stories/*": ["./stories/*"],
+      "@/hooks/*": ["./lib/hooks/*"],
+      "@/stores/*": ["./lib/stores/*"]
     },
     "outDir": "./dist",
     "declaration": true,
