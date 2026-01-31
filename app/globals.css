@@ -44,13 +44,40 @@
     --font-satoshi: 'Satoshi', system-ui, -apple-system, sans-serif;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   * {
     border-color: #e5e5e5; /* neutral-30 */
   }
 
   body {
-    background-color: #fafafa; /* neutral-10 */
+    background-color: #ffffff;
     color: #171717; /* neutral-100 */
     font-family: var(--font-satoshi);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #fafafa;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d4d4d4;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a3a3a3;
+  }
+
+  /* Smooth section scroll offset for fixed header */
+  section[id] {
+    scroll-margin-top: 80px;
   }
 }
