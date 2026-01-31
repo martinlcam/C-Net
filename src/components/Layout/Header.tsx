@@ -19,31 +19,31 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="text-2xl font-bold text-primary-purple-60">
+            <Link href="/" className="text-2xl font-bold text-black">
               Your Name
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link
                 href="/"
-                className="text-sm font-medium text-neutral-70 hover:text-primary-purple-60 transition-colors"
+                className="text-sm font-medium text-neutral-70 hover:text-black transition-colors"
               >
                 Home
               </Link>
               <Link
                 href="/about"
-                className="text-sm font-medium text-neutral-70 hover:text-primary-purple-60 transition-colors"
+                className="text-sm font-medium text-neutral-70 hover:text-black transition-colors"
               >
                 About
               </Link>
               <Link
                 href="/projects"
-                className="text-sm font-medium text-neutral-70 hover:text-primary-purple-60 transition-colors"
+                className="text-sm font-medium text-neutral-70 hover:text-black transition-colors"
               >
                 Projects
               </Link>
               <Link
                 href="/contact"
-                className="text-sm font-medium text-neutral-70 hover:text-primary-purple-60 transition-colors"
+                className="text-sm font-medium text-neutral-70 hover:text-black transition-colors"
               >
                 Contact
               </Link>
@@ -61,7 +61,7 @@ export function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
-                      <div className="h-8 w-8 rounded-full bg-primary-purple-50 flex items-center justify-center text-white text-sm font-medium">
+                      <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white text-sm font-medium">
                         {session.user?.name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     </Button>
