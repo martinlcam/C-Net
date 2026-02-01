@@ -29,43 +29,35 @@ export function Header() {
   }
 
   return (
-    <header className="fixed top-0 right-0 z-50 w-[calc(100%-48px)] ml-12">
-      {/* Top border line */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-neutral-30" />
-      
-      <div className="flex h-16 items-center justify-between px-8 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        {/* Left side - Name/Logo */}
-        <Link href="/" className="text-xl font-medium text-neutral-100 tracking-tight">
-          Martin Cam<span className="text-accent-green-50">.</span>
-        </Link>
-
-        {/* Center Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
+    <header className="h-16 bg-white">
+      <div className="flex h-full items-center justify-between px-8">
+        {/* Left Navigation - Left aligned - BLACK text */}
+        <nav className="flex items-center gap-6">
           <button
             type="button"
             onClick={() => scrollToSection('home')}
-            className="text-sm font-medium text-neutral-60 hover:text-neutral-100 transition-colors"
+            className="text-base font-normal text-black hover:text-gray-600 transition-colors"
           >
             Home
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('about')}
-            className="text-sm font-medium text-neutral-60 hover:text-neutral-100 transition-colors"
+            className="text-base font-normal text-black hover:text-gray-600 transition-colors"
           >
             About
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('projects')}
-            className="text-sm font-medium text-neutral-60 hover:text-neutral-100 transition-colors"
+            className="text-base font-normal text-black hover:text-gray-600 transition-colors"
           >
             Projects
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('contact')}
-            className="text-sm font-medium text-neutral-60 hover:text-neutral-100 transition-colors"
+            className="text-base font-normal text-black hover:text-gray-600 transition-colors"
           >
             Contact
           </button>
@@ -74,26 +66,26 @@ export function Header() {
         {/* Right side - Auth */}
         <div className="flex items-center gap-4">
           {status === 'loading' ? (
-            <div className="h-9 w-20 bg-neutral-20 animate-pulse rounded" />
+            <div className="h-10 w-20 bg-gray-200 animate-pulse rounded-xl" />
           ) : session ? (
             <>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="rounded-xl border-black text-black hover:bg-gray-100">
                 <Link href="/cnet/dashboard">C-Net</Link>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
-                    <div className="h-8 w-8 rounded-full bg-neutral-100 flex items-center justify-center text-white text-sm font-medium">
+                    <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white text-sm font-medium">
                       {session.user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-neutral-100">
+                    <p className="text-sm font-medium text-black">
                       {session.user?.name || 'User'}
                     </p>
-                    <p className="text-xs text-neutral-70">{session.user?.email}</p>
+                    <p className="text-xs text-gray-600">{session.user?.email}</p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -105,8 +97,8 @@ export function Header() {
               </DropdownMenu>
             </>
           ) : (
-            <Button asChild size="sm" className="bg-neutral-100 hover:bg-neutral-80 text-white">
-              <Link href="/auth/signin">Login</Link>
+            <Button asChild size="sm" variant="outline" className="rounded-xl border-black text-black hover:bg-gray-100 px-5 py-3">
+              <Link href="/auth/signin">Sign In</Link>
             </Button>
           )}
         </div>
