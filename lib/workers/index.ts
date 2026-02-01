@@ -6,7 +6,6 @@ import { createCleanupWorker } from './cleanup'
 import { createNotificationSenderWorker } from './notification-sender'
 import { createServiceIntegrationsWorker } from './service-integrations'
 import { db } from '@/db/client'
-import { infrastructureConfigs } from '@/db/schema'
 
 let workers: Array<{ name: string; worker: unknown }> = []
 let isShuttingDown = false

@@ -1,4 +1,4 @@
-import { Worker, Job } from 'bullmq'
+import { Worker, type Job } from 'bullmq'
 import { QUEUE_NAMES, getRedisConnectionOptions } from '@/lib/queues'
 import { db } from '@/db/client'
 import { auditLogs } from '@/db/schema'

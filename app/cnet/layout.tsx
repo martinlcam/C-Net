@@ -10,7 +10,7 @@ export default async function CNetLayout({
 }) {
   try {
     await requireAuthorizedEmail()
-  } catch (error) {
+  } catch (_error) {
     // Redirect to sign-in if not authorized
     redirect('/auth/signin?callbackUrl=/cnet/dashboard&error=Unauthorized')
   }
