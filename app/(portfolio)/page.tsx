@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/stories/dropdown-menu/dropdown-menu'
 import LogoLoop from '@/components/LogoLoop'
+import { AuthModal } from '@/components/AuthModal'
+import { useAuthModal } from '@/lib/stores/auth-modal'
 import {
   SiReact,
   SiNextdotjs,
@@ -44,6 +46,7 @@ const techLogos = [
 
 export default function HomePage() {
   const { data: session, status } = useSession()
+  const { openModal } = useAuthModal()
 
   const projects = [
     {
@@ -75,6 +78,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#eef1f0]">
+      <AuthModal />
       {/* ===== MAIN FRAMED LAYOUT ===== */}
       <div className="border border-black">
         
@@ -137,8 +141,12 @@ export default function HomePage() {
                     </DropdownMenu>
                   </>
                 ) : (
-                  <Button asChild variant="outline" className="rounded-[12px] border-[#ddc9f7] text-[#ad70eb] hover:bg-purple-50 px-7 py-3.5 h-12 text-lg font-medium">
-                    <Link href="/auth/signin">Sign In</Link>
+                  <Button 
+                    onClick={openModal}
+                    variant="outline" 
+                    className="rounded-[12px] border-black text-black hover:bg-gray-100 px-7 py-3.5 h-12 text-lg font-medium"
+                  >
+                    Sign In
                   </Button>
               )}
             </div>
