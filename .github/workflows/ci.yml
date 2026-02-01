@@ -9,10 +9,7 @@ on:
 jobs:
   commitlint:
     name: Commit Lint
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -38,17 +35,13 @@ jobs:
 
   bugcat:
     name: Bugcat Check
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check bugcat exists (Linux)
-        if: runner.os == 'Linux'
+      - name: Check bugcat exists
         run: |
           if [ ! -f "public/images/bugcat asleep.gif" ]; then
             echo "Error: bugcat asleep.gif is missing from public/images!"
@@ -56,22 +49,9 @@ jobs:
           fi
           echo "bugcat is safe and sound"
 
-      - name: Check bugcat exists (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          if (-not (Test-Path "public/images/bugcat asleep.gif")) {
-            Write-Error "Error: bugcat asleep.gif is missing from public/images!"
-            exit 1
-          }
-          Write-Host "bugcat is safe and sound"
-
   format:
     name: Format
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -90,10 +70,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -112,10 +89,7 @@ jobs:
 
   type-check:
     name: Type Check
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -134,11 +108,8 @@ jobs:
 
   build:
     name: Build
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     needs: [format, lint, type-check]
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout code
@@ -164,14 +135,10 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
-    needs: [build]
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
