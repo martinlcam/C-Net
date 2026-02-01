@@ -177,7 +177,7 @@ export async function testNASConnection(
       'Content-Type': 'application/json',
     }
     if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`
+      headers.Authorization = `Bearer ${apiKey}`
     }
 
     const response = await axios.get(url, {
@@ -215,7 +215,7 @@ export async function testNASConnection(
     try {
       const protocol = port === 443 ? 'https' : 'http'
       const rootUrl = `${protocol}://${hostname}:${port}/`
-      const rootResponse = await axios.get(rootUrl, {
+      const _rootResponse = await axios.get(rootUrl, {
         timeout: 3000,
         validateStatus: () => true, // Accept any status for basic connectivity
       })

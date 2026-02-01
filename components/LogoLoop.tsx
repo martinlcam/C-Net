@@ -320,7 +320,6 @@ export const LogoLoop = React.memo<LogoLoopProps>(
                 scaleOnHover && 'overflow-visible group/item'
               )}
               key={key}
-              role="listitem"
             >
               {renderItem(item, key)}
             </li>
@@ -396,7 +395,6 @@ export const LogoLoop = React.memo<LogoLoopProps>(
               scaleOnHover && 'overflow-visible group/item'
             )}
             key={key}
-            role="listitem"
           >
             {inner}
           </li>
@@ -411,7 +409,6 @@ export const LogoLoop = React.memo<LogoLoopProps>(
           <ul
             className={cx('flex items-center', isVertical && 'flex-col')}
             key={`copy-${copyIndex}`}
-            role="list"
             aria-hidden={copyIndex > 0}
             ref={copyIndex === 0 ? seqRef : undefined}
           >
@@ -437,8 +434,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
     return (
       <div ref={containerRef} className={rootClasses} style={containerStyle} role="region" aria-label={ariaLabel}>
         {fadeOut && (
-          <>
-            {isVertical ? (
+          isVertical ? (
               <>
                 <div
                   aria-hidden
@@ -476,8 +472,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
                   )}
                 />
               </>
-            )}
-          </>
+            )
         )}
 
         <div

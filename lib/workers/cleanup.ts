@@ -1,9 +1,8 @@
-import { Worker, Job } from 'bullmq'
+import { Worker, type Job } from 'bullmq'
 import { QUEUE_NAMES, getRedisConnectionOptions } from '@/lib/queues'
 import { db } from '@/db/client'
 import { metricsSnapshots, auditLogs } from '@/db/schema'
 import { lt } from 'drizzle-orm'
-import { sql } from 'drizzle-orm'
 
 interface CleanupJobData {
   type: 'metrics' | 'audit-logs' | 'all'

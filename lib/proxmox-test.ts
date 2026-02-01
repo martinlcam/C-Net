@@ -17,7 +17,7 @@ export async function testProxmoxConnection(
   host: string,
   user: string,
   token: string,
-  verifySSL = false
+  _verifySSL = false
 ): Promise<ProxmoxConnectionTestResult> {
   try {
     // Create Proxmox service instance with provided credentials

@@ -62,7 +62,7 @@ export default function IntegrationsPage() {
   // Fetch credentials on mount
   useEffect(() => {
     fetchCredentials()
-  }, [])
+  }, [fetchCredentials])
 
   const fetchCredentials = async () => {
     try {
@@ -105,7 +105,7 @@ export default function IntegrationsPage() {
       errors.port = 'Port is required'
     } else {
       const portNum = parseInt(formData.port, 10)
-      if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+      if (Number.isNaN(portNum) || portNum < 1 || portNum > 65535) {
         errors.port = 'Port must be between 1 and 65535'
       }
     }

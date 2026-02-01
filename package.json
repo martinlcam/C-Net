@@ -7,10 +7,9 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "biome lint --write --unsafe --vcs-use-ignore-file=true app lib components stories",
-    "format": "biome format --write --vcs-use-ignore-file=true app lib components stories",
-    "lint:check": "biome lint --vcs-use-ignore-file=true app lib components stories",
-    "format:check": "biome format --vcs-use-ignore-file=true app lib components stories",
+    "lint": "biome lint --write --vcs-use-ignore-file=true app lib components stories",
+    "format": "biome format --vcs-use-ignore-file=true app lib components stories",
+    "format:fix": "biome format --write --vcs-use-ignore-file=true app lib components stories",
     "type-check": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -19,8 +18,7 @@
     "test": "bun test",
     "test:watch": "bun test --watch",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "prepare": "husky"
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^latest",
