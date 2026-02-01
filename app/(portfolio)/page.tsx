@@ -172,6 +172,7 @@ export default function HomePage() {
                 viewBox="0 0 1400 600"
                 fill="none"
                 preserveAspectRatio="xMidYMid slice"
+                aria-hidden="true"
               >
                 <path
                   d="M-100 100 Q 200 50, 400 150 T 800 100 T 1200 200 T 1600 100"

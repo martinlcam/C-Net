@@ -46,8 +46,9 @@ export function getRedisConnectionOptions(): ConnectionOptions {
  * Get or create a BullMQ queue instance.
  */
 export function getQueue(queueName: string): Queue {
-  if (queues.has(queueName)) {
-    return queues.get(queueName)!
+  const existingQueue = queues.get(queueName)
+  if (existingQueue) {
+    return existingQueue
   }
 
   const queue = new Queue(queueName, {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth'
+import type { Queue } from 'bullmq'
 import {
   getMetricsQueue,
   getHealthChecksQueue,
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     })
 
     // Get appropriate queue
-    let queue
+    let queue: Queue
     switch (validated.queue) {
       case QUEUE_NAMES.METRICS:
         queue = getMetricsQueue()
