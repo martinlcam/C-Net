@@ -1,4 +1,4 @@
-import { MetricsCard } from '@/components/MetricsCard'
+import { MetricsCard } from "@/components/MetricsCard"
 
 export default function DashboardPage() {
   return (
@@ -11,7 +11,9 @@ export default function DashboardPage() {
       </div>
       <div className="bg-white rounded-lg border border-neutral-30 p-6">
         <h2 className="text-2xl font-semibold text-primary-purple-70 mb-4">Quick Actions</h2>
-        <p className="text-neutral-70">Use the sidebar to navigate to different sections of the dashboard.</p>
+        <p className="text-neutral-70">
+          Use the sidebar to navigate to different sections of the dashboard.
+        </p>
       </div>
     </div>
   )

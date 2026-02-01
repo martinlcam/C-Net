@@ -1,17 +1,17 @@
-import { Worker, type Job } from 'bullmq'
-import { QUEUE_NAMES, getRedisConnectionOptions } from '@/lib/queues'
-import { db } from '@/db/client'
-import { serviceStatuses, serviceCredentials } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
-import { getNotificationsQueue } from '@/lib/queues'
+import { Worker, type Job } from "bullmq"
+import { QUEUE_NAMES, getRedisConnectionOptions } from "@/lib/queues"
+import { db } from "@/db/client"
+import { serviceStatuses, serviceCredentials } from "@/db/schema"
+import { eq, and } from "drizzle-orm"
+import { getNotificationsQueue } from "@/lib/queues"
 
 interface HealthCheckJobData {
-  service?: 'pi-hole' | 'plex' | 'minecraft' | 'nas'
+  service?: "pi-hole" | "plex" | "minecraft" | "nas"
 }
 
 interface ServiceHealthCheck {
   service: string
-  status: 'up' | 'down' | 'degraded'
+  status: "up" | "down" | "degraded"
   responseTime?: number
   errorMessage?: string
 }
@@ -26,7 +26,7 @@ export function createHealthCheckerWorker(): Worker {
     async (job: Job<HealthCheckJobData>) => {
       const servicesToCheck = job.data.service
         ? [job.data.service]
-        : (['pi-hole', 'plex', 'minecraft', 'nas'] as const)
+        : (["pi-hole", "plex", "minecraft", "nas"] as const)
 
       const results: ServiceHealthCheck[] = []
 
@@ -42,8 +42,8 @@ export function createHealthCheckerWorker(): Worker {
           if (!credentials) {
             results.push({
               service,
-              status: 'down',
-              errorMessage: 'Service credentials not configured',
+              status: "down",
+              errorMessage: "Service credentials not configured",
             })
             continue
           }
@@ -53,32 +53,32 @@ export function createHealthCheckerWorker(): Worker {
           let errorMessage: string | undefined
 
           switch (service) {
-            case 'pi-hole': {
+            case "pi-hole": {
               isHealthy = await checkPiHole(credentials.hostname, credentials.port)
               break
             }
-            case 'plex': {
+            case "plex": {
               isHealthy = await checkPlex(credentials.hostname, credentials.port)
               break
             }
-            case 'minecraft': {
+            case "minecraft": {
               isHealthy = await checkMinecraft(credentials.hostname, credentials.port)
               break
             }
-            case 'nas': {
+            case "nas": {
               isHealthy = await checkNAS(credentials.hostname, credentials.port)
               break
             }
           }
 
           const responseTime = Date.now() - startTime
-          const status = isHealthy ? 'up' : 'down'
+          const status = isHealthy ? "up" : "down"
 
           results.push({
             service,
             status,
             responseTime,
-            errorMessage: isHealthy ? undefined : errorMessage || 'Health check failed',
+            errorMessage: isHealthy ? undefined : errorMessage || "Health check failed",
           })
 
           // Update service status in database
@@ -89,7 +89,7 @@ export function createHealthCheckerWorker(): Worker {
               status,
               lastCheck: new Date(),
               responseTime,
-              errorMessage: isHealthy ? null : errorMessage || 'Health check failed',
+              errorMessage: isHealthy ? null : errorMessage || "Health check failed",
             })
             .onConflictDoUpdate({
               target: serviceStatuses.service,
@@ -97,7 +97,7 @@ export function createHealthCheckerWorker(): Worker {
                 status,
                 lastCheck: new Date(),
                 responseTime,
-                errorMessage: isHealthy ? null : errorMessage || 'Health check failed',
+                errorMessage: isHealthy ? null : errorMessage || "Health check failed",
               },
             })
 
@@ -108,8 +108,8 @@ export function createHealthCheckerWorker(): Worker {
             })
 
             // Only send alert if status changed from up to down
-            if (previousStatus?.status === 'up') {
-              await getNotificationsQueue().add('service-down', {
+            if (previousStatus?.status === "up") {
+              await getNotificationsQueue().add("service-down", {
                 service,
                 message: `Service ${service} is now down`,
                 responseTime,
@@ -121,8 +121,8 @@ export function createHealthCheckerWorker(): Worker {
           console.error(`Health check failed for ${service}:`, error)
           results.push({
             service,
-            status: 'down',
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            status: "down",
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
           })
         }
       }
@@ -146,11 +146,11 @@ export function createHealthCheckerWorker(): Worker {
     }
   )
 
-  worker.on('completed', (job) => {
+  worker.on("completed", (job) => {
     console.log(`Health check job ${job.id} completed`)
   })
 
-  worker.on('failed', (job, err) => {
+  worker.on("failed", (job, err) => {
     console.error(`Health check job ${job?.id} failed:`, err)
   })
 
@@ -162,7 +162,7 @@ async function checkPiHole(hostname: string, port: number): Promise<boolean> {
   try {
     const url = `http://${hostname}:${port}/admin/api.php?summaryRaw&auth=`
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       signal: AbortSignal.timeout(5000), // 5 second timeout
     })
     return response.ok && response.status === 200
@@ -175,7 +175,7 @@ async function checkPlex(hostname: string, port: number): Promise<boolean> {
   try {
     const url = `http://${hostname}:${port}/`
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       signal: AbortSignal.timeout(5000),
     })
     return response.ok
@@ -192,7 +192,7 @@ async function checkMinecraft(hostname: string, port: number): Promise<boolean> 
     const timeout = setTimeout(() => controller.abort(), 5000)
 
     const response = await fetch(`http://${hostname}:${port}`, {
-      method: 'GET',
+      method: "GET",
       signal: controller.signal as AbortSignal,
     })
 
@@ -207,7 +207,7 @@ async function checkNAS(hostname: string, port: number): Promise<boolean> {
   try {
     const url = `http://${hostname}:${port}/api/v2.0/system/info`
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       signal: AbortSignal.timeout(5000),
     })
     return response.ok

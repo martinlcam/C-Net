@@ -1,9 +1,9 @@
-import { Worker, type Job } from 'bullmq'
-import { QUEUE_NAMES, getRedisConnectionOptions } from '@/lib/queues'
-import { sendEmail } from '@/lib/resend'
+import { Worker, type Job } from "bullmq"
+import { QUEUE_NAMES, getRedisConnectionOptions } from "@/lib/queues"
+import { sendEmail } from "@/lib/resend"
 
 interface NotificationJobData {
-  type: 'service-down' | 'disk-usage' | 'custom'
+  type: "service-down" | "disk-usage" | "custom"
   service?: string
   message: string
   responseTime?: number
@@ -20,34 +20,35 @@ export function createNotificationSenderWorker(): Worker {
   const worker = new Worker<NotificationJobData>(
     QUEUE_NAMES.NOTIFICATIONS,
     async (job: Job<NotificationJobData>) => {
-      const { type, message, service, responseTime, errorMessage, diskUsagePercent, recipient } = job.data
+      const { type, message, service, responseTime, errorMessage, diskUsagePercent, recipient } =
+        job.data
 
       try {
         // Default recipient is the authorized email (martinlucam@gmail.com)
-        const to = recipient || 'martinlucam@gmail.com'
+        const to = recipient || "martinlucam@gmail.com"
 
         let subject: string
         let htmlBody: string
         let textBody: string
 
         switch (type) {
-          case 'service-down': {
-            subject = `Alert: ${service || 'Service'} is Down`
+          case "service-down": {
+            subject = `Alert: ${service || "Service"} is Down`
             htmlBody = `
               <h2>Service Down Alert</h2>
-              <p><strong>Service:</strong> ${service || 'Unknown'}</p>
+              <p><strong>Service:</strong> ${service || "Unknown"}</p>
               <p><strong>Message:</strong> ${message}</p>
-              ${responseTime ? `<p><strong>Response Time:</strong> ${responseTime}ms</p>` : ''}
-              ${errorMessage ? `<p><strong>Error:</strong> ${errorMessage}</p>` : ''}
+              ${responseTime ? `<p><strong>Response Time:</strong> ${responseTime}ms</p>` : ""}
+              ${errorMessage ? `<p><strong>Error:</strong> ${errorMessage}</p>` : ""}
               <p><em>Timestamp: ${new Date().toISOString()}</em></p>
             `
-            textBody = `Service Down Alert\n\nService: ${service || 'Unknown'}\nMessage: ${message}\n${
-              responseTime ? `Response Time: ${responseTime}ms\n` : ''
-            }${errorMessage ? `Error: ${errorMessage}\n` : ''}\nTimestamp: ${new Date().toISOString()}`
+            textBody = `Service Down Alert\n\nService: ${service || "Unknown"}\nMessage: ${message}\n${
+              responseTime ? `Response Time: ${responseTime}ms\n` : ""
+            }${errorMessage ? `Error: ${errorMessage}\n` : ""}\nTimestamp: ${new Date().toISOString()}`
             break
           }
 
-          case 'disk-usage': {
+          case "disk-usage": {
             subject = `Alert: Disk Usage at ${diskUsagePercent}%`
             htmlBody = `
               <h2>High Disk Usage Alert</h2>
@@ -59,7 +60,7 @@ export function createNotificationSenderWorker(): Worker {
             break
           }
 
-          case 'custom': {
+          case "custom": {
             subject = `C-Net Alert: ${message.substring(0, 50)}`
             htmlBody = `
               <h2>C-Net Alert</h2>
@@ -91,7 +92,7 @@ export function createNotificationSenderWorker(): Worker {
           timestamp: new Date().toISOString(),
         }
       } catch (error) {
-        console.error('Notification job failed:', error)
+        console.error("Notification job failed:", error)
 
         // If email fails, we still want to track it but not retry indefinitely
         // BullMQ will handle retries based on job options
@@ -111,11 +112,11 @@ export function createNotificationSenderWorker(): Worker {
     }
   )
 
-  worker.on('completed', (job) => {
+  worker.on("completed", (job) => {
     console.log(`Notification job ${job.id} completed: ${job.data.type}`)
   })
 
-  worker.on('failed', (job, err) => {
+  worker.on("failed", (job, err) => {
     console.error(`Notification job ${job?.id} failed:`, err)
   })
 

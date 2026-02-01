@@ -1,17 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { LoadingSpinner } from './loading-spinner'
+import type { Meta, StoryObj } from "@storybook/react"
+import { LoadingSpinner } from "./loading-spinner"
 
 const meta: Meta<typeof LoadingSpinner> = {
-  title: 'UI/LoadingSpinner',
+  title: "UI/LoadingSpinner",
   component: LoadingSpinner,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
+      control: "select",
+      options: ["sm", "md", "lg"],
     },
   },
 }
@@ -21,19 +21,19 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    size: 'md',
+    size: "md",
   },
 }
 
 export const Small: Story = {
   args: {
-    size: 'sm',
+    size: "sm",
   },
 }
 
 export const Large: Story = {
   args: {
-    size: 'lg',
+    size: "lg",
   },
 }
 

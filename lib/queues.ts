@@ -1,14 +1,14 @@
-import { Queue } from 'bullmq'
-import type { ConnectionOptions } from 'bullmq'
+import { Queue } from "bullmq"
+import type { ConnectionOptions } from "bullmq"
 
 // Queue names
 export const QUEUE_NAMES = {
-  METRICS: 'metrics',
-  HEALTH_CHECKS: 'health-checks',
-  BACKUPS: 'backups',
-  CLEANUP: 'cleanup',
-  NOTIFICATIONS: 'notifications',
-  SERVICE_INTEGRATIONS: 'service-integrations',
+  METRICS: "metrics",
+  HEALTH_CHECKS: "health-checks",
+  BACKUPS: "backups",
+  CLEANUP: "cleanup",
+  NOTIFICATIONS: "notifications",
+  SERVICE_INTEGRATIONS: "service-integrations",
 } as const
 
 // Queue instances (singletons)
@@ -20,15 +20,15 @@ const queues: Map<string, Queue> = new Map()
  */
 export function getRedisConnectionOptions(): ConnectionOptions {
   const redisUrl = process.env.REDIS_URL
-  const redisHost = process.env.REDIS_HOST || 'localhost'
-  const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10)
+  const redisHost = process.env.REDIS_HOST || "localhost"
+  const redisPort = parseInt(process.env.REDIS_PORT || "6379", 10)
 
   if (redisUrl) {
     // Parse the URL for connection options
     const url = new URL(redisUrl)
     return {
       host: url.hostname,
-      port: parseInt(url.port || '6379', 10),
+      port: parseInt(url.port || "6379", 10),
       password: url.password || undefined,
       username: url.username || undefined,
       maxRetriesPerRequest: null, // Required for BullMQ
@@ -56,7 +56,7 @@ export function getQueue(queueName: string): Queue {
     defaultJobOptions: {
       attempts: 3,
       backoff: {
-        type: 'exponential',
+        type: "exponential",
         delay: 2000,
       },
       removeOnComplete: {

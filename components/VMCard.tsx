@@ -1,7 +1,14 @@
-import { Button } from '@/stories/button/button'
-import { Badge } from '@/stories/badge/badge'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/stories/card/card'
-import type { ProxmoxVM } from '@/types/proxmox'
+import { Button } from "@/stories/button/button"
+import { Badge } from "@/stories/badge/badge"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/stories/card/card"
+import type { ProxmoxVM } from "@/types/proxmox"
 
 interface VMCardProps {
   vm: ProxmoxVM
@@ -13,7 +20,7 @@ interface VMCardProps {
 
 export function VMCard({ vm, onStart, onStop, onRestart, isLoading = false }: VMCardProps) {
   const statusColor =
-    vm.status === 'running' ? 'success' : vm.status === 'paused' ? 'warning' : 'destructive'
+    vm.status === "running" ? "success" : vm.status === "paused" ? "warning" : "destructive"
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -23,7 +30,7 @@ export function VMCard({ vm, onStart, onStop, onRestart, isLoading = false }: VM
           <Badge variant={statusColor}>{vm.status}</Badge>
         </div>
         <CardDescription>
-          VM ID: {vm.vmid} • Node: {vm.node} • Type: {vm.type || 'qemu'}
+          VM ID: {vm.vmid} • Node: {vm.node} • Type: {vm.type || "qemu"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -45,7 +52,7 @@ export function VMCard({ vm, onStart, onStop, onRestart, isLoading = false }: VM
         </div>
       </CardContent>
       <CardFooter className="flex gap-2">
-        {vm.status === 'running' ? (
+        {vm.status === "running" ? (
           <>
             <Button
               variant="destructive"
@@ -55,7 +62,12 @@ export function VMCard({ vm, onStart, onStop, onRestart, isLoading = false }: VM
             >
               Stop
             </Button>
-            <Button variant="outline" size="sm" onClick={() => onRestart(vm.vmid)} disabled={isLoading}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRestart(vm.vmid)}
+              disabled={isLoading}
+            >
               Restart
             </Button>
           </>

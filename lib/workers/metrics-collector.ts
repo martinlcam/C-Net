@@ -1,10 +1,10 @@
-import { Worker, type Job } from 'bullmq'
-import { QUEUE_NAMES, getRedisConnectionOptions } from '@/lib/queues'
-import { db } from '@/db/client'
-import { metricsSnapshots, infrastructureConfigs } from '@/db/schema'
-import { eq } from 'drizzle-orm'
-import { ProxmoxService } from '@/services/proxmox'
-import { decrypt, getEncryptionPassword } from '@/lib/encryption'
+import { Worker, type Job } from "bullmq"
+import { QUEUE_NAMES, getRedisConnectionOptions } from "@/lib/queues"
+import { db } from "@/db/client"
+import { metricsSnapshots, infrastructureConfigs } from "@/db/schema"
+import { eq } from "drizzle-orm"
+import { ProxmoxService } from "@/services/proxmox"
+import { decrypt, getEncryptionPassword } from "@/lib/encryption"
 
 interface MetricsJobData {
   userId: string
@@ -59,7 +59,11 @@ export function createMetricsCollectorWorker(): Worker {
             return { node: node.node, success: true }
           } catch (error) {
             console.error(`Failed to collect metrics for node ${node.node}:`, error)
-            return { node: node.node, success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+            return {
+              node: node.node,
+              success: false,
+              error: error instanceof Error ? error.message : "Unknown error",
+            }
           }
         })
 
@@ -74,7 +78,7 @@ export function createMetricsCollectorWorker(): Worker {
           timestamp: new Date().toISOString(),
         }
       } catch (error) {
-        console.error('Metrics collection job failed:', error)
+        console.error("Metrics collection job failed:", error)
         throw error
       }
     },
@@ -91,11 +95,11 @@ export function createMetricsCollectorWorker(): Worker {
     }
   )
 
-  worker.on('completed', (job) => {
+  worker.on("completed", (job) => {
     console.log(`Metrics collection job ${job.id} completed`)
   })
 
-  worker.on('failed', (job, err) => {
+  worker.on("failed", (job, err) => {
     console.error(`Metrics collection job ${job?.id} failed:`, err)
   })
 

@@ -6,32 +6,32 @@
  * Usage: bun run src/scripts/start-workers.ts
  */
 
-import { initializeWorkers, shutdownWorkers } from '@/workers/index'
+import { initializeWorkers, shutdownWorkers } from "@/workers/index"
 
 async function main() {
-  console.log('Starting C-Net workers...')
+  console.log("Starting C-Net workers...")
 
   try {
     await initializeWorkers()
-    console.log('Workers started successfully. Press Ctrl+C to stop.')
+    console.log("Workers started successfully. Press Ctrl+C to stop.")
   } catch (error) {
-    console.error('Failed to start workers:', error)
+    console.error("Failed to start workers:", error)
     process.exit(1)
   }
 
   // Keep process alive
-  process.on('SIGTERM', async () => {
+  process.on("SIGTERM", async () => {
     await shutdownWorkers()
     process.exit(0)
   })
 
-  process.on('SIGINT', async () => {
+  process.on("SIGINT", async () => {
     await shutdownWorkers()
     process.exit(0)
   })
 }
 
 main().catch((error) => {
-  console.error('Unhandled error:', error)
+  console.error("Unhandled error:", error)
   process.exit(1)
 })

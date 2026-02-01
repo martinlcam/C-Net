@@ -1,6 +1,6 @@
-import { getServerAuthSession } from './auth'
+import { getServerAuthSession } from "./auth"
 
-const ALLOWED_EMAIL = 'martinlucam@gmail.com'
+const ALLOWED_EMAIL = "martinlucam@gmail.com"
 
 /**
  * Requires the user to be authenticated and have an authorized email address.
@@ -10,7 +10,7 @@ export async function requireAuthorizedEmail() {
   const session = await getServerAuthSession()
 
   if (!session?.user?.email) {
-    throw new Error('Unauthorized: No session or email found')
+    throw new Error("Unauthorized: No session or email found")
   }
 
   if (session.user.email !== ALLOWED_EMAIL) {

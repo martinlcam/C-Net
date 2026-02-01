@@ -1,14 +1,14 @@
-'use client'
+"use client"
 
-import { useQuery } from '@tanstack/react-query'
-import { MetricsCard } from '@/components/MetricsCard'
-import { LoadingSpinner } from '@/stories/loading-spinner/loading-spinner'
-import type { NodeMetrics } from '@/types/proxmox'
+import { useQuery } from "@tanstack/react-query"
+import { MetricsCard } from "@/components/MetricsCard"
+import { LoadingSpinner } from "@/stories/loading-spinner/loading-spinner"
+import type { NodeMetrics } from "@/types/proxmox"
 
 async function fetchMetrics(): Promise<{ nodes: NodeMetrics[]; timestamp: string }> {
-  const response = await fetch('/api/metrics/current')
+  const response = await fetch("/api/metrics/current")
   if (!response.ok) {
-    throw new Error('Failed to fetch metrics')
+    throw new Error("Failed to fetch metrics")
   }
   const data = await response.json()
   return data.data
@@ -16,7 +16,7 @@ async function fetchMetrics(): Promise<{ nodes: NodeMetrics[]; timestamp: string
 
 export default function MonitoringPage() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['metrics', 'current'],
+    queryKey: ["metrics", "current"],
     queryFn: fetchMetrics,
     refetchInterval: 30000, // Refetch every 30 seconds
   })
@@ -32,7 +32,7 @@ export default function MonitoringPage() {
   if (error) {
     return (
       <div className="bg-accent-red-10 border border-accent-red-30 rounded-lg p-4 text-accent-red-70">
-        Error loading metrics: {error instanceof Error ? error.message : 'Unknown error'}
+        Error loading metrics: {error instanceof Error ? error.message : "Unknown error"}
       </div>
     )
   }
@@ -58,21 +58,39 @@ export default function MonitoringPage() {
           value={primaryNode.cpu.usage}
           unit="%"
           subtitle={`Node: ${primaryNode.node}`}
-          variant={primaryNode.cpu.usage > 80 ? 'destructive' : primaryNode.cpu.usage > 60 ? 'warning' : 'success'}
+          variant={
+            primaryNode.cpu.usage > 80
+              ? "destructive"
+              : primaryNode.cpu.usage > 60
+                ? "warning"
+                : "success"
+          }
         />
         <MetricsCard
           title="Memory Usage"
           value={primaryNode.memory.percent}
           unit="%"
           subtitle={`${(primaryNode.memory.used / 1024 / 1024 / 1024).toFixed(2)} GB / ${(primaryNode.memory.total / 1024 / 1024 / 1024).toFixed(2)} GB`}
-          variant={primaryNode.memory.percent > 80 ? 'destructive' : primaryNode.memory.percent > 60 ? 'warning' : 'success'}
+          variant={
+            primaryNode.memory.percent > 80
+              ? "destructive"
+              : primaryNode.memory.percent > 60
+                ? "warning"
+                : "success"
+          }
         />
         <MetricsCard
           title="Disk Usage"
           value={primaryNode.disk.percent}
           unit="%"
           subtitle={`${(primaryNode.disk.used / 1024 / 1024 / 1024).toFixed(2)} GB / ${(primaryNode.disk.total / 1024 / 1024 / 1024).toFixed(2)} GB`}
-          variant={primaryNode.disk.percent > 80 ? 'destructive' : primaryNode.disk.percent > 60 ? 'warning' : 'success'}
+          variant={
+            primaryNode.disk.percent > 80
+              ? "destructive"
+              : primaryNode.disk.percent > 60
+                ? "warning"
+                : "success"
+          }
         />
       </div>
 

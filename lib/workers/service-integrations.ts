@@ -1,12 +1,12 @@
-import { Worker, type Job } from 'bullmq'
-import { QUEUE_NAMES, getRedisConnectionOptions } from '@/lib/queues'
-import { db } from '@/db/client'
-import { serviceCredentials } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
-import { logAuditAction } from '@/lib/audit'
+import { Worker, type Job } from "bullmq"
+import { QUEUE_NAMES, getRedisConnectionOptions } from "@/lib/queues"
+import { db } from "@/db/client"
+import { serviceCredentials } from "@/db/schema"
+import { eq, and } from "drizzle-orm"
+import { logAuditAction } from "@/lib/audit"
 
 interface ServiceIntegrationJobData {
-  action: 'pi-hole-gravity-update' | 'plex-library-scan' | 'container-restart'
+  action: "pi-hole-gravity-update" | "plex-library-scan" | "container-restart"
   serviceId?: string
   containerId?: string
   userId: string
@@ -26,17 +26,17 @@ export function createServiceIntegrationsWorker(): Worker {
         let result: { success: boolean; message: string; details?: unknown }
 
         switch (action) {
-          case 'pi-hole-gravity-update': {
+          case "pi-hole-gravity-update": {
             result = await runPiHoleGravityUpdate(serviceId)
             break
           }
 
-          case 'plex-library-scan': {
+          case "plex-library-scan": {
             result = await runPlexLibraryScan(serviceId)
             break
           }
 
-          case 'container-restart': {
+          case "container-restart": {
             result = await runContainerRestart(containerId)
             break
           }
@@ -49,10 +49,10 @@ export function createServiceIntegrationsWorker(): Worker {
         // Log action
         await logAuditAction({
           userId,
-          action: 'SERVICE_ENABLED', // Placeholder - would need SERVICE_INTEGRATION in enum
-          resourceType: 'service-integration',
-          resourceId: serviceId || containerId || 'unknown',
-          status: result.success ? 'success' : 'failed',
+          action: "SERVICE_ENABLED", // Placeholder - would need SERVICE_INTEGRATION in enum
+          resourceType: "service-integration",
+          resourceId: serviceId || containerId || "unknown",
+          status: result.success ? "success" : "failed",
           errorMessage: result.success ? undefined : result.message,
           changes: { action, serviceId, containerId, result },
         })
@@ -86,15 +86,15 @@ export function createServiceIntegrationsWorker(): Worker {
     }
   )
 
-  worker.on('completed', (job) => {
+  worker.on("completed", (job) => {
     console.log(`Service integration job ${job.id} completed: ${job.data.action}`)
   })
 
-  worker.on('failed', (job, err) => {
+  worker.on("failed", (job, err) => {
     console.error(`Service integration job ${job?.id} failed:`, err)
   })
 
-  worker.on('progress', (job, progress) => {
+  worker.on("progress", (job, progress) => {
     console.log(`Service integration job ${job.id} progress: ${progress}%`)
   })
 
@@ -104,23 +104,25 @@ export function createServiceIntegrationsWorker(): Worker {
 /**
  * Run Pi-hole gravity update (blocklist refresh).
  */
-async function runPiHoleGravityUpdate(serviceId?: string): Promise<{ success: boolean; message: string; details?: unknown }> {
+async function runPiHoleGravityUpdate(
+  serviceId?: string
+): Promise<{ success: boolean; message: string; details?: unknown }> {
   if (!serviceId) {
     return {
       success: false,
-      message: 'Service ID is required for Pi-hole gravity update',
+      message: "Service ID is required for Pi-hole gravity update",
     }
   }
 
   // Get Pi-hole credentials
   const credentials = await db.query.serviceCredentials.findFirst({
-    where: and(eq(serviceCredentials.service, 'pi-hole'), eq(serviceCredentials.id, serviceId)),
+    where: and(eq(serviceCredentials.service, "pi-hole"), eq(serviceCredentials.id, serviceId)),
   })
 
   if (!credentials) {
     return {
       success: false,
-      message: 'Pi-hole credentials not found',
+      message: "Pi-hole credentials not found",
     }
   }
 
@@ -144,23 +146,25 @@ async function runPiHoleGravityUpdate(serviceId?: string): Promise<{ success: bo
 /**
  * Run Plex library scan.
  */
-async function runPlexLibraryScan(serviceId?: string): Promise<{ success: boolean; message: string; details?: unknown }> {
+async function runPlexLibraryScan(
+  serviceId?: string
+): Promise<{ success: boolean; message: string; details?: unknown }> {
   if (!serviceId) {
     return {
       success: false,
-      message: 'Service ID is required for Plex library scan',
+      message: "Service ID is required for Plex library scan",
     }
   }
 
   // Get Plex credentials
   const credentials = await db.query.serviceCredentials.findFirst({
-    where: and(eq(serviceCredentials.service, 'plex'), eq(serviceCredentials.id, serviceId)),
+    where: and(eq(serviceCredentials.service, "plex"), eq(serviceCredentials.id, serviceId)),
   })
 
   if (!credentials) {
     return {
       success: false,
-      message: 'Plex credentials not found',
+      message: "Plex credentials not found",
     }
   }
 
@@ -184,11 +188,13 @@ async function runPlexLibraryScan(serviceId?: string): Promise<{ success: boolea
 /**
  * Restart a container (LXC or Docker).
  */
-async function runContainerRestart(containerId?: string): Promise<{ success: boolean; message: string; details?: unknown }> {
+async function runContainerRestart(
+  containerId?: string
+): Promise<{ success: boolean; message: string; details?: unknown }> {
   if (!containerId) {
     return {
       success: false,
-      message: 'Container ID is required for restart',
+      message: "Container ID is required for restart",
     }
   }
 

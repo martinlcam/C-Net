@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { NextResponse } from "next/server"
+import { requireAuth } from "@/lib/auth"
 import {
   getMetricsQueue,
   getHealthChecksQueue,
@@ -7,9 +7,9 @@ import {
   getCleanupQueue,
   getNotificationsQueue,
   getServiceIntegrationsQueue,
-} from '@/lib/queues'
+} from "@/lib/queues"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
@@ -25,7 +25,14 @@ export async function GET() {
       getServiceIntegrationsQueue(),
     ]
 
-    const queueNames = ['metrics', 'health-checks', 'backups', 'cleanup', 'notifications', 'service-integrations']
+    const queueNames = [
+      "metrics",
+      "health-checks",
+      "backups",
+      "cleanup",
+      "notifications",
+      "service-integrations",
+    ]
 
     const metrics = await Promise.all(
       queues.map(async (queue, index) => {
@@ -57,11 +64,11 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('Failed to get queue metrics:', error)
+    console.error("Failed to get queue metrics:", error)
     return NextResponse.json(
       {
-        error: 'Failed to get queue metrics',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to get queue metrics",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

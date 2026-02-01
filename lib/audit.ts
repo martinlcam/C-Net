@@ -1,6 +1,6 @@
-import { db } from '@/db/client'
-import { auditLogs } from '@/db/schema'
-import type { auditActionEnum } from '@/db/schema'
+import { db } from "@/db/client"
+import { auditLogs } from "@/db/schema"
+import type { auditActionEnum } from "@/db/schema"
 
 type AuditAction = (typeof auditActionEnum.enumValues)[number]
 
@@ -10,7 +10,7 @@ interface LogAuditActionParams {
   resourceType: string
   resourceId: string
   changes?: Record<string, unknown>
-  status: 'success' | 'failed'
+  status: "success" | "failed"
   errorMessage?: string
   ipAddress?: string
 }
@@ -31,7 +31,7 @@ export async function logAuditAction(params: LogAuditActionParams): Promise<void
       ipAddress: params.ipAddress || null,
     })
   } catch (error) {
-    console.error('Failed to log audit action:', error)
+    console.error("Failed to log audit action:", error)
     // Don't throw - audit logging should not break the main flow
   }
 }

@@ -1,18 +1,14 @@
-import { redirect } from 'next/navigation'
-import { requireAuthorizedEmail } from '@/lib/authorization'
-import Link from 'next/link'
-import { Button } from '@/stories/button/button'
+import { redirect } from "next/navigation"
+import { requireAuthorizedEmail } from "@/lib/authorization"
+import Link from "next/link"
+import { Button } from "@/stories/button/button"
 
-export default async function CNetLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function CNetLayout({ children }: { children: React.ReactNode }) {
   try {
     await requireAuthorizedEmail()
   } catch (_error) {
     // Redirect to sign-in if not authorized
-    redirect('/auth/signin?callbackUrl=/cnet/dashboard&error=Unauthorized')
+    redirect("/auth/signin?callbackUrl=/cnet/dashboard&error=Unauthorized")
   }
 
   return (

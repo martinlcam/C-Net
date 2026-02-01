@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/db/client'
-import { serviceCredentials } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
-import { encrypt, getEncryptionPassword } from '@/lib/encryption'
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireAuth } from "@/lib/auth"
+import { db } from "@/db/client"
+import { serviceCredentials } from "@/db/schema"
+import { eq, and } from "drizzle-orm"
+import { encrypt, getEncryptionPassword } from "@/lib/encryption"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 const updateCredentialSchema = z.object({
-  hostname: z.string().min(1, 'Hostname is required').optional(),
-  port: z.number().int().min(1).max(65535, 'Port must be between 1 and 65535').optional(),
+  hostname: z.string().min(1, "Hostname is required").optional(),
+  port: z.number().int().min(1).max(65535, "Port must be between 1 and 65535").optional(),
   apiKey: z.string().optional(),
 })
 
@@ -18,10 +18,7 @@ const updateCredentialSchema = z.object({
  * PATCH /api/services/credentials/[id]
  * Update an existing service credential
  */
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth()
     const userId = session.user.id
@@ -36,7 +33,7 @@ export async function PATCH(
     })
 
     if (!existing) {
-      return NextResponse.json({ error: 'Credential not found' }, { status: 404 })
+      return NextResponse.json({ error: "Credential not found" }, { status: 404 })
     }
 
     // Prepare update data
@@ -57,7 +54,7 @@ export async function PATCH(
     // Encrypt API key if provided
     if (validated.apiKey !== undefined) {
       const password = getEncryptionPassword()
-      updateData.apiKey = validated.apiKey ? await encrypt(validated.apiKey, password) : ''
+      updateData.apiKey = validated.apiKey ? await encrypt(validated.apiKey, password) : ""
     }
 
     // Update the credential
@@ -68,7 +65,7 @@ export async function PATCH(
       .returning()
 
     if (!updated) {
-      return NextResponse.json({ error: 'Failed to update credential' }, { status: 500 })
+      return NextResponse.json({ error: "Failed to update credential" }, { status: 500 })
     }
 
     // Return updated credential without decrypted API key
@@ -80,17 +77,20 @@ export async function PATCH(
         port: updated.port,
         createdAt: updated.createdAt,
       },
-      message: 'Credential updated successfully',
+      message: "Credential updated successfully",
     })
   } catch (error) {
-    console.error('Failed to update service credential:', error)
+    console.error("Failed to update service credential:", error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      )
     }
     return NextResponse.json(
       {
-        error: 'Failed to update credential',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to update credential",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )
@@ -101,10 +101,7 @@ export async function PATCH(
  * DELETE /api/services/credentials/[id]
  * Delete a service credential
  */
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth()
     const userId = session.user.id
@@ -116,21 +113,21 @@ export async function DELETE(
     })
 
     if (!existing) {
-      return NextResponse.json({ error: 'Credential not found' }, { status: 404 })
+      return NextResponse.json({ error: "Credential not found" }, { status: 404 })
     }
 
     // Delete the credential (cascade will handle any dependent data)
     await db.delete(serviceCredentials).where(eq(serviceCredentials.id, id))
 
     return NextResponse.json({
-      message: 'Credential deleted successfully',
+      message: "Credential deleted successfully",
     })
   } catch (error) {
-    console.error('Failed to delete service credential:', error)
+    console.error("Failed to delete service credential:", error)
     return NextResponse.json(
       {
-        error: 'Failed to delete credential',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to delete credential",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

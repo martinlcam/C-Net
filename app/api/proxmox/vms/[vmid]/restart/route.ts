@@ -1,19 +1,16 @@
-import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { NextResponse } from "next/server"
+import { requireAuth } from "@/lib/auth"
 
-export const dynamic = 'force-dynamic'
-import { db } from '@/db/client'
-import { infrastructureConfigs } from '@/db/schema'
-import { eq } from 'drizzle-orm'
-import { ProxmoxService } from '@/services/proxmox'
-import { decrypt, getEncryptionPassword } from '@/lib/encryption'
-import { logAuditAction } from '@/lib/audit'
-import { getClientIp } from '@/lib/utils'
+export const dynamic = "force-dynamic"
+import { db } from "@/db/client"
+import { infrastructureConfigs } from "@/db/schema"
+import { eq } from "drizzle-orm"
+import { ProxmoxService } from "@/services/proxmox"
+import { decrypt, getEncryptionPassword } from "@/lib/encryption"
+import { logAuditAction } from "@/lib/audit"
+import { getClientIp } from "@/lib/utils"
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ vmid: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ vmid: string }> }) {
   try {
     const session = await requireAuth()
     const userId = session.user.id
@@ -26,7 +23,7 @@ export async function POST(
     })
 
     if (!config) {
-      return NextResponse.json({ error: 'Proxmox configuration not found' }, { status: 404 })
+      return NextResponse.json({ error: "Proxmox configuration not found" }, { status: 404 })
     }
 
     // Decrypt token
@@ -42,10 +39,10 @@ export async function POST(
     // Log audit action
     await logAuditAction({
       userId,
-      action: 'VM_RESTARTED',
-      resourceType: 'vm',
+      action: "VM_RESTARTED",
+      resourceType: "vm",
       resourceId: vmid,
-      status: 'success',
+      status: "success",
       ipAddress: ipAddress || undefined,
     })
 
@@ -53,24 +50,24 @@ export async function POST(
   } catch (error) {
     const { vmid } = await params
     const session = await requireAuth().catch(() => null)
-    
+
     if (session) {
       await logAuditAction({
         userId: session.user.id,
-        action: 'VM_RESTARTED',
-        resourceType: 'vm',
+        action: "VM_RESTARTED",
+        resourceType: "vm",
         resourceId: vmid,
-        status: 'failed',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        status: "failed",
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
         ipAddress: getClientIp(request.headers) || undefined,
       })
     }
 
-    console.error('Failed to restart VM:', error)
+    console.error("Failed to restart VM:", error)
     return NextResponse.json(
       {
-        error: 'Failed to restart VM',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to restart VM",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

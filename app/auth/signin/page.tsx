@@ -1,7 +1,7 @@
-'use client'
+"use client"
 
-import { signIn } from 'next-auth/react'
-import Link from 'next/link'
+import { signIn } from "next-auth/react"
+import Link from "next/link"
 
 export default function SignInPage() {
   return (
@@ -11,14 +11,12 @@ export default function SignInPage() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-primary-purple-60">
             Sign in to C-Net
           </h2>
-          <p className="mt-2 text-center text-sm text-neutral-70">
-            Access your homelab dashboard
-          </p>
+          <p className="mt-2 text-center text-sm text-neutral-70">Access your homelab dashboard</p>
         </div>
         <div className="mt-8 space-y-6">
           <button
             type="button"
-            onClick={() => signIn('google', { callbackUrl: '/cnet/dashboard' })}
+            onClick={() => signIn("google", { callbackUrl: "/cnet/dashboard" })}
             className="w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple-50 hover:bg-primary-purple-55 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple-40 transition-colors"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" role="img" aria-label="Google logo">
@@ -43,10 +41,7 @@ export default function SignInPage() {
             Sign in with Google
           </button>
           <div className="text-center">
-            <Link
-              href="/"
-              className="text-sm text-primary-purple-50 hover:text-primary-purple-55"
-            >
+            <Link href="/" className="text-sm text-primary-purple-50 hover:text-primary-purple-55">
               Back to home
             </Link>
           </div>

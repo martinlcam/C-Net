@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
-import type { Queue } from 'bullmq'
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireAuth } from "@/lib/auth"
+import type { Queue } from "bullmq"
 import {
   getMetricsQueue,
   getHealthChecksQueue,
@@ -10,9 +10,9 @@ import {
   getNotificationsQueue,
   getServiceIntegrationsQueue,
   QUEUE_NAMES,
-} from '@/lib/queues'
+} from "@/lib/queues"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 const statusQuerySchema = z.object({
   queue: z.enum([
@@ -32,8 +32,8 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const validated = statusQuerySchema.parse({
-      queue: searchParams.get('queue') || undefined,
-      jobId: searchParams.get('jobId') || undefined,
+      queue: searchParams.get("queue") || undefined,
+      jobId: searchParams.get("jobId") || undefined,
     })
 
     // Get appropriate queue
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
       const job = await queue.getJob(validated.jobId)
 
       if (!job) {
-        return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+        return NextResponse.json({ error: "Job not found" }, { status: 404 })
       }
 
       const state = await job.getState()
@@ -105,14 +105,17 @@ export async function GET(request: Request) {
       })
     }
   } catch (error) {
-    console.error('Failed to get job status:', error)
+    console.error("Failed to get job status:", error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      )
     }
     return NextResponse.json(
       {
-        error: 'Failed to get job status',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to get job status",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

@@ -1,6 +1,6 @@
-export type ServiceType = 'pi-hole' | 'plex' | 'minecraft' | 'nas'
+export type ServiceType = "pi-hole" | "plex" | "minecraft" | "nas"
 
-export type ServiceStatus = 'up' | 'down' | 'degraded'
+export type ServiceStatus = "up" | "down" | "degraded"
 
 export interface ServiceHealth {
   service: ServiceType
@@ -11,7 +11,7 @@ export interface ServiceHealth {
 }
 
 export interface PiHoleStatus {
-  status: 'enabled' | 'disabled'
+  status: "enabled" | "disabled"
   domainsBeingBlocked: number
   dnsQueriesToday: number
   adsBlockedToday: number
@@ -23,14 +23,14 @@ export interface PiHoleStatus {
 }
 
 export interface PlexStatus {
-  status: 'available' | 'unavailable'
+  status: "available" | "unavailable"
   version?: string
   libraries?: number
   activeStreams?: number
 }
 
 export interface MinecraftStatus {
-  status: 'online' | 'offline'
+  status: "online" | "offline"
   version?: string
   players?: {
     online: number
