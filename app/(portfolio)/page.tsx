@@ -21,6 +21,7 @@ import {
 import LogoLoop from "@/components/LogoLoop"
 import { AuthModal } from "@/components/AuthModal"
 import { useAuthModal } from "@/lib/stores/auth-modal"
+import { Text } from "@radix-ui/themes"
 import {
   SiReact,
   SiNextdotjs,
@@ -116,12 +117,7 @@ export default function HomePage() {
         <div className="flex border-b border-black">
           {/* Top-left box with C */}
           <div className="w-[58px] h-16 border-r border-black flex items-center justify-center shrink-0">
-            <span
-              className="text-[48px] font-normal text-black leading-none"
-              style={{ fontFamily: "var(--font-sans), sans-serif" }}
-            >
-              C
-            </span>
+            
           </div>
 
           {/* Header navigation */}
@@ -208,10 +204,9 @@ export default function HomePage() {
         <div className="flex">
           {/* Left sidebar with N-E-T */}
           <div className="w-[58px] border-r border-black flex flex-col items-center pt-2 shrink-0">
-            <div
-              className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight"
-              style={{ fontFamily: "var(--font-sans), sans-serif" }}
-            >
+            <div className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight">
+              <span>C</span>
+              <span className="text-[24px]">│</span>
               <span>N</span>
               <span>E</span>
               <span>T</span>
@@ -268,14 +263,21 @@ export default function HomePage() {
               <p className="text-gray-500 text-xl mb-3">Hey there, I'm</p>
               <h1 className="text-[80px] md:text-[96px] font-bold text-black mb-8 tracking-tight leading-none">
                 Martin Cam
-                <span className="inline-block ml-3 w-4 h-4 rounded-full bg-[#bea9e9] align-middle" />
+                <span className="inline-block ml-3 w-4 h-4 rounded-full bg-[#bea9e9] relative -top-14" />
               </h1>
               <p className="text-xl text-gray-700 mb-5 leading-relaxed">
                 An 19-year-old Full Stack web developer based in{" "}
-                <span className="text-[#bea9e9] font-medium">Vancouver, Canada</span>. I'm currently
+                <Text color="iris">Vancouver, Canada</Text>. I'm currently
                 working as a{" "}
-                <span className="text-[#bea9e9] font-medium">Software Engineer at Futurity</span>,
-                an international AI startup providing enterprise on-premise AI deployments,
+                <a
+                  href="https://futurity.work"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  <Text color="grass">Software Engineer at Futurity</Text>
+                </a>
+                , an international AI startup providing enterprise on-premise AI deployments,
                 integrations and plugins for clients around the world.
               </p>
               <p className="text-xl text-gray-700 mb-10 leading-relaxed">
@@ -305,7 +307,7 @@ export default function HomePage() {
         <div className="border-t border-black" />
 
         {/* ===== TECH STRIP SECTION - Scrolling logos ===== */}
-        <div className="h-[15vh] border-b border-black flex items-center overflow-hidden">
+        <div className="h-[10vh] border-b border-black flex items-center overflow-hidden">
           <LogoLoop
             logos={techLogos}
             speed={80}
