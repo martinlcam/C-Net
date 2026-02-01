@@ -46,7 +46,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run Biome lint
-        run: bun run lint --no-write
+        run: bun run lint:check
 
       - name: Run Biome format check
         run: bun run format

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/stories/button/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/stories/card/card'
 import {
@@ -59,12 +59,7 @@ export default function IntegrationsPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  // Fetch credentials on mount
-  useEffect(() => {
-    fetchCredentials()
-  }, [fetchCredentials])
-
-  const fetchCredentials = async () => {
+  const fetchCredentials = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/services/credentials')
@@ -79,7 +74,12 @@ export default function IntegrationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  // Fetch credentials on mount
+  useEffect(() => {
+    fetchCredentials()
+  }, [fetchCredentials])
 
   const handleServiceChange = (service: 'pi-hole' | 'plex' | 'minecraft' | 'nas' | '') => {
     setFormData({

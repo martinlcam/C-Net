@@ -72,9 +72,11 @@ const useResizeObserver = (
     callback()
 
     return () => {
-      observers.forEach((observer) => observer?.disconnect())
+      for (const observer of observers) {
+        observer?.disconnect()
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: Custom hook with dynamic dependencies
   }, dependencies)
 }
 
@@ -115,7 +117,7 @@ const useImageLoader = (
         img.removeEventListener('error', handleImageLoad)
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: Custom hook with dynamic dependencies
   }, dependencies)
 }
 
@@ -340,6 +342,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
             {(item as { node: React.ReactNode }).node}
           </span>
         ) : (
+          // biome-ignore lint/performance/noImgElement: Generic component that may be used outside Next.js
           <img
             className={cx(
               'h-[var(--logoloop-logoHeight)] w-auto block object-contain',
@@ -408,6 +411,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
         Array.from({ length: copyCount }, (_, copyIndex) => (
           <ul
             className={cx('flex items-center', isVertical && 'flex-col')}
+            // biome-ignore lint/suspicious/noArrayIndexKey: Index is stable for duplicated infinite scroll content
             key={`copy-${copyIndex}`}
             aria-hidden={copyIndex > 0}
             ref={copyIndex === 0 ? seqRef : undefined}
@@ -432,7 +436,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
     )
 
     return (
-      <div ref={containerRef} className={rootClasses} style={containerStyle} role="region" aria-label={ariaLabel}>
+      <section ref={containerRef} className={rootClasses} style={containerStyle} aria-label={ariaLabel}>
         {fadeOut && (
           isVertical ? (
               <>
@@ -475,6 +479,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
             )
         )}
 
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: Mouse events for hover pause effect */}
         <div
           className={cx(
             'flex will-change-transform select-none relative z-0',
@@ -482,12 +487,13 @@ export const LogoLoop = React.memo<LogoLoopProps>(
             isVertical ? 'flex-col h-max w-full' : 'flex-row w-max'
           )}
           ref={trackRef}
+          role="presentation"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           {logoLists}
         </div>
-      </div>
+      </section>
     )
   }
 )

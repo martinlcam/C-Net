@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome lint --write --vcs-use-ignore-file=true app lib components stories",
+    "lint:check": "biome lint --vcs-use-ignore-file=true app lib components stories",
     "format": "biome format --vcs-use-ignore-file=true app lib components stories",
     "format:fix": "biome format --write --vcs-use-ignore-file=true app lib components stories",
     "type-check": "tsc --noEmit",

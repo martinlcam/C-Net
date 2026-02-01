@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth'
+import type { Queue } from 'bullmq'
 import {
   getMetricsQueue,
   getHealthChecksQueue,
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     const validated = triggerJobSchema.parse(body)
 
     // Get appropriate queue
-    let queue
+    let queue: Queue
     switch (validated.queue) {
       case QUEUE_NAMES.METRICS:
         queue = getMetricsQueue()
