@@ -33,6 +33,22 @@ jobs:
         if: github.event_name == 'push'
         run: bunx commitlint --from ${{ github.event.before }} --to ${{ github.event.after }} --verbose
 
+  bugcat:
+    name: Bugcat Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check bugcat exists
+        run: |
+          if [ ! -f "public/images/bugcat asleep.gif" ]; then
+            echo "Error: bugcat asleep.gif is missing from public/images!"
+            exit 1
+          fi
+          echo "bugcat is safe and sound"
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
