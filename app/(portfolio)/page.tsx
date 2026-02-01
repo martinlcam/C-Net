@@ -48,22 +48,15 @@ export default function HomePage() {
       {/* ===== MAIN FRAMED LAYOUT ===== */}
       <div className="border border-black">
         
-        {/* ===== TOP SECTION: CNET sidebar + Main content area ===== */}
-        <div className="flex">
-          {/* Left sidebar with C-N-E-T - extends full height of hero */}
-          <div className="w-[58px] border-r border-black flex flex-col items-center pt-6 shrink-0">
-            <div className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight" style={{ fontFamily: 'var(--font-sans), sans-serif' }}>
-              <span>C</span>
-              <span>N</span>
-              <span>E</span>
-              <span>T</span>
-            </div>
+        {/* ===== HEADER ROW - Top line extends full width ===== */}
+        <div className="flex border-b border-black">
+          {/* Top-left box with C */}
+          <div className="w-[58px] h-16 border-r border-black flex items-center justify-center shrink-0">
+            <span className="text-[48px] font-normal text-black leading-none" style={{ fontFamily: 'var(--font-sans), sans-serif' }}>C</span>
           </div>
           
-          {/* Right side - Header + Hero content */}
-          <div className="flex-1 flex flex-col">
-            {/* Header row */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black">
+          {/* Header navigation */}
+          <div className="flex-1 flex items-center justify-between px-6">
               {/* Left Navigation */}
               <nav className="flex items-center gap-6">
                 <a href="#home" className="text-[24px] font-normal text-black hover:text-gray-600 transition-colors">
@@ -117,12 +110,24 @@ export default function HomePage() {
                   <Button asChild variant="outline" className="rounded-[12px] border-[#ddc9f7] text-[#ad70eb] hover:bg-purple-50 px-7 py-3.5 h-12 text-lg font-medium">
                     <Link href="/auth/signin">Sign In</Link>
                   </Button>
-                )}
-              </div>
+              )}
             </div>
-
-            {/* Hero Section - with decorative background */}
-            <section id="home" className="relative min-h-[500px] flex items-center px-10 py-16 overflow-hidden">
+          </div>
+        </div>
+        
+        {/* ===== MAIN CONTENT: Sidebar (N,E,T) + Hero ===== */}
+        <div className="flex">
+          {/* Left sidebar with N-E-T */}
+          <div className="w-[58px] border-r border-black flex flex-col items-center pt-2 shrink-0">
+            <div className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight" style={{ fontFamily: 'var(--font-sans), sans-serif' }}>
+              <span>N</span>
+              <span>E</span>
+              <span>T</span>
+            </div>
+          </div>
+          
+          {/* Hero Section - with decorative background */}
+          <section id="home" className="flex-1 relative min-h-[500px] flex items-center px-10 py-16 overflow-hidden">
               {/* Decorative vector lines background */}
               <svg
                 className="absolute inset-0 w-full h-full pointer-events-none"
@@ -190,7 +195,6 @@ export default function HomePage() {
                 </div>
               </div>
             </section>
-          </div>
         </div>
 
         {/* ===== HORIZONTAL LINE - End of hero section ===== */}
