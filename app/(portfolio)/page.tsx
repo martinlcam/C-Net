@@ -116,9 +116,7 @@ export default function HomePage() {
         {/* ===== HEADER ROW - Top line extends full width ===== */}
         <div className="flex border-b border-black">
           {/* Top-left box with C */}
-          <div className="w-[58px] h-16 border-r border-black flex items-center justify-center shrink-0">
-            
-          </div>
+          <div className="w-[58px] h-16 border-r border-black flex items-center justify-center shrink-0"></div>
 
           {/* Header navigation */}
           <div className="flex-1 flex items-center justify-between px-6">
@@ -267,8 +265,7 @@ export default function HomePage() {
               </h1>
               <p className="text-xl text-gray-700 mb-5 leading-relaxed">
                 An 19-year-old Full Stack web developer based in{" "}
-                <Text color="iris">Vancouver, Canada</Text>. I'm currently
-                working as a{" "}
+                <Text color="iris">Vancouver, Canada</Text>. I'm currently working as a{" "}
                 <a
                   href="https://futurity.work"
                   target="_blank"
