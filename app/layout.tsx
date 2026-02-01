@@ -5,8 +5,8 @@ import { StyleDebugger } from '@/components/StyleDebugger'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Your Name - Portfolio',
-  description: 'Full-stack developer portfolio',
+  title: "Martin's Portfolio",
+  description: 'C-Net API',
 }
 
 export default function RootLayout({
