@@ -1,5 +1,5 @@
-import axios, { type AxiosInstance } from 'axios'
-import type { ProxmoxNode, ProxmoxVM, NodeMetrics, StoragePool } from '@/types/proxmox'
+import axios, { type AxiosInstance } from "axios"
+import type { ProxmoxNode, ProxmoxVM, NodeMetrics, StoragePool } from "@/types/proxmox"
 
 export class ProxmoxService {
   private client: AxiosInstance
@@ -12,7 +12,7 @@ export class ProxmoxService {
       baseURL: this.baseURL,
       headers: {
         Authorization: `PVEAPIToken=${user}!${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       httpsAgent: {
         rejectUnauthorized: false, // Use with caution; consider proper SSL
@@ -22,11 +22,11 @@ export class ProxmoxService {
 
   async getNodes(): Promise<ProxmoxNode[]> {
     try {
-      const response = await this.client.get('/nodes')
+      const response = await this.client.get("/nodes")
       return response.data.data
     } catch (error) {
       throw new Error(
-        `Failed to fetch Proxmox nodes: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch Proxmox nodes: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }
@@ -46,21 +46,17 @@ export class ProxmoxService {
         memory: {
           used: data.memory?.used || 0,
           total: data.memory?.total || 0,
-          percent: data.memory?.total
-            ? ((data.memory.used || 0) / data.memory.total) * 100
-            : 0,
+          percent: data.memory?.total ? ((data.memory.used || 0) / data.memory.total) * 100 : 0,
         },
         disk: {
           used: data.rootfs?.used || 0,
           total: data.rootfs?.total || 0,
-          percent: data.rootfs?.total
-            ? ((data.rootfs.used || 0) / data.rootfs.total) * 100
-            : 0,
+          percent: data.rootfs?.total ? ((data.rootfs.used || 0) / data.rootfs.total) * 100 : 0,
         },
       }
     } catch (error) {
       throw new Error(
-        `Failed to fetch node status: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch node status: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }
@@ -79,14 +75,14 @@ export class ProxmoxService {
           allVMs.push(
             ...vms.map((vm: Record<string, unknown>) => ({
               vmid: Number(vm.vmid) || 0,
-              name: (vm.name as string) || '',
-              status: (vm.status as string) === 'running' ? 'running' : 'stopped',
+              name: (vm.name as string) || "",
+              status: (vm.status as string) === "running" ? "running" : "stopped",
               node: node.node,
               cpu: Number(vm.cpus) || 0,
               maxmem: Number(vm.maxmem) || 0,
               mem: Number(vm.mem) || 0,
               uptime: Number(vm.uptime) || 0,
-              type: 'qemu' as const,
+              type: "qemu" as const,
             }))
           )
 
@@ -97,14 +93,14 @@ export class ProxmoxService {
           allVMs.push(
             ...lxcs.map((lxc: Record<string, unknown>) => ({
               vmid: Number(lxc.vmid) || 0,
-              name: (lxc.hostname as string) || '',
-              status: (lxc.status as string) === 'running' ? 'running' : 'stopped',
+              name: (lxc.hostname as string) || "",
+              status: (lxc.status as string) === "running" ? "running" : "stopped",
               node: node.node,
               cpu: Number(lxc.cpus) || 0,
               maxmem: Number(lxc.maxmem) || 0,
               mem: Number(lxc.mem) || 0,
               uptime: Number(lxc.uptime) || 0,
-              type: 'lxc' as const,
+              type: "lxc" as const,
             }))
           )
         } catch (nodeError) {
@@ -115,7 +111,7 @@ export class ProxmoxService {
       return allVMs
     } catch (error) {
       throw new Error(
-        `Failed to fetch all VMs: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch all VMs: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }
@@ -129,15 +125,13 @@ export class ProxmoxService {
         throw new Error(`VM ${vmid} not found`)
       }
 
-      const endpoint = vm.type === 'lxc' ? 'lxc' : 'qemu'
-      const response = await this.client.post(
-        `/nodes/${vm.node}/${endpoint}/${vmid}/status/start`
-      )
+      const endpoint = vm.type === "lxc" ? "lxc" : "qemu"
+      const response = await this.client.post(`/nodes/${vm.node}/${endpoint}/${vmid}/status/start`)
 
       return response.data.data // Task ID
     } catch (error) {
       throw new Error(
-        `Failed to start VM: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to start VM: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }
@@ -151,15 +145,13 @@ export class ProxmoxService {
         throw new Error(`VM ${vmid} not found`)
       }
 
-      const endpoint = vm.type === 'lxc' ? 'lxc' : 'qemu'
-      const response = await this.client.post(
-        `/nodes/${vm.node}/${endpoint}/${vmid}/status/stop`
-      )
+      const endpoint = vm.type === "lxc" ? "lxc" : "qemu"
+      const response = await this.client.post(`/nodes/${vm.node}/${endpoint}/${vmid}/status/stop`)
 
       return response.data.data
     } catch (error) {
       throw new Error(
-        `Failed to stop VM: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to stop VM: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }
@@ -173,26 +165,24 @@ export class ProxmoxService {
         throw new Error(`VM ${vmid} not found`)
       }
 
-      const endpoint = vm.type === 'lxc' ? 'lxc' : 'qemu'
-      const response = await this.client.post(
-        `/nodes/${vm.node}/${endpoint}/${vmid}/status/reboot`
-      )
+      const endpoint = vm.type === "lxc" ? "lxc" : "qemu"
+      const response = await this.client.post(`/nodes/${vm.node}/${endpoint}/${vmid}/status/reboot`)
 
       return response.data.data
     } catch (error) {
       throw new Error(
-        `Failed to restart VM: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to restart VM: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }
 
   async getStorage(): Promise<StoragePool[]> {
     try {
-      const response = await this.client.get('/storage')
+      const response = await this.client.get("/storage")
       return response.data.data || []
     } catch (error) {
       throw new Error(
-        `Failed to fetch storage: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch storage: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }

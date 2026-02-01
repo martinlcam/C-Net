@@ -1,6 +1,6 @@
-import { VMCard } from './VMCard'
-import { LoadingSpinner } from '@/stories/loading-spinner/loading-spinner'
-import type { ProxmoxVM } from '@/types/proxmox'
+import { VMCard } from "./VMCard"
+import { LoadingSpinner } from "@/stories/loading-spinner/loading-spinner"
+import type { ProxmoxVM } from "@/types/proxmox"
 
 interface VMListProps {
   vms: ProxmoxVM[]

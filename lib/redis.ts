@@ -1,4 +1,4 @@
-import { Redis } from 'ioredis'
+import { Redis } from "ioredis"
 
 let redisClient: Redis | null = null
 
@@ -12,8 +12,8 @@ export function getRedisClient(): Redis {
   }
 
   const redisUrl = process.env.REDIS_URL
-  const redisHost = process.env.REDIS_HOST || 'localhost'
-  const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10)
+  const redisHost = process.env.REDIS_HOST || "localhost"
+  const redisPort = parseInt(process.env.REDIS_PORT || "6379", 10)
 
   if (redisUrl) {
     // Use REDIS_URL if provided
@@ -25,7 +25,7 @@ export function getRedisClient(): Redis {
         return delay
       },
       reconnectOnError(err) {
-        const targetError = 'READONLY'
+        const targetError = "READONLY"
         if (err.message.includes(targetError)) {
           return true
         }
@@ -44,7 +44,7 @@ export function getRedisClient(): Redis {
         return delay
       },
       reconnectOnError(err) {
-        const targetError = 'READONLY'
+        const targetError = "READONLY"
         if (err.message.includes(targetError)) {
           return true
         }
@@ -53,16 +53,16 @@ export function getRedisClient(): Redis {
     })
   }
 
-  redisClient.on('error', (err) => {
-    console.error('Redis Client Error:', err)
+  redisClient.on("error", (err) => {
+    console.error("Redis Client Error:", err)
   })
 
-  redisClient.on('connect', () => {
-    console.log('Redis Client Connected')
+  redisClient.on("connect", () => {
+    console.log("Redis Client Connected")
   })
 
-  redisClient.on('ready', () => {
-    console.log('Redis Client Ready')
+  redisClient.on("ready", () => {
+    console.log("Redis Client Ready")
   })
 
   return redisClient

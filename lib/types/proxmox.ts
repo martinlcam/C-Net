@@ -13,13 +13,13 @@ export interface ProxmoxNode {
 export interface ProxmoxVM {
   vmid: number
   name?: string
-  status: 'running' | 'stopped' | 'paused'
+  status: "running" | "stopped" | "paused"
   node: string
   cpu?: number
   maxmem?: number
   mem?: number
   uptime?: number
-  type?: 'qemu' | 'lxc'
+  type?: "qemu" | "lxc"
 }
 
 export interface NodeMetrics {

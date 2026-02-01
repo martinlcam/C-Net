@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { NextResponse } from "next/server"
+import { requireAuth } from "@/lib/auth"
 
-export const dynamic = 'force-dynamic'
-import { db } from '@/db/client'
-import { infrastructureConfigs } from '@/db/schema'
-import { eq } from 'drizzle-orm'
-import { ProxmoxService } from '@/services/proxmox'
-import { decrypt, getEncryptionPassword } from '@/lib/encryption'
+export const dynamic = "force-dynamic"
+import { db } from "@/db/client"
+import { infrastructureConfigs } from "@/db/schema"
+import { eq } from "drizzle-orm"
+import { ProxmoxService } from "@/services/proxmox"
+import { decrypt, getEncryptionPassword } from "@/lib/encryption"
 
 export async function GET() {
   try {
@@ -19,7 +19,7 @@ export async function GET() {
     })
 
     if (!config) {
-      return NextResponse.json({ error: 'Proxmox configuration not found' }, { status: 404 })
+      return NextResponse.json({ error: "Proxmox configuration not found" }, { status: 404 })
     }
 
     // Decrypt token
@@ -50,11 +50,11 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Failed to fetch metrics:', error)
+    console.error("Failed to fetch metrics:", error)
     return NextResponse.json(
       {
-        error: 'Failed to fetch metrics',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch metrics",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

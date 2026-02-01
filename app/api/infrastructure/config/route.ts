@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireAuth } from "@/lib/auth"
 
-export const dynamic = 'force-dynamic'
-import { db } from '@/db/client'
-import { infrastructureConfigs } from '@/db/schema'
-import { eq } from 'drizzle-orm'
-import { encrypt, getEncryptionPassword } from '@/lib/encryption'
-import { testProxmoxConnection } from '@/lib/proxmox-test'
+export const dynamic = "force-dynamic"
+import { db } from "@/db/client"
+import { infrastructureConfigs } from "@/db/schema"
+import { eq } from "drizzle-orm"
+import { encrypt, getEncryptionPassword } from "@/lib/encryption"
+import { testProxmoxConnection } from "@/lib/proxmox-test"
 
 const configSchema = z.object({
   proxmoxHost: z.string().min(1),
@@ -26,7 +26,7 @@ export async function GET() {
     })
 
     if (!config) {
-      return NextResponse.json({ error: 'Configuration not found' }, { status: 404 })
+      return NextResponse.json({ error: "Configuration not found" }, { status: 404 })
     }
 
     // Return config without token for security
@@ -41,11 +41,11 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Failed to fetch infrastructure config:', error)
+    console.error("Failed to fetch infrastructure config:", error)
     return NextResponse.json(
       {
-        error: 'Failed to fetch configuration',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch configuration",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     if (!connectionTest.success) {
       return NextResponse.json(
         {
-          error: 'Connection test failed',
+          error: "Connection test failed",
           message: connectionTest.message,
         },
         { status: 400 }
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         .where(eq(infrastructureConfigs.id, existing.id))
         .returning()
 
-      return NextResponse.json({ data: updated, message: 'Configuration updated' })
+      return NextResponse.json({ data: updated, message: "Configuration updated" })
     } else {
       // Create new config
       const [created] = await db
@@ -115,17 +115,20 @@ export async function POST(request: Request) {
         })
         .returning()
 
-      return NextResponse.json({ data: created, message: 'Configuration created' }, { status: 201 })
+      return NextResponse.json({ data: created, message: "Configuration created" }, { status: 201 })
     }
   } catch (error) {
-    console.error('Failed to save infrastructure config:', error)
+    console.error("Failed to save infrastructure config:", error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      )
     }
     return NextResponse.json(
       {
-        error: 'Failed to save configuration',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to save configuration",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

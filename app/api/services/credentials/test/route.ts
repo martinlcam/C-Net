@@ -1,17 +1,17 @@
-import { NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/db/client'
-import { serviceCredentials } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
-import { decrypt, getEncryptionPassword } from '@/lib/encryption'
-import { testServiceConnection } from '@/lib/service-test'
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireAuth } from "@/lib/auth"
+import { db } from "@/db/client"
+import { serviceCredentials } from "@/db/schema"
+import { eq, and } from "drizzle-orm"
+import { decrypt, getEncryptionPassword } from "@/lib/encryption"
+import { testServiceConnection } from "@/lib/service-test"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 const testCredentialSchema = z.object({
   credentialId: z.string().uuid().optional(),
-  service: z.enum(['pi-hole', 'plex', 'minecraft', 'nas']).optional(),
+  service: z.enum(["pi-hole", "plex", "minecraft", "nas"]).optional(),
   hostname: z.string().min(1).optional(),
   port: z.number().int().min(1).max(65535).optional(),
   apiKey: z.string().optional(),
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const validated = testCredentialSchema.parse(body)
 
-    let service: 'pi-hole' | 'plex' | 'minecraft' | 'nas'
+    let service: "pi-hole" | "plex" | "minecraft" | "nas"
     let hostname: string
     let port: number
     let apiKey: string | undefined
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       })
 
       if (!credential) {
-        return NextResponse.json({ error: 'Credential not found' }, { status: 404 })
+        return NextResponse.json({ error: "Credential not found" }, { status: 404 })
       }
 
       service = credential.service
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       if (!validated.service || !validated.hostname || !validated.port) {
         return NextResponse.json(
           {
-            error: 'Either credentialId or service + hostname + port must be provided',
+            error: "Either credentialId or service + hostname + port must be provided",
           },
           { status: 400 }
         )
@@ -84,14 +84,17 @@ export async function POST(request: Request) {
       responseTime: result.responseTime,
     })
   } catch (error) {
-    console.error('Failed to test service connection:', error)
+    console.error("Failed to test service connection:", error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      )
     }
     return NextResponse.json(
       {
-        error: 'Failed to test connection',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to test connection",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

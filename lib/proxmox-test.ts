@@ -1,4 +1,4 @@
-import { ProxmoxService } from '@/services/proxmox'
+import { ProxmoxService } from "@/services/proxmox"
 
 export interface ProxmoxConnectionTestResult {
   success: boolean
@@ -29,7 +29,7 @@ export async function testProxmoxConnection(
     if (!nodes || nodes.length === 0) {
       return {
         success: false,
-        message: 'Connection successful but no nodes found in the cluster',
+        message: "Connection successful but no nodes found in the cluster",
       }
     }
 
@@ -38,7 +38,7 @@ export async function testProxmoxConnection(
     if (!firstNode) {
       return {
         success: false,
-        message: 'Connection successful but no nodes found in the cluster',
+        message: "Connection successful but no nodes found in the cluster",
       }
     }
     try {
@@ -47,7 +47,7 @@ export async function testProxmoxConnection(
       return {
         success: false,
         message: `Connection successful but failed to fetch node status: ${
-          statusError instanceof Error ? statusError.message : 'Unknown error'
+          statusError instanceof Error ? statusError.message : "Unknown error"
         }`,
       }
     }
@@ -63,18 +63,18 @@ export async function testProxmoxConnection(
     // Handle specific error types
     if (error instanceof Error) {
       // Authentication errors
-      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+      if (error.message.includes("401") || error.message.includes("Unauthorized")) {
         return {
           success: false,
-          message: 'Authentication failed. Please check your user and token credentials.',
+          message: "Authentication failed. Please check your user and token credentials.",
         }
       }
 
       // Connection errors
       if (
-        error.message.includes('ENOTFOUND') ||
-        error.message.includes('ECONNREFUSED') ||
-        error.message.includes('timeout')
+        error.message.includes("ENOTFOUND") ||
+        error.message.includes("ECONNREFUSED") ||
+        error.message.includes("timeout")
       ) {
         return {
           success: false,
@@ -83,7 +83,7 @@ export async function testProxmoxConnection(
       }
 
       // SSL certificate errors
-      if (error.message.includes('certificate') || error.message.includes('SSL')) {
+      if (error.message.includes("certificate") || error.message.includes("SSL")) {
         return {
           success: false,
           message: `SSL certificate error. Try unchecking "Verify SSL" if using a self-signed certificate. Details: ${error.message}`,
@@ -99,7 +99,7 @@ export async function testProxmoxConnection(
 
     return {
       success: false,
-      message: 'Unknown error occurred while testing connection',
+      message: "Unknown error occurred while testing connection",
     }
   }
 }

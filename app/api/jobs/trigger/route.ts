@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
-import type { Queue } from 'bullmq'
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireAuth } from "@/lib/auth"
+import type { Queue } from "bullmq"
 import {
   getMetricsQueue,
   getHealthChecksQueue,
@@ -10,9 +10,9 @@ import {
   getNotificationsQueue,
   getServiceIntegrationsQueue,
   QUEUE_NAMES,
-} from '@/lib/queues'
+} from "@/lib/queues"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 const triggerJobSchema = z.object({
   queue: z.enum([
@@ -72,17 +72,20 @@ export async function POST(request: Request) {
       jobId: job.id,
       queue: validated.queue,
       jobName: validated.jobName,
-      message: 'Job queued successfully',
+      message: "Job queued successfully",
     })
   } catch (error) {
-    console.error('Failed to trigger job:', error)
+    console.error("Failed to trigger job:", error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      )
     }
     return NextResponse.json(
       {
-        error: 'Failed to trigger job',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to trigger job",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     )

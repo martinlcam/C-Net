@@ -1,11 +1,11 @@
-import { Worker, type Job } from 'bullmq'
-import { QUEUE_NAMES, getRedisConnectionOptions } from '@/lib/queues'
-import { db } from '@/db/client'
-import { metricsSnapshots, auditLogs } from '@/db/schema'
-import { lt } from 'drizzle-orm'
+import { Worker, type Job } from "bullmq"
+import { QUEUE_NAMES, getRedisConnectionOptions } from "@/lib/queues"
+import { db } from "@/db/client"
+import { metricsSnapshots, auditLogs } from "@/db/schema"
+import { lt } from "drizzle-orm"
 
 interface CleanupJobData {
-  type: 'metrics' | 'audit-logs' | 'all'
+  type: "metrics" | "audit-logs" | "all"
 }
 
 /**
@@ -21,7 +21,7 @@ export function createCleanupWorker(): Worker {
       const results: Record<string, number> = {}
 
       try {
-        if (type === 'metrics' || type === 'all') {
+        if (type === "metrics" || type === "all") {
           // Delete metrics older than 30 days
           const thirtyDaysAgo = new Date()
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -35,7 +35,7 @@ export function createCleanupWorker(): Worker {
           console.log(`Deleted ${deletedMetrics.length} metrics older than 30 days`)
         }
 
-        if (type === 'audit-logs' || type === 'all') {
+        if (type === "audit-logs" || type === "all") {
           // Delete audit logs older than 90 days (keep longer than metrics)
           const ninetyDaysAgo = new Date()
           ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
@@ -61,7 +61,7 @@ export function createCleanupWorker(): Worker {
           timestamp: new Date().toISOString(),
         }
       } catch (error) {
-        console.error('Cleanup job failed:', error)
+        console.error("Cleanup job failed:", error)
         throw error
       }
     },
@@ -78,11 +78,11 @@ export function createCleanupWorker(): Worker {
     }
   )
 
-  worker.on('completed', (job) => {
+  worker.on("completed", (job) => {
     console.log(`Cleanup job ${job.id} completed: ${job.data.type}`)
   })
 
-  worker.on('failed', (job, err) => {
+  worker.on("failed", (job, err) => {
     console.error(`Cleanup job ${job?.id} failed:`, err)
   })
 

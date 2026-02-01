@@ -1,8 +1,8 @@
-'use client'
+"use client"
 
-import { useState, useEffect, useCallback } from 'react'
-import { Button } from '@/stories/button/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/stories/card/card'
+import { useState, useEffect, useCallback } from "react"
+import { Button } from "@/stories/button/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/stories/card/card"
 import {
   Dialog,
   DialogContent,
@@ -10,34 +10,34 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/stories/dialog/dialog'
-import { Badge } from '@/stories/badge/badge'
-import { LoadingSpinner } from '@/stories/loading-spinner/loading-spinner'
+} from "@/stories/dialog/dialog"
+import { Badge } from "@/stories/badge/badge"
+import { LoadingSpinner } from "@/stories/loading-spinner/loading-spinner"
 
 interface ServiceCredential {
   id: string
-  service: 'pi-hole' | 'plex' | 'minecraft' | 'nas'
+  service: "pi-hole" | "plex" | "minecraft" | "nas"
   hostname: string
   port: number
   createdAt: string
 }
 
 interface CredentialFormData {
-  service: 'pi-hole' | 'plex' | 'minecraft' | 'nas' | ''
+  service: "pi-hole" | "plex" | "minecraft" | "nas" | ""
   hostname: string
   port: string
   apiKey: string
 }
 
 const SERVICE_LABELS: Record<string, string> = {
-  'pi-hole': 'Pi-hole',
-  plex: 'Plex',
-  minecraft: 'Minecraft',
-  nas: 'NAS/TrueNAS',
+  "pi-hole": "Pi-hole",
+  plex: "Plex",
+  minecraft: "Minecraft",
+  nas: "NAS/TrueNAS",
 }
 
 const DEFAULT_PORTS: Record<string, number> = {
-  'pi-hole': 80,
+  "pi-hole": 80,
   plex: 32400,
   minecraft: 25565,
   nas: 443,
@@ -51,10 +51,10 @@ export default function IntegrationsPage() {
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null)
   const [formData, setFormData] = useState<CredentialFormData>({
-    service: '',
-    hostname: '',
-    port: '',
-    apiKey: '',
+    service: "",
+    hostname: "",
+    port: "",
+    apiKey: "",
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -62,15 +62,15 @@ export default function IntegrationsPage() {
   const fetchCredentials = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/services/credentials')
+      const response = await fetch("/api/services/credentials")
       if (!response.ok) {
-        throw new Error('Failed to fetch credentials')
+        throw new Error("Failed to fetch credentials")
       }
       const data = await response.json()
       setCredentials(data.data || [])
     } catch (error) {
-      console.error('Error fetching credentials:', error)
-      alert('Failed to load credentials. Please refresh the page.')
+      console.error("Error fetching credentials:", error)
+      alert("Failed to load credentials. Please refresh the page.")
     } finally {
       setLoading(false)
     }
@@ -81,38 +81,38 @@ export default function IntegrationsPage() {
     fetchCredentials()
   }, [fetchCredentials])
 
-  const handleServiceChange = (service: 'pi-hole' | 'plex' | 'minecraft' | 'nas' | '') => {
+  const handleServiceChange = (service: "pi-hole" | "plex" | "minecraft" | "nas" | "") => {
     setFormData({
       ...formData,
       service,
-      port: service ? String(DEFAULT_PORTS[service] || '') : '',
+      port: service ? String(DEFAULT_PORTS[service] || "") : "",
     })
-    setFormErrors({ ...formErrors, service: '' })
+    setFormErrors({ ...formErrors, service: "" })
   }
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {}
 
     if (!formData.service) {
-      errors.service = 'Service type is required'
+      errors.service = "Service type is required"
     }
 
     if (!formData.hostname.trim()) {
-      errors.hostname = 'Hostname is required'
+      errors.hostname = "Hostname is required"
     }
 
     if (!formData.port) {
-      errors.port = 'Port is required'
+      errors.port = "Port is required"
     } else {
       const portNum = parseInt(formData.port, 10)
       if (Number.isNaN(portNum) || portNum < 1 || portNum > 65535) {
-        errors.port = 'Port must be between 1 and 65535'
+        errors.port = "Port must be between 1 and 65535"
       }
     }
 
     // API key is required for all services except Minecraft
-    if (formData.service && formData.service !== 'minecraft' && !formData.apiKey.trim()) {
-      errors.apiKey = 'API key is required for this service type'
+    if (formData.service && formData.service !== "minecraft" && !formData.apiKey.trim()) {
+      errors.apiKey = "API key is required for this service type"
     }
 
     setFormErrors(errors)
@@ -135,24 +135,22 @@ export default function IntegrationsPage() {
         apiKey: formData.apiKey.trim() || undefined,
       }
 
-      const url = editingId
-        ? `/api/services/credentials/${editingId}`
-        : '/api/services/credentials'
-      const method = editingId ? 'PATCH' : 'POST'
+      const url = editingId ? `/api/services/credentials/${editingId}` : "/api/services/credentials"
+      const method = editingId ? "PATCH" : "POST"
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to save credential')
+        throw new Error(error.error || "Failed to save credential")
       }
 
       // Reset form and close dialog
-      setFormData({ service: '', hostname: '', port: '', apiKey: '' })
+      setFormData({ service: "", hostname: "", port: "", apiKey: "" })
       setEditingId(null)
       setIsDialogOpen(false)
       setFormErrors({})
@@ -161,8 +159,8 @@ export default function IntegrationsPage() {
       // Refresh credentials list
       await fetchCredentials()
     } catch (error) {
-      console.error('Error saving credential:', error)
-      alert(error instanceof Error ? error.message : 'Failed to save credential')
+      console.error("Error saving credential:", error)
+      alert(error instanceof Error ? error.message : "Failed to save credential")
     } finally {
       setSubmitting(false)
     }
@@ -173,7 +171,7 @@ export default function IntegrationsPage() {
       service: credential.service,
       hostname: credential.hostname,
       port: String(credential.port),
-      apiKey: '', // Don't populate API key for security
+      apiKey: "", // Don't populate API key for security
     })
     setEditingId(credential.id)
     setIsDialogOpen(true)
@@ -182,23 +180,23 @@ export default function IntegrationsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this credential?')) {
+    if (!confirm("Are you sure you want to delete this credential?")) {
       return
     }
 
     try {
       const response = await fetch(`/api/services/credentials/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete credential')
+        throw new Error("Failed to delete credential")
       }
 
       await fetchCredentials()
     } catch (error) {
-      console.error('Error deleting credential:', error)
-      alert('Failed to delete credential')
+      console.error("Error deleting credential:", error)
+      alert("Failed to delete credential")
     }
   }
 
@@ -207,9 +205,9 @@ export default function IntegrationsPage() {
       setTestingId(credentialId)
       setTestResult(null)
 
-      const response = await fetch('/api/services/credentials/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/services/credentials/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credentialId }),
       })
 
@@ -223,14 +221,14 @@ export default function IntegrationsPage() {
       } else {
         setTestResult({
           success: false,
-          message: data.error || 'Connection test failed',
+          message: data.error || "Connection test failed",
         })
       }
     } catch (error) {
-      console.error('Error testing connection:', error)
+      console.error("Error testing connection:", error)
       setTestResult({
         success: false,
-        message: 'Failed to test connection',
+        message: "Failed to test connection",
       })
     } finally {
       setTestingId(null)
@@ -238,7 +236,7 @@ export default function IntegrationsPage() {
   }
 
   const openAddDialog = () => {
-    setFormData({ service: '', hostname: '', port: '', apiKey: '' })
+    setFormData({ service: "", hostname: "", port: "", apiKey: "" })
     setEditingId(null)
     setIsDialogOpen(true)
     setFormErrors({})
@@ -279,7 +277,7 @@ export default function IntegrationsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {['pi-hole', 'plex', 'minecraft', 'nas'].map((service) => {
+          {["pi-hole", "plex", "minecraft", "nas"].map((service) => {
             const serviceCreds = groupedCredentials[service] || []
             if (serviceCreds.length === 0) {
               return null
@@ -289,7 +287,9 @@ export default function IntegrationsPage() {
               <Card key={service}>
                 <CardHeader>
                   <CardTitle>{SERVICE_LABELS[service]}</CardTitle>
-                  <CardDescription>Credentials for {SERVICE_LABELS[service]} service</CardDescription>
+                  <CardDescription>
+                    Credentials for {SERVICE_LABELS[service]} service
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -306,7 +306,7 @@ export default function IntegrationsPage() {
                           {testResult && testingId === cred.id && (
                             <div
                               className={`text-sm mt-1 ${
-                                testResult.success ? 'text-green-600' : 'text-red-600'
+                                testResult.success ? "text-green-600" : "text-red-600"
                               }`}
                             >
                               {testResult.message}
@@ -326,7 +326,7 @@ export default function IntegrationsPage() {
                                 Testing...
                               </>
                             ) : (
-                              'Test'
+                              "Test"
                             )}
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => handleEdit(cred)}>
@@ -354,11 +354,13 @@ export default function IntegrationsPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Service Credential' : 'Add Service Credential'}</DialogTitle>
+            <DialogTitle>
+              {editingId ? "Edit Service Credential" : "Add Service Credential"}
+            </DialogTitle>
             <DialogDescription>
               {editingId
-                ? 'Update the service credential details below.'
-                : 'Configure a new service integration by providing connection details.'}
+                ? "Update the service credential details below."
+                : "Configure a new service integration by providing connection details."}
             </DialogDescription>
           </DialogHeader>
 
@@ -371,7 +373,9 @@ export default function IntegrationsPage() {
                 id="service"
                 value={formData.service}
                 onChange={(e) =>
-                  handleServiceChange(e.target.value as 'pi-hole' | 'plex' | 'minecraft' | 'nas' | '')
+                  handleServiceChange(
+                    e.target.value as "pi-hole" | "plex" | "minecraft" | "nas" | ""
+                  )
                 }
                 disabled={!!editingId}
                 className="w-full px-3 py-2 border border-neutral-30 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-purple-40"
@@ -397,7 +401,7 @@ export default function IntegrationsPage() {
                 value={formData.hostname}
                 onChange={(e) => {
                   setFormData({ ...formData, hostname: e.target.value })
-                  setFormErrors({ ...formErrors, hostname: '' })
+                  setFormErrors({ ...formErrors, hostname: "" })
                 }}
                 placeholder="pi-hole.local or 192.168.1.100"
                 className="w-full px-3 py-2 border border-neutral-30 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-purple-40"
@@ -417,21 +421,20 @@ export default function IntegrationsPage() {
                 value={formData.port}
                 onChange={(e) => {
                   setFormData({ ...formData, port: e.target.value })
-                  setFormErrors({ ...formErrors, port: '' })
+                  setFormErrors({ ...formErrors, port: "" })
                 }}
                 placeholder="80, 32400, 25565, etc."
                 min="1"
                 max="65535"
                 className="w-full px-3 py-2 border border-neutral-30 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-purple-40"
               />
-              {formErrors.port && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.port}</p>
-              )}
+              {formErrors.port && <p className="mt-1 text-sm text-red-600">{formErrors.port}</p>}
             </div>
 
             <div>
               <label htmlFor="apiKey" className="block text-sm font-medium text-neutral-100 mb-1">
-                API Key {formData.service && formData.service !== 'minecraft' && (
+                API Key{" "}
+                {formData.service && formData.service !== "minecraft" && (
                   <span className="text-red-500">*</span>
                 )}
               </label>
@@ -441,9 +444,9 @@ export default function IntegrationsPage() {
                 value={formData.apiKey}
                 onChange={(e) => {
                   setFormData({ ...formData, apiKey: e.target.value })
-                  setFormErrors({ ...formErrors, apiKey: '' })
+                  setFormErrors({ ...formErrors, apiKey: "" })
                 }}
-                placeholder={formData.service === 'minecraft' ? 'Optional' : 'Enter API key'}
+                placeholder={formData.service === "minecraft" ? "Optional" : "Enter API key"}
                 className="w-full px-3 py-2 border border-neutral-30 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-purple-40"
               />
               {formErrors.apiKey && (
@@ -462,7 +465,7 @@ export default function IntegrationsPage() {
                 variant="outline"
                 onClick={() => {
                   setIsDialogOpen(false)
-                  setFormData({ service: '', hostname: '', port: '', apiKey: '' })
+                  setFormData({ service: "", hostname: "", port: "", apiKey: "" })
                   setEditingId(null)
                   setFormErrors({})
                   setTestResult(null)
@@ -477,9 +480,9 @@ export default function IntegrationsPage() {
                     Saving...
                   </>
                 ) : editingId ? (
-                  'Update'
+                  "Update"
                 ) : (
-                  'Create'
+                  "Create"
                 )}
               </Button>
             </DialogFooter>

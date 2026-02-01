@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from "axios"
 
 export interface ServiceTestResult {
   success: boolean
@@ -16,7 +16,7 @@ export async function testPiHoleConnection(
 ): Promise<ServiceTestResult> {
   const startTime = Date.now()
   try {
-    const protocol = port === 443 ? 'https' : 'http'
+    const protocol = port === 443 ? "https" : "http"
     const url = `${protocol}://${hostname}:${port}/admin/api.php?summaryRaw`
 
     const response = await axios.get(url, {
@@ -30,7 +30,7 @@ export async function testPiHoleConnection(
     if (response.status === 200 && response.data) {
       return {
         success: true,
-        message: 'Pi-hole connection successful',
+        message: "Pi-hole connection successful",
         responseTime,
       }
     } else {
@@ -44,7 +44,7 @@ export async function testPiHoleConnection(
     const responseTime = Date.now() - startTime
     return {
       success: false,
-      message: `Failed to connect to Pi-hole: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: `Failed to connect to Pi-hole: ${error instanceof Error ? error.message : "Unknown error"}`,
       responseTime,
     }
   }
@@ -60,12 +60,12 @@ export async function testPlexConnection(
 ): Promise<ServiceTestResult> {
   const startTime = Date.now()
   try {
-    const protocol = port === 443 ? 'https' : 'http'
+    const protocol = port === 443 ? "https" : "http"
     const url = `${protocol}://${hostname}:${port}/`
 
     const headers: Record<string, string> = {}
     if (apiKey) {
-      headers['X-Plex-Token'] = apiKey
+      headers["X-Plex-Token"] = apiKey
     }
 
     const response = await axios.get(url, {
@@ -80,7 +80,7 @@ export async function testPlexConnection(
       // 401 means the server is reachable but authentication may be needed
       return {
         success: true,
-        message: 'Plex connection successful',
+        message: "Plex connection successful",
         responseTime,
       }
     } else {
@@ -94,7 +94,7 @@ export async function testPlexConnection(
     const responseTime = Date.now() - startTime
     return {
       success: false,
-      message: `Failed to connect to Plex: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: `Failed to connect to Plex: ${error instanceof Error ? error.message : "Unknown error"}`,
       responseTime,
     }
   }
@@ -115,20 +115,20 @@ export async function testMinecraftConnection(
     // Note: This is a simplified check. Full Minecraft server list ping would require
     // a specialized library. For now, we'll try a simple HTTP check if there's a web interface,
     // otherwise we'll use a basic connectivity test.
-    const net = await import('node:net')
+    const net = await import("node:net")
     const socket = new net.Socket()
 
     const connectionPromise = new Promise<boolean>((resolve) => {
       socket.setTimeout(5000)
-      socket.once('connect', () => {
+      socket.once("connect", () => {
         socket.destroy()
         resolve(true)
       })
-      socket.once('timeout', () => {
+      socket.once("timeout", () => {
         socket.destroy()
         resolve(false)
       })
-      socket.once('error', () => {
+      socket.once("error", () => {
         resolve(false)
       })
       socket.connect(port, hostname)
@@ -140,13 +140,13 @@ export async function testMinecraftConnection(
     if (connected) {
       return {
         success: true,
-        message: 'Minecraft server connection successful',
+        message: "Minecraft server connection successful",
         responseTime,
       }
     } else {
       return {
         success: false,
-        message: 'Failed to connect to Minecraft server (timeout or connection refused)',
+        message: "Failed to connect to Minecraft server (timeout or connection refused)",
         responseTime,
       }
     }
@@ -154,7 +154,7 @@ export async function testMinecraftConnection(
     const responseTime = Date.now() - startTime
     return {
       success: false,
-      message: `Failed to connect to Minecraft: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: `Failed to connect to Minecraft: ${error instanceof Error ? error.message : "Unknown error"}`,
       responseTime,
     }
   }
@@ -170,11 +170,11 @@ export async function testNASConnection(
 ): Promise<ServiceTestResult> {
   const startTime = Date.now()
   try {
-    const protocol = port === 443 ? 'https' : 'http'
+    const protocol = port === 443 ? "https" : "http"
     const url = `${protocol}://${hostname}:${port}/api/v2.0/system/info`
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     }
     if (apiKey) {
       headers.Authorization = `Bearer ${apiKey}`
@@ -191,14 +191,14 @@ export async function testNASConnection(
     if (response.status === 200) {
       return {
         success: true,
-        message: 'NAS connection successful',
+        message: "NAS connection successful",
         responseTime,
       }
     } else if (response.status === 401) {
       // Server is reachable but authentication is required/incorrect
       return {
         success: true,
-        message: 'NAS connection successful (authentication may be required)',
+        message: "NAS connection successful (authentication may be required)",
         responseTime,
       }
     } else {
@@ -213,7 +213,7 @@ export async function testNASConnection(
     // If it's a connection error, the server might not be a TrueNAS server
     // Try a basic HTTP check on root path
     try {
-      const protocol = port === 443 ? 'https' : 'http'
+      const protocol = port === 443 ? "https" : "http"
       const rootUrl = `${protocol}://${hostname}:${port}/`
       const _rootResponse = await axios.get(rootUrl, {
         timeout: 3000,
@@ -221,13 +221,13 @@ export async function testNASConnection(
       })
       return {
         success: true,
-        message: 'NAS connection successful (basic connectivity confirmed)',
+        message: "NAS connection successful (basic connectivity confirmed)",
         responseTime: Date.now() - startTime,
       }
     } catch {
       return {
         success: false,
-        message: `Failed to connect to NAS: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to connect to NAS: ${error instanceof Error ? error.message : "Unknown error"}`,
         responseTime,
       }
     }
@@ -238,19 +238,19 @@ export async function testNASConnection(
  * Test service connection based on service type
  */
 export async function testServiceConnection(
-  service: 'pi-hole' | 'plex' | 'minecraft' | 'nas',
+  service: "pi-hole" | "plex" | "minecraft" | "nas",
   hostname: string,
   port: number,
   apiKey?: string
 ): Promise<ServiceTestResult> {
   switch (service) {
-    case 'pi-hole':
+    case "pi-hole":
       return testPiHoleConnection(hostname, port, apiKey)
-    case 'plex':
+    case "plex":
       return testPlexConnection(hostname, port, apiKey)
-    case 'minecraft':
+    case "minecraft":
       return testMinecraftConnection(hostname, port)
-    case 'nas':
+    case "nas":
       return testNASConnection(hostname, port, apiKey)
     default:
       return {
