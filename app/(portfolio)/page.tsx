@@ -11,6 +11,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/stories/dropdown-menu/dropdown-menu'
+import LogoLoop from '@/components/LogoLoop'
+import {
+  SiReact,
+  SiNextdotjs,
+  SiTypescript,
+  SiTailwindcss,
+  SiPostgresql,
+  SiRedis,
+  SiDocker,
+  SiExpress,
+  SiRadixui,
+  SiBun,
+  SiZod,
+} from 'react-icons/si'
+import { TbDatabase } from 'react-icons/tb'
+
+const techLogos = [
+  { node: <SiReact className="text-black" />, title: 'React', href: 'https://react.dev' },
+  { node: <SiNextdotjs className="text-black" />, title: 'Next.js', href: 'https://nextjs.org' },
+  { node: <SiTypescript className="text-black" />, title: 'TypeScript', href: 'https://www.typescriptlang.org' },
+  { node: <SiTailwindcss className="text-black" />, title: 'Tailwind CSS', href: 'https://tailwindcss.com' },
+  { node: <TbDatabase className="text-black" />, title: 'Drizzle ORM', href: 'https://orm.drizzle.team' },
+  { node: <SiPostgresql className="text-black" />, title: 'PostgreSQL', href: 'https://www.postgresql.org' },
+  { node: <SiRedis className="text-black" />, title: 'Redis', href: 'https://redis.io' },
+  { node: <SiDocker className="text-black" />, title: 'Docker', href: 'https://www.docker.com' },
+  { node: <SiExpress className="text-black" />, title: 'Express.js', href: 'https://expressjs.com' },
+  { node: <SiRadixui className="text-black" />, title: 'Radix UI', href: 'https://www.radix-ui.com' },
+  { node: <SiBun className="text-black" />, title: 'Bun', href: 'https://bun.sh' },
+  { node: <SiZod className="text-black" />, title: 'Zod', href: 'https://zod.dev' },
+]
 
 export default function HomePage() {
   const { data: session, status } = useSession()
@@ -44,7 +74,7 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#eef1f0]">
       {/* ===== MAIN FRAMED LAYOUT ===== */}
       <div className="border border-black">
         
@@ -127,7 +157,7 @@ export default function HomePage() {
           </div>
           
           {/* Hero Section - with decorative background */}
-          <section id="home" className="flex-1 relative min-h-[500px] flex items-center px-10 py-16 overflow-hidden">
+          <section id="home" className="flex-1 relative min-h-[70vh] flex items-center px-10 py-16 overflow-hidden">
               {/* Decorative vector lines background */}
               <svg
                 className="absolute inset-0 w-full h-full pointer-events-none"
@@ -168,28 +198,28 @@ export default function HomePage() {
               </svg>
 
               {/* Hero content */}
-              <div className="relative z-10 max-w-[600px]">
-                <p className="text-gray-500 text-base mb-2">Hey there, I'm</p>
-                <h1 className="text-[64px] font-bold text-black mb-6 tracking-tight leading-none">
-                  Martin Cam<span className="inline-block ml-2 w-3 h-3 rounded-full bg-[#22c55e] align-middle" />
+              <div className="relative z-10 max-w-[750px]">
+                <p className="text-gray-500 text-xl mb-3">Hey there, I'm</p>
+                <h1 className="text-[80px] md:text-[96px] font-bold text-black mb-8 tracking-tight leading-none">
+                  Martin Cam<span className="inline-block ml-3 w-4 h-4 rounded-full bg-[#bea9e9] align-middle" />
                 </h1>
-                <p className="text-base text-gray-700 mb-4 leading-relaxed">
+                <p className="text-xl text-gray-700 mb-5 leading-relaxed">
                   An 19-year-old Full Stack web developer based in{' '}
-                  <span className="text-[#22c55e] font-medium">Vancouver, Canada</span>.
+                  <span className="text-[#bea9e9] font-medium">Vancouver, Canada</span>.
                   I'm currently working as a{' '}
-                  <span className="text-[#22c55e] font-medium">Software Engineer at Futurity</span>,
+                  <span className="text-[#bea9e9] font-medium">Software Engineer at Futurity</span>,
                   an international AI startup providing enterprise on-premise AI deployments, integrations
                   and plugins for clients around the world.
                 </p>
-                <p className="text-base text-gray-700 mb-8 leading-relaxed">
+                <p className="text-xl text-gray-700 mb-10 leading-relaxed">
                   Primarily, I write a lot of TypeScript, React, Next, and Tailwind CSS but I
                   also have experience with ExpressJS, Drizzle ORM, PostgreSQL, and Docker.
                 </p>
-                <div className="flex gap-3">
-                  <Button asChild className="bg-black hover:bg-gray-800 text-white px-6 py-3 rounded-[12px] text-base font-medium h-auto">
+                <div className="flex gap-4">
+                  <Button asChild className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-[12px] text-lg font-medium h-auto">
                     <a href="#projects">View Projects</a>
                   </Button>
-                  <Button asChild variant="outline" className="border-black text-black hover:bg-gray-100 px-6 py-3 rounded-[12px] text-base font-medium h-auto">
+                  <Button asChild variant="outline" className="border-black text-black hover:bg-gray-100 px-8 py-4 rounded-[12px] text-lg font-medium h-auto">
                     <a href="#contact">Get in Touch</a>
                   </Button>
                 </div>
@@ -200,8 +230,21 @@ export default function HomePage() {
         {/* ===== HORIZONTAL LINE - End of hero section ===== */}
         <div className="border-t border-black" />
 
-        {/* ===== THIN STRIP SECTION - Decorative bar ===== */}
-        <div className="h-10 border-b border-black" />
+        {/* ===== TECH STRIP SECTION - Scrolling logos ===== */}
+        <div className="h-[15vh] border-b border-black flex items-center overflow-hidden">
+          <LogoLoop
+            logos={techLogos}
+            speed={80}
+            direction="left"
+            logoHeight={32}
+            gap={48}
+            hoverSpeed={0}
+            scaleOnHover
+            fadeOut
+            fadeOutColor="#eef1f0"
+            ariaLabel="Technologies used"
+          />
+        </div>
 
         {/* ===== REST OF PAGE - About, Projects, Contact ===== */}
         <div>
@@ -209,7 +252,7 @@ export default function HomePage() {
           <section id="about" className="py-24 px-12 lg:px-20 border-b border-black">
             <div className="max-w-5xl">
               <h2 className="text-5xl md:text-6xl font-bold text-black mb-12 tracking-tight">
-                About<span className="text-green-500">.</span>
+                About<span className="text-[#bea9e9]">.</span>
               </h2>
 
               <div className="grid md:grid-cols-2 gap-12 mb-16">
@@ -306,7 +349,7 @@ export default function HomePage() {
           <section id="projects" className="py-24 px-12 lg:px-20 border-b border-black">
             <div className="max-w-7xl">
               <h2 className="text-5xl md:text-6xl font-bold text-black mb-4 tracking-tight">
-                Projects<span className="text-green-500">.</span>
+                Projects<span className="text-[#bea9e9]">.</span>
               </h2>
               <p className="text-xl text-gray-600 mb-12 max-w-2xl">
                 A collection of projects showcasing my work in full-stack development, infrastructure
@@ -352,7 +395,7 @@ export default function HomePage() {
           <section id="contact" className="py-24 px-12 lg:px-20 border-b border-black">
             <div className="max-w-4xl">
               <h2 className="text-5xl md:text-6xl font-bold text-black mb-4 tracking-tight">
-                Contact<span className="text-green-500">.</span>
+                Contact<span className="text-[#bea9e9]">.</span>
               </h2>
               <p className="text-xl text-gray-600 mb-12">
                 Get in touch with me for collaborations, opportunities, or just to say hello!
@@ -363,7 +406,7 @@ export default function HomePage() {
                   href="mailto:your.email@example.com"
                   className="p-6 border border-black group"
                 >
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-green-600">
+                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
                     Email
                   </h3>
                   <p className="text-gray-600">your.email@example.com</p>
@@ -375,7 +418,7 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="p-6 border border-black group"
                 >
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-green-600">
+                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
                     GitHub
                   </h3>
                   <p className="text-gray-600">github.com/yourusername</p>
@@ -387,7 +430,7 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="p-6 border border-black group"
                 >
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-green-600">
+                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
                     LinkedIn
                   </h3>
                   <p className="text-gray-600">linkedin.com/in/yourprofile</p>
@@ -399,7 +442,7 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="p-6 border border-black group"
                 >
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-green-600">
+                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
                     Twitter
                   </h3>
                   <p className="text-gray-600">@yourusername</p>
