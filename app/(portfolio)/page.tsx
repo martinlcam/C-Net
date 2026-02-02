@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { animate, svg, stagger } from "animejs"
@@ -38,6 +38,175 @@ import {
   SiZod,
 } from "react-icons/si"
 import { TbDatabase } from "react-icons/tb"
+
+function ContactSection() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitStatus("idle")
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setSubmitStatus("success")
+        setFormData({ name: "", email: "", message: "" })
+      } else {
+        setSubmitStatus("error")
+      }
+    } catch {
+      setSubmitStatus("error")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <section id="contact" className="py-24 px-12 lg:px-20 border-b border-black">
+      <div className="max-w-5xl">
+        <div className="flex flex-col md:flex-row md:gap-0">
+          {/* Left side - Get in Touch info */}
+          <div className="md:w-2/5 md:pr-12 pb-8 md:pb-0">
+            <h2 className="text-3xl md:text-4xl font-bold text-black mb-4 tracking-tight">
+              Get in Touch
+            </h2>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              I'm looking forward to hearing from you! If you prefer not to fill out forms, feel
+              free to email me directly.
+            </p>
+            <a
+              href="mailto:martin@futurity.work"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-black underline hover:text-gray-600 transition-colors"
+            >
+              martin@futurity.work
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M7 17L17 7" />
+                <path d="M7 7h10v10" />
+              </svg>
+            </a>
+          </div>
+
+          {/* Divider - horizontal on mobile, vertical on desktop */}
+          <div className="border-t md:border-t-0 md:border-l border-black my-0 md:my-0" />
+
+          {/* Right side - Form */}
+          <div className="md:w-3/5 md:pl-12 pt-8 md:pt-0">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="name" className="text-sm font-medium text-black">
+                    Name <span className="text-gray-400">*</span>
+                  </label>
+                  <span className="text-sm text-gray-400">{formData.name.length}/100</span>
+                </div>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  maxLength={100}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="ex. Toby Fox"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="email" className="text-sm font-medium text-black">
+                    Email <span className="text-gray-400">*</span>
+                  </label>
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="waddle-doo@website.com"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="message" className="text-sm font-medium text-black">
+                    Share More Details <span className="text-gray-400">*</span>
+                  </label>
+                  <span className="text-sm text-gray-400">{formData.message.length}/5000</span>
+                </div>
+                <textarea
+                  id="message"
+                  name="message"
+                  required
+                  maxLength={5000}
+                  rows={5}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  placeholder="Describe what you need..."
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all resize-none"
+                />
+              </div>
+
+              {submitStatus === "success" && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 text-sm">
+                    Message sent successfully! I'll get back to you soon.
+                  </p>
+                </div>
+              )}
+
+              {submitStatus === "error" && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 text-sm">
+                    Something went wrong. Please try again or email me directly.
+                  </p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-black hover:bg-gray-800 text-white py-4 rounded-lg text-base font-medium h-auto disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting ? "Sending..." : "Submit"}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 const techLogos = [
   { node: <SiReact className="text-black" />, title: "React", href: "https://react.dev" },
@@ -82,17 +251,24 @@ export default function HomePage() {
   const { data: session, status } = useSession()
   const { openModal } = useAuthModal()
   const svgRef = useRef<SVGSVGElement>(null)
+  const [isAtTop, setIsAtTop] = useState(true)
 
   useEffect(() => {
     if (svgRef.current) {
       animate(svg.createDrawable('.hero-line'), {
         draw: ['0 0', '0 1'],
-        ease: 'cubicBezier(0.1,0.7,0.5,1)',
-        duration: 2000,
+        ease: 'outInSine',
+        duration: 1000,
         delay: stagger(100),
         loop: false
       })
     }
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => setIsAtTop(window.scrollY === 0)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   const projects = [
@@ -124,18 +300,13 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#eef1f0]">
+    <div className="min-h-screen w-full bg-[#eef1f0]">
       <AuthModal />
-      {/* ===== MAIN FRAMED LAYOUT ===== */}
-      <div className="border border-black">
-        {/* ===== HEADER ROW - Top line extends full width ===== */}
-        <div className="flex border-b border-black">
-          {/* Top-left box with C */}
-          <div className="w-[58px] h-16 border-r border-black flex items-center justify-center shrink-0"></div>
-
-          {/* Header navigation */}
+      <div className="border-y border-l border-black">
+        <div className="flex border-b border-black sticky top-0 z-50 bg-[#eef1f0]">
+          {/* Conditionally show border when at page top */}
+          <div className={`w-[58px] h-16 flex items-center justify-center shrink-0 transition-all ${isAtTop ? 'border-r border-black' : ''}`}></div>
           <div className="flex-1 flex items-center justify-between px-6">
-            {/* Left Navigation */}
             <nav className="flex items-center gap-6">
               <a
                 href="#home"
@@ -162,8 +333,6 @@ export default function HomePage() {
                 Contact
               </a>
             </nav>
-
-            {/* Right side - Auth */}
             <div className="flex items-center gap-4">
               {status === "loading" ? (
                 <div className="h-12 w-24 bg-gray-100 animate-pulse rounded-xl" />
@@ -213,9 +382,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ===== MAIN CONTENT: Sidebar (N,E,T) + Hero ===== */}
         <div className="flex">
-          {/* Left sidebar with N-E-T */}
           <div className="w-[58px] border-r border-black flex flex-col items-center pt-2 shrink-0">
             <div className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight">
               <span>C</span>
@@ -226,12 +393,10 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Hero Section - with decorative background */}
           <section
             id="home"
             className="flex-1 relative min-h-[70vh] flex items-center px-10 py-16 overflow-hidden"
           >
-            {/* Decorative vector lines background */}
             <svg
               ref={svgRef}
               className="absolute inset-0 w-full h-full pointer-events-none"
@@ -277,7 +442,6 @@ export default function HomePage() {
               />
             </svg>
 
-            {/* Hero content */}
             <div className="relative z-10 max-w-[750px]">
               <p className="text-gray-500 text-xl mb-3">Hey there, I'm</p>
               <h1 className="text-[80px] md:text-[96px] font-bold text-black mb-8 tracking-tight leading-none">
@@ -321,10 +485,8 @@ export default function HomePage() {
           </section>
         </div>
 
-        {/* ===== HORIZONTAL LINE - End of hero section ===== */}
         <div className="border-t border-black" />
 
-        {/* ===== TECH STRIP SECTION - Scrolling logos ===== */}
         <div className="h-[10vh] border-b border-black flex items-center overflow-hidden">
           <LogoLoop
             logos={techLogos}
@@ -340,9 +502,7 @@ export default function HomePage() {
           />
         </div>
 
-        {/* ===== REST OF PAGE - About, Projects, Contact ===== */}
         <div>
-          {/* ===== ABOUT SECTION ===== */}
           <section id="about" className="py-24 px-12 lg:px-20 border-b border-black">
             <div className="max-w-5xl">
               <h2 className="text-5xl md:text-6xl font-bold text-black mb-12 tracking-tight">
@@ -407,39 +567,9 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-
-              <div>
-                <h3 className="text-2xl font-semibold text-black mb-6">Technologies</h3>
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    "Next.js 16",
-                    "React 19",
-                    "TypeScript",
-                    "Tailwind CSS",
-                    "Drizzle ORM",
-                    "PostgreSQL",
-                    "Redis",
-                    "BullMQ",
-                    "Auth.js",
-                    "TanStack Query",
-                    "Zustand",
-                    "Radix UI",
-                    "Proxmox",
-                    "Bun",
-                  ].map((tech) => (
-                    <span
-                      key={tech}
-                      className="px-4 py-2 bg-gray-100 text-gray-800 border border-black text-sm font-medium"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
           </section>
 
-          {/* ===== PROJECTS SECTION ===== */}
           <section id="projects" className="py-24 px-12 lg:px-20 border-b border-black">
             <div className="max-w-7xl">
               <h2 className="text-5xl md:text-6xl font-bold text-black mb-4 tracking-tight">
@@ -492,74 +622,8 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* ===== CONTACT SECTION ===== */}
-          <section id="contact" className="py-24 px-12 lg:px-20 border-b border-black">
-            <div className="max-w-4xl">
-              <h2 className="text-5xl md:text-6xl font-bold text-black mb-4 tracking-tight">
-                Contact<span className="text-[#bea9e9]">.</span>
-              </h2>
-              <p className="text-xl text-gray-600 mb-12">
-                Get in touch with me for collaborations, opportunities, or just to say hello!
-              </p>
+          <ContactSection />
 
-              <div className="grid md:grid-cols-2 gap-6 mb-12">
-                <a href="mailto:your.email@example.com" className="p-6 border border-black group">
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
-                    Email
-                  </h3>
-                  <p className="text-gray-600">your.email@example.com</p>
-                </a>
-
-                <a
-                  href="https://github.com/yourusername"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-6 border border-black group"
-                >
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
-                    GitHub
-                  </h3>
-                  <p className="text-gray-600">github.com/yourusername</p>
-                </a>
-
-                <a
-                  href="https://linkedin.com/in/yourprofile"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-6 border border-black group"
-                >
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
-                    LinkedIn
-                  </h3>
-                  <p className="text-gray-600">linkedin.com/in/yourprofile</p>
-                </a>
-
-                <a
-                  href="https://twitter.com/yourusername"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-6 border border-black group"
-                >
-                  <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-[#bea9e9]">
-                    Twitter
-                  </h3>
-                  <p className="text-gray-600">@yourusername</p>
-                </a>
-              </div>
-
-              <div className="p-8 border border-black bg-gray-50">
-                <h3 className="text-2xl font-semibold text-black mb-3">Let's Work Together</h3>
-                <p className="text-gray-600 mb-6">
-                  I'm always interested in new projects and opportunities. Feel free to reach out!
-                </p>
-                <Button asChild size="lg" className="bg-black hover:bg-gray-800 text-white">
-                  <a href="mailto:your.email@example.com">Send an Email</a>
-                </Button>
-              </div>
-            </div>
-          </section>
-
-          {/* Footer */}
           <footer className="py-8 px-12 lg:px-20">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-gray-500 text-sm">
