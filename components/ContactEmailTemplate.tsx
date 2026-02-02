@@ -1,16 +1,14 @@
-import * as React from "react";
-
 interface ContactEmailTemplateProps {
-  name: string;
-  email: string;
-  message: string;
+  readonly name: string
+  readonly email: string
+  readonly message: string
 }
 
 export function ContactEmailTemplate({
   name,
   email,
   message,
-}: ContactEmailTemplateProps) {
+}: Readonly<ContactEmailTemplateProps>) {
   return (
     <div
       style={{
@@ -93,5 +91,5 @@ export function ContactEmailTemplate({
         This email was sent from the contact form on your portfolio website.
       </p>
     </div>
-  );
+  )
 }
