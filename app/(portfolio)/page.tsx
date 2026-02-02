@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
+import { animate, svg, stagger } from "animejs"
 import { Button } from "@/stories/button/button"
 import {
   Card,
@@ -79,6 +81,19 @@ const techLogos = [
 export default function HomePage() {
   const { data: session, status } = useSession()
   const { openModal } = useAuthModal()
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  useEffect(() => {
+    if (svgRef.current) {
+      animate(svg.createDrawable('.hero-line'), {
+        draw: ['0 0', '0 1'],
+        ease: 'cubicBezier(0.1,0.7,0.5,1)',
+        duration: 2000,
+        delay: stagger(100),
+        loop: false
+      })
+    }
+  }, [])
 
   const projects = [
     {
@@ -218,6 +233,7 @@ export default function HomePage() {
           >
             {/* Decorative vector lines background */}
             <svg
+              ref={svgRef}
               className="absolute inset-0 w-full h-full pointer-events-none"
               viewBox="0 0 1400 600"
               fill="none"
@@ -225,32 +241,37 @@ export default function HomePage() {
               aria-hidden="true"
             >
               <path
+                className="hero-line"
                 d="M-100 100 Q 200 50, 400 150 T 800 100 T 1200 200 T 1600 100"
-                stroke="#e5e5e5"
+                stroke="#d4d4d4"
                 strokeWidth="1"
                 fill="none"
               />
               <path
+                className="hero-line"
                 d="M-100 200 Q 300 150, 500 250 T 900 200 T 1300 300 T 1600 200"
-                stroke="#e5e5e5"
+                stroke="#d4d4d4"
                 strokeWidth="1"
                 fill="none"
               />
               <path
+                className="hero-line"
                 d="M-100 300 Q 250 250, 450 350 T 850 300 T 1250 400 T 1600 300"
-                stroke="#e5e5e5"
+                stroke="#d4d4d4"
                 strokeWidth="1"
                 fill="none"
               />
               <path
+                className="hero-line"
                 d="M-100 400 Q 200 350, 400 450 T 800 400 T 1200 500 T 1600 400"
-                stroke="#e5e5e5"
+                stroke="#d4d4d4"
                 strokeWidth="1"
                 fill="none"
               />
               <path
+                className="hero-line"
                 d="M-100 500 Q 300 450, 500 550 T 900 500 T 1300 600 T 1600 500"
-                stroke="#e5e5e5"
+                stroke="#d4d4d4"
                 strokeWidth="1"
                 fill="none"
               />
