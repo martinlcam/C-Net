@@ -255,20 +255,20 @@ export default function HomePage() {
 
   useEffect(() => {
     if (svgRef.current) {
-      animate(svg.createDrawable('.hero-line'), {
-        draw: ['0 0', '0 1'],
-        ease: 'outInSine',
+      animate(svg.createDrawable(".hero-line"), {
+        draw: ["0 0", "0 1"],
+        ease: "outInSine",
         duration: 1000,
         delay: stagger(100),
-        loop: false
+        loop: false,
       })
     }
   }, [])
 
   useEffect(() => {
     const handleScroll = () => setIsAtTop(window.scrollY === 0)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   const projects = [
@@ -305,7 +305,9 @@ export default function HomePage() {
       <div className="border-y border-l border-black">
         <div className="flex border-b border-black sticky top-0 z-50 bg-[#eef1f0]">
           {/* Conditionally show border when at page top */}
-          <div className={`w-[58px] h-16 flex items-center justify-center shrink-0 transition-all ${isAtTop ? 'border-r border-black' : ''}`}></div>
+          <div
+            className={`w-[58px] h-16 flex items-center justify-center shrink-0 transition-all ${isAtTop ? "border-r border-black" : ""}`}
+          ></div>
           <div className="flex-1 flex items-center justify-between px-6">
             <nav className="flex items-center gap-6">
               <a
