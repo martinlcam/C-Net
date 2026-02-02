@@ -11,6 +11,7 @@ const allowedTypes = process.env.COMMIT_TYPES
     "deps",
     "style",
     "security",
+    "fml"
   ];
 
 export default {
