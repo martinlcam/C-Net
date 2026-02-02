@@ -9,7 +9,8 @@ const allowedTypes = process.env.COMMIT_TYPES
     "test",
     "ci",
     "deps",
-    "style"
+    "style",
+    "security",
   ];
 
 export default {
