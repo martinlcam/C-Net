@@ -78,47 +78,58 @@ function ContactSection() {
   }
 
   return (
-    <section id="contact" className="py-24 px-12 lg:px-20 border-b border-black">
-      <div className="max-w-5xl">
-        <div className="flex flex-col md:flex-row md:gap-0">
+    <section
+      id="contact"
+      className="border-b border-black relative min-h-[calc(100vh-65px)] flex flex-col"
+    >
+      {/* Center divider that touches section borders */}
+      <div
+        className="hidden md:block absolute inset-y-0 left-1/2 w-px bg-black pointer-events-none"
+        aria-hidden="true"
+      />
+
+      <div className="max-w-7xl mx-auto px-12 lg:px-20 w-full flex-1 flex items-center py-24 md:py-0">
+        <div className="flex flex-col md:grid md:grid-cols-2 w-full md:py-24">
           {/* Left side - Get in Touch info */}
-          <div className="md:w-2/5 md:pr-12 pb-8 md:pb-0">
-            <h2 className="text-3xl md:text-4xl font-bold text-black mb-4 tracking-tight">
-              Get in Touch
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              I'm looking forward to hearing from you! If you prefer not to fill out forms, feel
-              free to email me directly.
-            </p>
-            <a
-              href="mailto:martin@futurity.work"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-black underline hover:text-gray-600 transition-colors"
-            >
-              martin@futurity.work
-              <svg
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+          <div className="md:pr-12 md:flex md:flex-col md:justify-center">
+            <div className="max-w-md mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-black mb-4 tracking-tight">
+                Get in Touch
+              </h2>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                I'm looking forward to hearing from you! If you prefer not to fill out forms, feel
+                free to email me directly.
+              </p>
+              <a
+                href="mailto:martin@futurity.work"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-black underline hover:text-gray-600 transition-colors"
               >
-                <path d="M7 17L17 7" />
-                <path d="M7 7h10v10" />
-              </svg>
-            </a>
+                martin@futurity.work
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M7 17L17 7" />
+                  <path d="M7 7h10v10" />
+                </svg>
+              </a>
+            </div>
           </div>
 
-          {/* Divider - horizontal on mobile, vertical on desktop */}
-          <div className="border-t md:border-t-0 md:border-l border-black my-0 md:my-0" />
+          {/* Divider - horizontal on mobile only */}
+          <div className="border-t border-black my-8 md:hidden" aria-hidden="true" />
 
           {/* Right side - Form */}
-          <div className="md:w-3/5 md:pl-12 pt-8 md:pt-0">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="md:pl-12 md:flex md:flex-col md:justify-center">
+            <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-2xl mx-auto">
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label htmlFor="name" className="text-sm font-medium text-black">
@@ -302,8 +313,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen w-full bg-[#eef1f0]">
       <AuthModal />
-      <div className="border-y border-l border-black">
-        <div className="flex border-b border-black sticky top-0 z-50 bg-[#eef1f0]">
+      <header
+        className="flex border-b border-black fixed top-0 left-0 right-0 z-50 bg-[#eef1f0] backdrop-blur-sm border-l"
+      >
           {/* Conditionally show border when at page top */}
           <div
             className={`w-[58px] h-16 flex items-center justify-center shrink-0 transition-all ${isAtTop ? "border-r border-black" : ""}`}
@@ -382,8 +394,12 @@ export default function HomePage() {
               )}
             </div>
           </div>
-        </div>
+        </header>
 
+        {/* Spacer for fixed header height (observed 65px in logs) */}
+        <div className="h-[65px]" aria-hidden="true" />
+
+        <div className="border-b border-l border-black">
         <div className="flex">
           <div className="w-[58px] border-r border-black flex flex-col items-center pt-2 shrink-0">
             <div className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight">
