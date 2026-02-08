@@ -311,10 +311,10 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen w-full bg-[#eef1f0]">
+    <div className="min-h-screen w-full bg-[#faf6f1]">
       <AuthModal />
       <header
-        className="flex border-b border-black fixed top-0 left-0 right-0 z-50 bg-[#eef1f0] backdrop-blur-sm border-l"
+        className="flex border-b border-black fixed top-0 left-0 right-0 z-50 bg-[#faf6f1] backdrop-blur-sm border-l"
       >
           {/* Conditionally show border when at page top */}
           <div
@@ -515,7 +515,7 @@ export default function HomePage() {
             hoverSpeed={0}
             scaleOnHover
             fadeOut
-            fadeOutColor="#eef1f0"
+            fadeOutColor="#faf6f1"
             ariaLabel="Technologies used"
           />
         </div>
