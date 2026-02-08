@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { SessionProviderWrapper } from "@/components/SessionProviderWrapper"
 import { Providers } from "./providers"
 import { StyleDebugger } from "@/components/StyleDebugger"
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SessionProviderWrapper>
             <Providers>{children}</Providers>
           </SessionProviderWrapper>
+          <SpeedInsights />
         </Theme>
       </body>
     </html>
