@@ -31,11 +31,30 @@ export interface SendEmailOptions {
   from?: string
 }
 
+/** Strip HTML tags in a single pass to avoid ReDoS from backtracking. */
+function stripHtmlTags(html: string): string {
+  let out = ""
+  let i = 0
+  while (i < html.length) {
+    if (html[i] === "<") {
+      while (i < html.length && html[i] !== ">") i++
+      if (i < html.length) i++
+    } else {
+      out += html[i]
+      i++
+    }
+  }
+  return out
+}
+
 export async function sendEmail(options: SendEmailOptions): Promise<{ id: string }> {
   const client = getResendClient()
 
-  // Ensure we have at least text or html content
-  const text = options.text || options.html?.replace(/<[^>]*>/g, "") || ""
+  // Ensure we have at least text or html content (strip tags with O(n) loop to avoid ReDoS)
+  const text =
+    options.text ||
+    (options.html ? stripHtmlTags(options.html) : "") ||
+    ""
 
   const result = await client.emails.send({
     from: options.from || "C-Net Dashboard <noreply@yourdomain.com>",
