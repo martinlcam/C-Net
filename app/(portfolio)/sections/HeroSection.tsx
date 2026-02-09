@@ -90,14 +90,14 @@ export function HeroSection() {
             </h1>
             <p className="text-lg text-gray-700 mb-3 leading-relaxed">
               An 19-year-old Full Stack web developer based in{" "}
-              <Text color="iris">Vancouver, Canada</Text>. I'm currently working as a{" "}
+              <Text color="indigo">Vancouver, Canada</Text>. I'm currently working as a{" "}
               <a
                 href="https://futurity.work"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:underline"
               >
-                <Text color="grass">Software Engineer at Futurity</Text>
+                <Text color="cyan">Software Engineer at Futurity</Text>
               </a>
               , an international AI startup providing enterprise on-premise AI deployments,
               integrations and plugins for clients around the world.
