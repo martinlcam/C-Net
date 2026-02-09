@@ -239,9 +239,7 @@ export function HeaderSection() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-black">
-                      {session.user?.name || "User"}
-                    </p>
+                    <p className="text-sm font-medium text-black">{session.user?.name || "User"}</p>
                     <p className="text-xs text-gray-600">{session.user?.email}</p>
                   </div>
                   <DropdownMenuSeparator />

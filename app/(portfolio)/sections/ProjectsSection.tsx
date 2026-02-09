@@ -45,8 +45,8 @@ export function ProjectsSection() {
           Projects<span className="text-[#bea9e9]">.</span>
         </h2>
         <p className="text-xl text-gray-600 mb-12 max-w-2xl">
-          A collection of projects showcasing my work in full-stack development,
-          infrastructure management, and modern web technologies.
+          A collection of projects showcasing my work in full-stack development, infrastructure
+          management, and modern web technologies.
         </p>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -54,9 +54,7 @@ export function ProjectsSection() {
             <Card key={project.id} className="flex flex-col border-black">
               <CardHeader>
                 <CardTitle className="text-black">{project.title}</CardTitle>
-                <CardDescription className="text-gray-600">
-                  {project.description}
-                </CardDescription>
+                <CardDescription className="text-gray-600">{project.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -71,12 +69,7 @@ export function ProjectsSection() {
                 </div>
               </CardContent>
               <CardFooter className="flex gap-2">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="border-black text-black"
-                >
+                <Button asChild variant="outline" size="sm" className="border-black text-black">
                   <Link href={project.github} target="_blank" rel="noopener noreferrer">
                     GitHub
                   </Link>
