@@ -7,9 +7,26 @@ on:
     branches: [main, develop]
 
 jobs:
+  bugcat:
+    name: Bugcat Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check bugcat exists
+        run: |
+          if [ ! -f "public/images/bugcat asleep.gif" ]; then
+            echo "Error: bugcat asleep.gif is missing from public/images!"
+            exit 1
+          fi
+          echo "bugcat is safe and sound"
+
   commitlint:
     name: Commit Lint
     runs-on: ubuntu-latest
+    needs: [bugcat]
 
     steps:
       - name: Checkout code
@@ -33,25 +50,10 @@ jobs:
         if: github.event_name == 'push'
         run: bunx commitlint --from ${{ github.event.before }} --to ${{ github.event.after }} --verbose
 
-  bugcat:
-    name: Bugcat Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check bugcat exists
-        run: |
-          if [ ! -f "public/images/bugcat asleep.gif" ]; then
-            echo "Error: bugcat asleep.gif is missing from public/images!"
-            exit 1
-          fi
-          echo "bugcat is safe and sound"
-
   format:
     name: Format
     runs-on: ubuntu-latest
+    needs: [bugcat]
 
     steps:
       - name: Checkout code
@@ -71,6 +73,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: [bugcat]
 
     steps:
       - name: Checkout code
@@ -90,6 +93,7 @@ jobs:
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
+    needs: [bugcat]
 
     steps:
       - name: Checkout code
@@ -135,6 +139,7 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
+    needs: [bugcat]
     steps:
       - uses: actions/checkout@v4
         with:
