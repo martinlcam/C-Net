@@ -365,7 +365,7 @@ export default function HomePage() {
       >
           {/* Conditionally show border when at page top */}
           <div
-            className={`w-[58px] h-16 flex items-center justify-center shrink-0 transition-all ${isAtTop ? "border-r border-black" : ""}`}
+            className={`hidden md:flex w-[58px] h-16 items-center justify-center shrink-0 transition-all ${isAtTop ? "border-r border-black" : ""}`}
           ></div>
           <div className="flex-1 flex items-center justify-between px-6">
             {/* Desktop nav */}
@@ -397,9 +397,10 @@ export default function HomePage() {
             </nav>
 
             {/* Mobile nav button */}
-            <button
-              type="button"
-              className="md:hidden relative p-2.5 rounded-[12px] bg-[#faf6f1] hover:bg-gray-100 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:ring-offset-2 z-50 border border-black"
+            <div className="md:hidden flex ml-auto pr-2">
+              <button
+                type="button"
+                className="relative p-3 rounded-[12px] bg-[#faf6f1] hover:bg-gray-100 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:ring-offset-2 z-50 border border-black"
               onClick={(e) => {
                 e.stopPropagation()
                 toggleMobileMenu()
@@ -425,6 +426,7 @@ export default function HomePage() {
                 />
               </div>
             </button>
+            </div>
 
             {/* Mobile menu panel */}
             <div
@@ -564,7 +566,7 @@ export default function HomePage() {
 
         <div className="border-b border-l border-black">
         <div className="flex">
-          <div className="w-[58px] border-r border-black flex flex-col items-center pt-2 shrink-0">
+          <div className="hidden md:flex w-[58px] border-r border-black flex-col items-center pt-2 shrink-0">
             <div className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight">
               <span>C</span>
               <span className="text-[24px]">│</span>
