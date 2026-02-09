@@ -258,11 +258,20 @@ const techLogos = [
   { node: <SiZod className="text-black" />, title: "Zod", href: "https://zod.dev" },
 ]
 
+const mobileNavItems = [
+  { title: "Home", href: "#home" },
+  { title: "About", href: "#about" },
+  { title: "Projects", href: "#projects" },
+  { title: "Contact", href: "#contact" },
+]
+
 export default function HomePage() {
   const { data: session, status } = useSession()
   const { openModal } = useAuthModal()
   const svgRef = useRef<SVGSVGElement>(null)
   const [isAtTop, setIsAtTop] = useState(true)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (svgRef.current) {
@@ -281,6 +290,44 @@ export default function HomePage() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  const closeMobileMenu = () => setIsMobileMenuOpen(false)
+  const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(target) &&
+        !(target as Element).closest('button[aria-label="Toggle mobile menu"]')
+      ) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMobileMenuOpen(false)
+    }
+
+    if (isMobileMenuOpen) {
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("mousedown", handleClickOutside)
+      }, 100)
+      document.addEventListener("keydown", handleEscapeKey)
+      document.body.style.overflow = "hidden"
+
+      return () => {
+        clearTimeout(timeoutId)
+        document.removeEventListener("mousedown", handleClickOutside)
+        document.removeEventListener("keydown", handleEscapeKey)
+        document.body.style.overflow = "unset"
+      }
+    }
+
+    document.body.style.overflow = "unset"
+    return undefined
+  }, [isMobileMenuOpen])
 
   const projects = [
     {
@@ -321,7 +368,8 @@ export default function HomePage() {
             className={`w-[58px] h-16 flex items-center justify-center shrink-0 transition-all ${isAtTop ? "border-r border-black" : ""}`}
           ></div>
           <div className="flex-1 flex items-center justify-between px-6">
-            <nav className="flex items-center gap-6">
+            {/* Desktop nav */}
+            <nav className="hidden md:flex items-center gap-6">
               <a
                 href="#home"
                 className="text-[24px] font-normal text-black hover:text-gray-600 transition-colors"
@@ -347,7 +395,122 @@ export default function HomePage() {
                 Contact
               </a>
             </nav>
-            <div className="flex items-center gap-4">
+
+            {/* Mobile nav button */}
+            <button
+              type="button"
+              className="md:hidden relative p-2.5 rounded-[12px] bg-[#faf6f1] hover:bg-gray-100 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:ring-offset-2 z-50 border border-black"
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleMobileMenu()
+              }}
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              <div className="relative w-6 h-6 flex items-center justify-center">
+                <span
+                  className={`absolute block h-0.5 w-5 bg-gray-700 transition-all duration-300 ${
+                    isMobileMenuOpen ? "rotate-45 translate-y-0" : "-translate-y-1.5"
+                  }`}
+                />
+                <span
+                  className={`absolute block h-0.5 w-5 bg-gray-700 transition-all duration-300 ${
+                    isMobileMenuOpen ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+                <span
+                  className={`absolute block h-0.5 w-5 bg-gray-700 transition-all duration-300 ${
+                    isMobileMenuOpen ? "-rotate-45 translate-y-0" : "translate-y-1.5"
+                  }`}
+                />
+              </div>
+            </button>
+
+            {/* Mobile menu panel */}
+            <div
+              ref={mobileMenuRef}
+              className={`fixed left-1/2 top-24 z-40 w-[calc(100%-3rem)] max-w-lg -translate-x-1/2 rounded-[12px] border border-black bg-[#faf6f1] shadow-2xl md:hidden transition-all duration-300 ease-out ${
+                isMobileMenuOpen
+                  ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                  : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
+              }`}
+            >
+              <div className="flex flex-col p-4 space-y-1">
+                {mobileNavItems.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className="block px-4 py-3 text-[17px] font-medium text-black rounded-[12px] hover:bg-gray-100 transition-colors duration-200"
+                    onClick={closeMobileMenu}
+                  >
+                    {item.title}
+                  </a>
+                ))}
+                <div className="flex items-center justify-center py-2 pt-4">
+                  <div className="h-px w-full bg-black" />
+                </div>
+                {status === "loading" ? (
+                  <div className="px-4 py-3">
+                    <div className="h-4 w-24 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                ) : session ? (
+                  <>
+                    <Link
+                      href="/cnet/dashboard"
+                      className="block px-4 py-3 text-[17px] font-medium text-[#ad70eb] rounded-[12px] hover:bg-purple-50 transition-colors duration-200"
+                      onClick={closeMobileMenu}
+                    >
+                      C-Net
+                    </Link>
+                    <div className="px-4 py-2">
+                      <p className="text-sm font-medium text-black truncate">
+                        {session.user?.name || "User"}
+                      </p>
+                      <p className="text-xs text-gray-600 truncate">{session.user?.email}</p>
+                    </div>
+                    <Link
+                      href="/cnet/dashboard"
+                      className="block px-4 py-3 text-[17px] font-medium text-black rounded-[12px] hover:bg-gray-100 transition-colors duration-200"
+                      onClick={closeMobileMenu}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-3 text-[17px] font-medium text-black rounded-[12px] hover:bg-gray-100 transition-colors duration-200"
+                      onClick={() => {
+                        signOut()
+                        closeMobileMenu()
+                      }}
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-3 text-[17px] font-medium text-black rounded-[12px] hover:bg-gray-100 transition-colors duration-200"
+                    onClick={() => {
+                      openModal()
+                      closeMobileMenu()
+                    }}
+                  >
+                    Sign In
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile menu backdrop */}
+            <div
+              className={`fixed inset-0 z-30 bg-black/10 md:hidden transition-opacity duration-300 ${
+                isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+              }`}
+              onClick={closeMobileMenu}
+              aria-hidden="true"
+            />
+
+            <div className="hidden md:flex items-center gap-4">
               {status === "loading" ? (
                 <div className="h-12 w-24 bg-gray-100 animate-pulse rounded-xl" />
               ) : session ? (
