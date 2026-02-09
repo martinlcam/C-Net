@@ -84,11 +84,11 @@ export function HeroSection() {
 
           <div className="relative z-10 max-w-[750px]">
             <p className="text-gray-500 text-xl mb-3">Hey there, I'm</p>
-            <h1 className="text-[80px] md:text-[96px] font-bold text-black mb-8 tracking-tight leading-none">
+            <h1 className="text-[80px] md:text-[96px] font-bold text-black mb-3 tracking-tight leading-none">
               Martin Cam
               <span className="inline-block ml-3 w-4 h-4 rounded-full bg-[#bea9e9] relative -top-14" />
             </h1>
-            <p className="text-xl text-gray-700 mb-5 leading-relaxed">
+            <p className="text-lg text-gray-700 mb-3 leading-relaxed">
               An 19-year-old Full Stack web developer based in{" "}
               <Text color="iris">Vancouver, Canada</Text>. I'm currently working as a{" "}
               <a
@@ -102,9 +102,9 @@ export function HeroSection() {
               , an international AI startup providing enterprise on-premise AI deployments,
               integrations and plugins for clients around the world.
             </p>
-            <p className="text-xl text-gray-700 mb-10 leading-relaxed">
-              Primarily, I write a lot of TypeScript, React, Next, and Tailwind CSS but I also
-              have experience with ExpressJS, Drizzle ORM, PostgreSQL, and Docker.
+            <p className="text-lg text-gray-700 mb-3 leading-relaxed">
+              Primarily, I write a lot of TypeScript, React, Next, and Tailwind CSS but I also have
+              experience with ExpressJS, Drizzle ORM, PostgreSQL, and Docker.
             </p>
             <div className="flex gap-4">
               <Button
@@ -124,8 +124,6 @@ export function HeroSection() {
           </div>
         </section>
       </div>
-
-      <div className="border-t border-black" />
     </div>
   )
 }

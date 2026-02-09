@@ -11,8 +11,8 @@ export function AboutSection() {
             <h3 className="text-2xl font-semibold text-black mb-4">Personal Bio</h3>
             <p className="text-lg text-gray-700 mb-4 leading-relaxed">
               I'm a full-stack developer passionate about building modern web applications and
-              managing infrastructure. I enjoy working with cutting-edge technologies and
-              solving complex problems.
+              managing infrastructure. I enjoy working with cutting-edge technologies and solving
+              complex problems.
             </p>
             <p className="text-lg text-gray-700 leading-relaxed">
               My expertise spans frontend and backend development, with a focus on creating
