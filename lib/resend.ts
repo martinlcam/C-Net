@@ -51,10 +51,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ id: string
   const client = getResendClient()
 
   // Ensure we have at least text or html content (strip tags with O(n) loop to avoid ReDoS)
-  const text =
-    options.text ||
-    (options.html ? stripHtmlTags(options.html) : "") ||
-    ""
+  const text = options.text || (options.html ? stripHtmlTags(options.html) : "") || ""
 
   const result = await client.emails.send({
     from: options.from || "C-Net Dashboard <noreply@yourdomain.com>",
