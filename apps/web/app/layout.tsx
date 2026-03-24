@@ -2,7 +2,6 @@ import { Theme } from "@radix-ui/themes"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from "next"
 import { SessionProviderWrapper } from "@/components/SessionProviderWrapper"
-import { StyleDebugger } from "@/components/StyleDebugger"
 import { Providers } from "./providers"
 import "@radix-ui/themes/styles.css"
 import "./globals.css"
@@ -17,7 +16,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <Theme accentColor="iris" grayColor="slate" radius="medium">
-          <StyleDebugger />
           <SessionProviderWrapper>
             <Providers>{children}</Providers>
           </SessionProviderWrapper>

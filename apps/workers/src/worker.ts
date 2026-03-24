@@ -20,6 +20,7 @@ process.on("SIGINT", async () => {
 })
 
 main().catch((err) => {
-  console.error("Worker startup failed:", err)
-  process.exit(1)
+  console.error("Worker startup failed:", err.message || err)
+  console.error("Workers will retry in 10 seconds...")
+  setTimeout(() => main().catch(() => process.exit(1)), 10_000)
 })

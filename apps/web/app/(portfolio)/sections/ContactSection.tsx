@@ -1,11 +1,15 @@
 "use client"
 
-import { type FormEvent, useState } from "react"
+import { type FormEvent, useEffect, useState } from "react"
 import { Button } from "@/stories/button/button"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 export function ContactSection() {
+  /** Avoid hydration mismatches: password managers inject data-* attrs into forms after paint. */
+  const [formMounted, setFormMounted] = useState(false)
+  useEffect(() => setFormMounted(true), [])
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -20,7 +24,7 @@ export function ContactSection() {
     setSubmitStatus("idle")
 
     try {
-      const response = await fetch(`${API_BASE}/api/contact`, {
+      const response = await fetch(`${API_BASE}/contact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -95,89 +99,98 @@ export function ContactSection() {
 
           {/* Right side - Form */}
           <div className="md:pl-12 md:flex md:flex-col md:justify-center">
-            <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-2xl mx-auto">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="name" className="text-sm font-medium text-black">
-                    Name <span className="text-gray-400">*</span>
-                  </label>
-                  <span className="text-sm text-gray-400">{formData.name.length}/100</span>
-                </div>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  maxLength={100}
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="ex. Toby Fox"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all"
-                />
+            {!formMounted ? (
+              <div className="space-y-6 w-full max-w-2xl mx-auto" aria-hidden>
+                <div className="h-[76px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
+                <div className="h-[76px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
+                <div className="h-[164px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
+                <div className="h-[52px] rounded-lg bg-gray-100 animate-pulse" />
               </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="email" className="text-sm font-medium text-black">
-                    Email <span className="text-gray-400">*</span>
-                  </label>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-2xl mx-auto">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label htmlFor="name" className="text-sm font-medium text-black">
+                      Name <span className="text-gray-400">*</span>
+                    </label>
+                    <span className="text-sm text-gray-400">{formData.name.length}/100</span>
+                  </div>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    maxLength={100}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="ex. Toby Fox"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all"
+                  />
                 </div>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="waddle-doo@website.com"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all"
-                />
-              </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="message" className="text-sm font-medium text-black">
-                    Share More Details <span className="text-gray-400">*</span>
-                  </label>
-                  <span className="text-sm text-gray-400">{formData.message.length}/5000</span>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label htmlFor="email" className="text-sm font-medium text-black">
+                      Email <span className="text-gray-400">*</span>
+                    </label>
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="waddle-doo@website.com"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all"
+                  />
                 </div>
-                <textarea
-                  id="message"
-                  name="message"
-                  required
-                  maxLength={5000}
-                  rows={5}
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="Describe what you need..."
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all resize-none"
-                />
-              </div>
 
-              {submitStatus === "success" && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 text-sm">
-                    Message sent successfully! I'll get back to you soon.
-                  </p>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label htmlFor="message" className="text-sm font-medium text-black">
+                      Share More Details <span className="text-gray-400">*</span>
+                    </label>
+                    <span className="text-sm text-gray-400">{formData.message.length}/5000</span>
+                  </div>
+                  <textarea
+                    id="message"
+                    name="message"
+                    required
+                    maxLength={5000}
+                    rows={5}
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    placeholder="Describe what you need..."
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:border-transparent transition-all resize-none"
+                  />
                 </div>
-              )}
 
-              {submitStatus === "error" && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-800 text-sm">
-                    Something went wrong. Please try again or email me directly.
-                  </p>
-                </div>
-              )}
+                {submitStatus === "success" && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-800 text-sm">
+                      Message sent successfully! I'll get back to you soon.
+                    </p>
+                  </div>
+                )}
 
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-black hover:bg-gray-800 text-white py-4 rounded-lg text-base font-medium h-auto disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isSubmitting ? "Sending..." : "Submit"}
-              </Button>
-            </form>
+                {submitStatus === "error" && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-800 text-sm">
+                      Something went wrong. Please try again or email me directly.
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-black hover:bg-gray-800 text-white py-4 rounded-lg text-base font-medium h-auto disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isSubmitting ? "Sending..." : "Submit"}
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       </div>

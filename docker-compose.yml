@@ -23,6 +23,7 @@ services:
 
   postgres:
     image: postgres:16
+    ports: ["5450:5432"]
     volumes: ["pg_data:/var/lib/postgresql/data"]
     environment:
       POSTGRES_DB: cnet
@@ -31,8 +32,11 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports: ["6379:6379"]
     volumes: ["redis_data:/data"]
 
 volumes:
   pg_data:
+    name: cnet_pg_data
   redis_data:
+    name: cnet_redis_data

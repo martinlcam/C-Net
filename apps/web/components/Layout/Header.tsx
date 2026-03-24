@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/stories/dropdown-menu/dropdown-menu"
 
+const authOutlineButtonClass = "rounded-xl border-black text-black hover:bg-gray-100 px-5 py-3"
+
 export function Header() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
@@ -69,12 +71,7 @@ export function Header() {
             <div className="h-10 w-20 bg-gray-200 animate-pulse rounded-xl" />
           ) : session ? (
             <>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="rounded-xl border-black text-black hover:bg-gray-100"
-              >
+              <Button asChild variant="outline" size="sm" className={authOutlineButtonClass}>
                 <Link href="/cnet/dashboard">C-Net</Link>
               </Button>
               <DropdownMenu>
@@ -100,12 +97,7 @@ export function Header() {
               </DropdownMenu>
             </>
           ) : (
-            <Button
-              asChild
-              size="sm"
-              variant="outline"
-              className="rounded-xl border-black text-black hover:bg-gray-100 px-5 py-3"
-            >
+            <Button asChild size="sm" variant="outline" className={authOutlineButtonClass}>
               <Link href="/auth/signin">Sign In</Link>
             </Button>
           )}
