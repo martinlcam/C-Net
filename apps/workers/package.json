@@ -1,0 +1,20 @@
+{
+  "name": "@cnet/workers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/worker.ts --watch",
+    "build": "tsc",
+    "start": "node dist/worker.js"
+  },
+  "dependencies": {
+    "@cnet/core": "workspace:*",
+    "@cnet/db": "workspace:*",
+    "@cnet/engine": "workspace:*",
+    "bullmq": "^5.66.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
