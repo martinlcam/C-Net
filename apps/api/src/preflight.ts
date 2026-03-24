@@ -6,9 +6,9 @@ export async function runPreflightChecks(): Promise<void> {
     const pool = new Pool({ connectionString: process.env.DATABASE_URL })
     await pool.query("SELECT 1")
     await pool.end()
-    console.log("✅ Database connected")
+    console.log("[✓] Database connected")
   } catch {
-    console.warn("⚠ Database not reachable at DATABASE_URL — API will fail on DB queries")
+    console.warn("[✗] Database not reachable at DATABASE_URL — API will fail on DB queries")
   }
 
   try {
@@ -16,8 +16,8 @@ export async function runPreflightChecks(): Promise<void> {
     const redis = new Redis(redisUrl)
     await redis.ping()
     await redis.quit()
-    console.log("✅ Redis connected")
+    console.log("[✓] Redis connected")
   } catch {
-    console.warn("⚠ Redis not reachable — job queues will not function")
+    console.warn("[✗] Redis not reachable — job queues will not function")
   }
 }

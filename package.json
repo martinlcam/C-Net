@@ -15,6 +15,9 @@
     "lint": "biome check .",
     "lint:check": "biome check .",
     "format": "biome check --write .",
+    "db:start": "bun scripts/db.ts start",
+    "db:stop": "bun scripts/db.ts stop",
+    "db:reset": "bun scripts/db.ts reset",
     "db:generate": "turbo db:generate --filter=@cnet/db",
     "db:migrate": "turbo db:migrate --filter=@cnet/db",
     "db:studio": "turbo db:studio --filter=@cnet/db"

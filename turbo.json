@@ -1,8 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
   "globalEnv": [
     "DATABASE_URL",
     "REDIS_URL",
+    "AUTH_SECRET",
     "NEXTAUTH_SECRET",
     "GOOGLE_ID",
     "GOOGLE_SECRET",
