@@ -2,6 +2,7 @@ FROM oven/bun:1 AS base
 
 FROM base AS builder
 WORKDIR /app
+# Context is trimmed by repo-root .dockerignore (no secrets / node_modules in image).
 COPY . .
 RUN bun install
 RUN bunx turbo prune @cnet/api --docker
@@ -14,7 +15,10 @@ COPY --from=builder /app/out/full/ .
 RUN bunx turbo build --filter=@cnet/api
 
 FROM base AS runner
+RUN groupadd --system --gid 1001 cnet \
+  && useradd --system --uid 1001 --gid cnet --home /app cnet
 WORKDIR /app
-COPY --from=installer /app/ .
+COPY --from=installer --chown=cnet:cnet /app/ .
+USER cnet
 EXPOSE 4000
 CMD ["bun", "run", "apps/api/dist/index.js"]
