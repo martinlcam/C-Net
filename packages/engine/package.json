@@ -1,0 +1,23 @@
+{
+  "name": "@cnet/engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@cnet/core": "workspace:*",
+    "@cnet/db": "workspace:*",
+    "axios": "^1.7.9",
+    "react": "^19.2.3",
+    "resend": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.8",
+    "typescript": "^5.9.2"
+  }
+}

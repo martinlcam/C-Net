@@ -1,0 +1,36 @@
+# Build context for apps/*/Dockerfile — keep images free of secrets and shrink context size.
+# Mitigates recursive COPY (Sonar docker:S6470).
+
+.git
+.gitattributes
+.gitignore
+
+**/.env
+**/.env.*
+!**/.env.example
+
+**/.cursor
+**/.idea
+**/.vscode
+**/.DS_Store
+**/Thumbs.db
+
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/.vercel
+
+*.log
+**/npm-debug.log*
+**/yarn-error.log*
+
+**/*.pem
+**/*.key
+**/id_rsa
+**/id_ed25519
+
+# Agent / local tooling (large, not needed in image)
+**/agent-transcripts
+**/mcps

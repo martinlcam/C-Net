@@ -17,8 +17,8 @@ jobs:
 
       - name: Check bugcat exists
         run: |
-          if [ ! -f "public/images/bugcat asleep.gif" ]; then
-            echo "Error: bugcat asleep.gif is missing from public/images!"
+          if [ ! -f "apps/web/public/images/bugcat asleep.gif" ]; then
+            echo "Error: bugcat asleep.gif is missing from apps/web/public/images!"
             exit 1
           fi
           echo "bugcat is safe and sound"
@@ -68,7 +68,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run Biome format check
-        run: bun run format
+        run: bun run lint:check
 
   lint:
     name: Lint
@@ -108,7 +108,13 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run TypeScript type check
-        run: bun run type-check
+        run: bunx turbo build
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/test
+          NEXTAUTH_SECRET: test-secret-minimum-32-characters-long
+          NEXTAUTH_URL: http://localhost:3000
+          GOOGLE_ID: test-id
+          GOOGLE_SECRET: test-secret
 
   build:
     name: Build
@@ -128,7 +134,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build Next.js application
-        run: bun run build
+        run: bunx turbo build
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/test
           NEXTAUTH_SECRET: test-secret-minimum-32-characters-long
