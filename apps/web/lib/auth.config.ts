@@ -79,16 +79,12 @@ export const authConfig: NextAuthConfig = {
   },
   jwt: {
     encode({ token, secret }) {
-      if (!token || !secret) {
-        throw new Error("JWT encode requires token and secret")
-      }
-      return jwt.sign(token, secret)
+      const key = Array.isArray(secret) ? secret[0] : secret
+      return jwt.sign(token!, key as string)
     },
     decode({ token, secret }) {
-      if (!token || !secret) {
-        throw new Error("JWT decode requires token and secret")
-      }
-      return jwt.verify(token, secret) as JWT
+      const key = Array.isArray(secret) ? secret[0] : secret
+      return jwt.verify(token!, key as string) as JWT
     },
   },
   session: {

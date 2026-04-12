@@ -1,8 +1,5 @@
 name: CI
 
-# Tip: In GitHub → Settings → Branches, add a rule for `main` / `develop` and require these
-# checks to pass before merge (SonarQube + commitlint + lint + build, etc.).
-
 on:
   push:
     branches: [main, develop]
