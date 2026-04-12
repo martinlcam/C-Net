@@ -141,8 +141,7 @@ const useAnimationLoop = (
 
     const prefersReduced =
       typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
 
     const seqSize = isVertical ? seqHeight : seqWidth
 

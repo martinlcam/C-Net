@@ -99,14 +99,7 @@ export function ContactSection() {
 
           {/* Right side - Form */}
           <div className="md:pl-12 md:flex md:flex-col md:justify-center">
-            {!formMounted ? (
-              <div className="space-y-6 w-full max-w-2xl mx-auto" aria-hidden>
-                <div className="h-[76px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
-                <div className="h-[76px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
-                <div className="h-[164px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
-                <div className="h-[52px] rounded-lg bg-gray-100 animate-pulse" />
-              </div>
-            ) : (
+            {formMounted ? (
               <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-2xl mx-auto">
                 <div>
                   <div className="flex justify-between items-center mb-2">
@@ -190,6 +183,13 @@ export function ContactSection() {
                   {isSubmitting ? "Sending..." : "Submit"}
                 </Button>
               </form>
+            ) : (
+              <div className="space-y-6 w-full max-w-2xl mx-auto" aria-hidden>
+                <div className="h-[76px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
+                <div className="h-[76px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
+                <div className="h-[164px] rounded-lg bg-gray-50 border border-gray-200 animate-pulse" />
+                <div className="h-[52px] rounded-lg bg-gray-100 animate-pulse" />
+              </div>
             )}
           </div>
         </div>
