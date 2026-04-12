@@ -8,6 +8,7 @@
   },
   "scripts": {
     "codegen": "orval",
+    "api:generate": "orval",
     "build": "tsc"
   },
   "dependencies": {},

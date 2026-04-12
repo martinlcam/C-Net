@@ -20,14 +20,10 @@
     "db:reset": "bun scripts/db.ts reset",
     "db:generate": "turbo db:generate --filter=@cnet/db",
     "db:migrate": "turbo db:migrate --filter=@cnet/db",
-    "db:studio": "turbo db:studio --filter=@cnet/db",
-    "prepare": "husky"
+    "db:studio": "turbo db:studio --filter=@cnet/db"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
-    "husky": "^9.1.7",
     "sonarqube-scanner": "^4.3.5",
     "turbo": "^2.5.0",
     "typescript": "^5.9.2"
