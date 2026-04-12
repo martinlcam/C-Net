@@ -12,7 +12,8 @@
     "@cnet/core": "workspace:*",
     "@cnet/db": "workspace:*",
     "@cnet/engine": "workspace:*",
-    "bullmq": "^5.66.5"
+    "bullmq": "^5.66.5",
+    "drizzle-orm": "0.44.7"
   },
   "devDependencies": {
     "typescript": "^5.9.2"

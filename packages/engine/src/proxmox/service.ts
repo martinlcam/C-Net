@@ -2,8 +2,8 @@ import axios, { type AxiosInstance } from "axios"
 import type { NodeMetrics, ProxmoxNode, ProxmoxVM, StoragePool } from "./types"
 
 export class ProxmoxService {
-  private client: AxiosInstance
-  private baseURL: string
+  private readonly client: AxiosInstance
+  private readonly baseURL: string
 
   constructor(host: string, user: string, token: string) {
     this.baseURL = `https://${host}:8006/api2/json`

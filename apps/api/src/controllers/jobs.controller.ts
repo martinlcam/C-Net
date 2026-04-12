@@ -183,7 +183,22 @@ export class JobsController extends Controller {
   public async getJobStatus(
     @Query() queue: QueueName,
     @Query() jobId?: string
-  ): Promise<unknown | JobsErrorResponse> {
+  ): Promise<
+    | {
+        jobId: string | undefined
+        queue: QueueName
+        state: string
+        progress: number | object | string | boolean
+        data: Record<string, unknown>
+        returnvalue: unknown
+        failedReason: string | undefined
+        timestamp: number | undefined
+        processedOn: number | undefined
+        finishedOn: number | undefined
+      }
+    | { queue: QueueName; stats: QueueStats }
+    | JobsErrorResponse
+  > {
     try {
       const q = this.getQueueByName(queue)
 
