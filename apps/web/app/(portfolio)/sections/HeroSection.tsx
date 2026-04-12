@@ -89,9 +89,8 @@ export function HeroSection() {
               <span className="inline-block ml-2 sm:ml-3 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-[#bea9e9] relative -top-8 sm:-top-12 md:-top-14" />
             </h1>
             <p className="text-base sm:text-lg text-gray-700 mb-3 leading-relaxed">
-              I’m a Forward Deployed Engineer based in{" "}
-              <Text color="indigo">Vancouver, Canada</Text>, building and shipping production
-              software across the full stack.{" "}
+              I’m a Forward Deployed Engineer based in <Text color="indigo">Vancouver, Canada</Text>
+              , building and shipping production software across the full stack.{" "}
               <a
                 href="https://futurity.work"
                 target="_blank"

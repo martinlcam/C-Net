@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Same rules as `.github/workflows/ci.yml` commitlint job
+bunx commitlint --edit "$1"

@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Same Biome check as CI (format + lint jobs). Sonar runs only in `bun run lint` when SONAR_TOKEN is set.
+bun run lint:check

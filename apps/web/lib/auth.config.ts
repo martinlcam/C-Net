@@ -1,6 +1,6 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { db } from "@cnet/db"
-import { users, accounts, sessions, verificationTokens } from "@cnet/db/schema"
+import { accounts, sessions, users, verificationTokens } from "@cnet/db/schema"
 import jwt from "jsonwebtoken"
 import type { NextRequest } from "next/server"
 import type { NextAuthConfig, Session } from "next-auth"
@@ -79,10 +79,16 @@ export const authConfig: NextAuthConfig = {
   },
   jwt: {
     encode({ token, secret }) {
-      return jwt.sign(token!, secret as string)
+      if (!token || !secret) {
+        throw new Error("JWT encode requires token and secret")
+      }
+      return jwt.sign(token, secret)
     },
     decode({ token, secret }) {
-      return jwt.verify(token!, secret as string) as JWT
+      if (!token || !secret) {
+        throw new Error("JWT decode requires token and secret")
+      }
+      return jwt.verify(token, secret) as JWT
     },
   },
   session: {
