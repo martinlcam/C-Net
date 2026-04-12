@@ -7,7 +7,7 @@ export function FooterSection() {
         </p>
         <div className="flex gap-6">
           <a
-            href="https://github.com/yourusername"
+            href="https://github.com/martinlcam"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-500 hover:text-black text-sm"
@@ -15,7 +15,7 @@ export function FooterSection() {
             GitHub
           </a>
           <a
-            href="https://linkedin.com/in/yourprofile"
+            href="https://www.linkedin.com/in/martin-xoku"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-500 hover:text-black text-sm"
@@ -23,12 +23,12 @@ export function FooterSection() {
             LinkedIn
           </a>
           <a
-            href="https://twitter.com/yourusername"
+            href="https://www.instagram.com/_martincam_/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-500 hover:text-black text-sm"
           >
-            Twitter
+            Instagram
           </a>
         </div>
       </div>

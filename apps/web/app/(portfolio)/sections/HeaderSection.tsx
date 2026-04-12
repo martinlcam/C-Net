@@ -72,7 +72,7 @@ export function HeaderSection() {
   }, [isMobileMenuOpen])
 
   return (
-    <header className="flex border-b border-black fixed top-0 left-0 right-0 z-50 bg-[#faf6f1] backdrop-blur-sm border-l">
+    <header className="flex border-b border-black fixed top-0 left-0 right-0 z-50 bg-[#faf6f1] backdrop-blur-sm md:border-l">
       <div
         className={`hidden md:flex w-[58px] h-16 items-center justify-center shrink-0 transition-all ${isAtTop ? "border-r border-black" : ""}`}
       />
