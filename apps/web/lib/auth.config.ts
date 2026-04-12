@@ -80,10 +80,12 @@ export const authConfig: NextAuthConfig = {
   jwt: {
     encode({ token, secret }) {
       const key = Array.isArray(secret) ? secret[0] : secret
+      // biome-ignore lint/style/noNonNullAssertion: NextAuth guarantees token is set during encode
       return jwt.sign(token!, key as string)
     },
     decode({ token, secret }) {
       const key = Array.isArray(secret) ? secret[0] : secret
+      // biome-ignore lint/style/noNonNullAssertion: NextAuth guarantees token is set during decode
       return jwt.verify(token!, key as string) as JWT
     },
   },
