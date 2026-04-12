@@ -1,0 +1,47 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalEnv": [
+    "DATABASE_URL",
+    "REDIS_URL",
+    "AUTH_SECRET",
+    "NEXTAUTH_SECRET",
+    "GOOGLE_ID",
+    "GOOGLE_SECRET",
+    "ENCRYPTION_PASSWORD",
+    "NODE_ENV",
+    "CORS_ORIGIN",
+    "RESEND_API_KEY",
+    "NEXT_PUBLIC_API_URL",
+    "API_PORT"
+  ],
+  "tasks": {
+    "api:generate": {
+      "dependsOn": ["^build"],
+      "outputs": ["src/generated/**"]
+    },
+    "build": {
+      "dependsOn": ["^build", "api:generate"],
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "dev": {
+      "persistent": true,
+      "cache": false
+    },
+    "codegen": {
+      "dependsOn": ["@cnet/api#api:generate"],
+      "outputs": ["src/generated/**"]
+    },
+    "lint": {},
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:studio": {
+      "persistent": true,
+      "cache": false
+    }
+  }
+}

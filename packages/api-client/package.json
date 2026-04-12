@@ -1,0 +1,19 @@
+{
+  "name": "@cnet/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "codegen": "orval",
+    "api:generate": "orval",
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "orval": "^7.6.0",
+    "typescript": "^5.9.2"
+  }
+}
