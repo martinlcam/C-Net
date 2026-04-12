@@ -18,7 +18,7 @@ FROM base AS runner
 RUN groupadd --system --gid 1001 cnet \
   && useradd --system --uid 1001 --gid cnet --home /app cnet
 WORKDIR /app
-COPY --from=installer --chown=cnet:cnet /app/ .
+COPY --from=installer --chown=cnet:cnet --chmod=555 /app/ .
 USER cnet
 EXPOSE 4000
 CMD ["bun", "run", "apps/api/dist/index.js"]
