@@ -15,7 +15,7 @@ function authSecret(): string | undefined {
 
 // Validate required environment variables at runtime (not during build)
 function validateEnv() {
-  if (typeof globalThis.window === "undefined" && !authSecret()) {
+  if (globalThis.window === undefined && !authSecret()) {
     // Only throw in production, not during build
     if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE?.includes("build")) {
       throw new Error(
@@ -81,12 +81,12 @@ export const authConfig: NextAuthConfig = {
     encode({ token, secret }) {
       const key = Array.isArray(secret) ? secret[0] : secret
       // biome-ignore lint/style/noNonNullAssertion: NextAuth guarantees token is set during encode
-      return jwt.sign(token!, key!)
+      return jwt.sign(token!, key)
     },
     decode({ token, secret }) {
       const key = Array.isArray(secret) ? secret[0] : secret
       // biome-ignore lint/style/noNonNullAssertion: NextAuth guarantees token is set during decode
-      return jwt.verify(token!, key!) as JWT
+      return jwt.verify(token!, key) as JWT
     },
   },
   session: {
