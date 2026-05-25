@@ -30,16 +30,8 @@ export function AuthModal() {
 
         <div className="flex flex-col gap-4 mt-6">
           <Button
-            onClick={() => handleSignIn("github")}
-            className="w-full bg-black hover:bg-gray-800 text-white rounded-xl py-3 text-base font-medium"
-          >
-            Continue with GitHub
-          </Button>
-
-          <Button
             onClick={() => handleSignIn("google")}
-            variant="outline"
-            className="w-full border-black text-black hover:bg-gray-100 rounded-xl py-3 text-base font-medium"
+            className="w-full bg-black hover:bg-gray-800 text-white rounded-xl py-3 text-base font-medium"
           >
             Continue with Google
           </Button>
@@ -54,7 +46,7 @@ export function AuthModal() {
           </div>
 
           <Button
-            onClick={() => handleSignIn("credentials")}
+            // onClick={() => handleSignIn("credentials")}
             variant="outline"
             className="w-full border-black text-black hover:bg-gray-100 rounded-xl py-3 text-base font-medium"
           >

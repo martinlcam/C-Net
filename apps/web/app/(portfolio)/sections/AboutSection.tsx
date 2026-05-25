@@ -7,7 +7,7 @@ export function AboutSection() {
         </h2>
 
         <div className="grid md:grid-cols-2 gap-12 mb-16">
-          <div>
+          <div className="line-through">
             <h3 className="text-2xl font-semibold text-black mb-4">Personal Bio</h3>
             <p className="text-lg text-gray-700 mb-4 leading-relaxed">
               I'm a full-stack developer passionate about building modern web applications and

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
 import { useAuthModal } from "@/lib/stores/auth-modal"
@@ -14,18 +15,33 @@ import {
 } from "@/stories/dropdown-menu/dropdown-menu"
 
 const mobileNavItems = [
-  { title: "Home", href: "#home" },
-  { title: "About", href: "#about" },
-  { title: "Projects", href: "#projects" },
-  { title: "Contact", href: "#contact" },
+  { title: "Home", href: "/#home" },
+  { title: "About", href: "/#about" },
+  { title: "Projects", href: "/#projects" },
+  { title: "Contact", href: "/#contact" },
+  { title: "BFIDA", href: "/bfida" },
+]
+
+const desktopNavItems = [
+  { title: "Home", href: "/#home" },
+  { title: "About", href: "/#about" },
+  { title: "Projects", href: "/#projects" },
+  { title: "Contact", href: "/#contact" },
+  { title: "BFIDA", href: "/bfida" },
 ]
 
 export function HeaderSection() {
   const { data: session, status } = useSession()
   const { openModal } = useAuthModal()
+  const pathname = usePathname()
   const [isAtTop, setIsAtTop] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
+
+  const isActive = (href: string) => {
+    if (href.startsWith("/#")) return pathname === "/"
+    return pathname === href
+  }
 
   useEffect(() => {
     const handleScroll = () => setIsAtTop(window.scrollY === 0)
@@ -78,30 +94,22 @@ export function HeaderSection() {
       />
       <div className="flex-1 flex items-center justify-between px-6">
         <nav className="hidden md:flex items-center gap-6">
-          <a
-            href="#home"
-            className="text-[24px] font-normal text-black hover:text-gray-600 transition-colors"
-          >
-            Home
-          </a>
-          <a
-            href="#about"
-            className="text-[24px] font-normal text-black hover:text-gray-600 transition-colors"
-          >
-            About
-          </a>
-          <a
-            href="#projects"
-            className="text-[24px] font-normal text-black hover:text-gray-600 transition-colors"
-          >
-            Projects
-          </a>
-          <a
-            href="#contact"
-            className="text-[24px] font-normal text-black hover:text-gray-600 transition-colors"
-          >
-            Contact
-          </a>
+          {desktopNavItems.map((item) => {
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`text-[24px] font-normal transition-colors ${
+                  active && item.title === "BFIDA"
+                    ? "text-[#ad70eb] hover:text-[#bea9e9]"
+                    : "text-black hover:text-gray-600"
+                }`}
+              >
+                {item.title}
+              </Link>
+            )
+          })}
         </nav>
 
         <div className="md:hidden flex ml-auto pr-2">
@@ -144,16 +152,23 @@ export function HeaderSection() {
           }`}
         >
           <div className="flex flex-col p-4 space-y-1">
-            {mobileNavItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="block px-4 py-3 text-[17px] font-medium text-black rounded-[12px] hover:bg-gray-100 transition-colors duration-200"
-                onClick={closeMobileMenu}
-              >
-                {item.title}
-              </a>
-            ))}
+            {mobileNavItems.map((item) => {
+              const active = isActive(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`block px-4 py-3 text-[17px] font-medium rounded-[12px] transition-colors duration-200 ${
+                    active && item.title === "BFIDA"
+                      ? "text-[#ad70eb] hover:bg-purple-50"
+                      : "text-black hover:bg-gray-100"
+                  }`}
+                  onClick={closeMobileMenu}
+                >
+                  {item.title}
+                </Link>
+              )
+            })}
             <div className="flex items-center justify-center py-2 pt-4">
               <div className="h-px w-full bg-black" />
             </div>
