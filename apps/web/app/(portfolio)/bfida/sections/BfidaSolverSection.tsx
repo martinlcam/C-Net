@@ -6,7 +6,7 @@ import { AlgorithmStats } from "../components/AlgorithmStats"
 import { BoardToggle } from "../components/BoardToggle"
 import { PegBoard } from "../components/PegBoard"
 import { PseudocodePanel } from "../components/PseudocodePanel"
-import { type Board, type BoardKind, type Cell, type Position, makeBoard } from "../lib/boards"
+import { type Board, type BoardKind, type Cell, makeBoard } from "../lib/boards"
 import { applyJump } from "../lib/move-logic"
 import { SOLUTIONS } from "../lib/solutions"
 import { buildTrace } from "../lib/algorithm-trace"
@@ -101,8 +101,8 @@ export function BfidaSolverSection() {
       className="border-b border-black px-6 sm:px-10 md:px-12 lg:px-20 py-16 md:py-24 bg-[#FAF6F1]"
     >
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-4">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-4">
+          <div className="min-w-0">
             <h2 className="text-4xl md:text-5xl font-bold text-black mb-2 tracking-tight">
               Watch the algorithm<span className="text-[#bea9e9]">.</span>
             </h2>
@@ -111,7 +111,9 @@ export function BfidaSolverSection() {
               of <em>Bidirectional BFIDA*</em> that drive each decision.
             </p>
           </div>
-          <BoardToggle value={kind} onChange={handleSwitch} />
+          <div className="shrink-0">
+            <BoardToggle value={kind} onChange={handleSwitch} />
+          </div>
         </div>
 
         <p className="text-xs text-gray-500 mb-8 max-w-2xl italic">
@@ -123,8 +125,8 @@ export function BfidaSolverSection() {
           its literal compute.
         </p>
 
-        <div className="grid md:grid-cols-12 gap-6 lg:gap-8 items-start">
-          <div className="md:col-span-7 flex flex-col gap-4">
+        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          <div className="lg:col-span-7 min-w-0 flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={handlePlayPause}
@@ -153,8 +155,8 @@ export function BfidaSolverSection() {
               >
                 Reset
               </Button>
-              <div className="flex items-center gap-2 text-xs text-gray-600 ml-auto">
-                <span>Speed</span>
+              <div className="flex items-center gap-2 text-xs text-gray-600 w-full sm:w-auto sm:ml-auto">
+                <span className="shrink-0">Speed</span>
                 <input
                   type="range"
                   min={0.5}
@@ -162,10 +164,10 @@ export function BfidaSolverSection() {
                   step={0.25}
                   value={speed}
                   onChange={(e) => setSpeed(Number(e.target.value))}
-                  className="accent-black"
+                  className="accent-black flex-1 sm:flex-none sm:w-32 min-w-0"
                   aria-label="Playback speed"
                 />
-                <span className="font-mono w-8 text-right">{speed.toFixed(2)}x</span>
+                <span className="font-mono w-10 text-right shrink-0">{speed.toFixed(2)}x</span>
               </div>
             </div>
 
@@ -212,7 +214,7 @@ export function BfidaSolverSection() {
             </div>
           </div>
 
-          <div className="md:col-span-5 flex flex-col gap-4">
+          <div className="lg:col-span-5 min-w-0 flex flex-col gap-4">
             <PseudocodePanel highlight={currentStep.highlight} />
             <AlgorithmStats stats={currentStep.stats} />
           </div>
