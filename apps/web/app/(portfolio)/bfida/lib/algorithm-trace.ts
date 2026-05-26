@@ -82,17 +82,33 @@ function alternatives(jump: Jump, seed: number): TraceAlternative[] {
   return out
 }
 
-const DEFAULT_BACKGROUND_HIGHLIGHT = ["L4", "L5", "L6", "L11"]
+// Lines that should glow softly in the background between active highlights:
+// the outer loop scaffold so the user always sees the algorithm shape.
+const DEFAULT_BACKGROUND_HIGHLIGHT = ["L6", "L7", "L17"]
+
+/** Pseudocode line groups, named for the trace logic that uses them. */
+const LINES = {
+  INIT: ["L1", "L2", "L3", "L4", "L5"],
+  LOOP_FORWARD: ["L6", "L7", "L8", "L9"],
+  LOOP_BACKWARD: ["L6", "L7", "L10", "L11"],
+  EXPAND_ENTRY: ["L15", "L16", "L17"],
+  F_CHECK: ["L17", "L18", "L19"],
+  PRUNE: ["L21", "L22"],
+  INTERSECT: ["L17", "L18", "L23", "L24", "L25", "L26"],
+  APPLY_SUCCESSOR: ["L28", "L29", "L30"],
+  CLOSE_CONTOUR: ["L26", "L27", "L31"],
+  TERMINATE: ["L12", "L13"],
+}
 
 export function buildTrace(kind: BoardKind): TraceStep[] {
   const solution: Solution = SOLUTIONS[kind]
   const totalJumps = solution.jumps.length
   const steps: TraceStep[] = []
 
-  // Pre-jump setup tick: highlight algorithm initialization.
+  // Tick 0: initialize OPEN_F / OPEN_B, g, bounds, and UB.
   steps.push({
     jumpIndex: null,
-    highlight: ["L1", "L2", "L3"],
+    highlight: LINES.INIT,
     phase: "init",
     stats: {
       direction: "forward",
@@ -119,15 +135,31 @@ export function buildTrace(kind: BoardKind): TraceStep[] {
     const frontierForward = Math.round(80 + i * 24 + rand(i + 101) * 60)
     const frontierBackward = Math.round(40 + i * 18 + rand(i + 202) * 40)
     const isIntersection = i === totalJumps - 1
+    // Resurface the outer loop / SelectDirection lines every few jumps so
+    // the user sees the bidirectional alternation, not just the inner loop.
+    const showLoopHeader = i === 0 || i % 5 === 0 || i % 5 === 4
 
-    // (a) "examine node" tick: highlight the inner BFHS lines.
+    // (a) "examine node" tick: walk through the inner ExpandContour checks.
+    let examineHighlight: string[]
+    if (isIntersection) {
+      examineHighlight = LINES.INTERSECT
+    } else if (showLoopHeader) {
+      const loop = direction === "backward" ? LINES.LOOP_BACKWARD : LINES.LOOP_FORWARD
+      examineHighlight = [...loop, ...LINES.EXPAND_ENTRY, ...LINES.F_CHECK]
+    } else {
+      examineHighlight = [...LINES.F_CHECK, ...LINES.PRUNE]
+    }
+
     steps.push({
       jumpIndex: null,
-      highlight:
-        i === 0
-          ? ["L4", "L5", "L6", "L7", "L10", "L11"]
-          : ["L11", "L12", "L13", ...(isIntersection ? ["L14", "L15"] : [])],
-      phase: isIntersection ? "frontier intersection" : "expand node",
+      highlight: examineHighlight,
+      phase: isIntersection
+        ? "frontier intersection"
+        : showLoopHeader
+          ? direction === "backward"
+            ? "backward contour"
+            : "forward contour"
+          : "expand node",
       stats: {
         direction,
         cutoff,
@@ -145,7 +177,7 @@ export function buildTrace(kind: BoardKind): TraceStep[] {
     // (b) "apply child" tick: animate the jump on the board.
     steps.push({
       jumpIndex: i,
-      highlight: isIntersection ? ["L14", "L15", "L16"] : ["L17", "L18"],
+      highlight: isIntersection ? LINES.CLOSE_CONTOUR : LINES.APPLY_SUCCESSOR,
       phase: isIntersection ? "solution proven" : "apply successor",
       stats: {
         direction,
@@ -161,6 +193,24 @@ export function buildTrace(kind: BoardKind): TraceStep[] {
       alternatives: alternatives(jump, i),
     })
   }
+
+  // Final tick: termination condition met, return the best path.
+  steps.push({
+    jumpIndex: null,
+    highlight: LINES.TERMINATE,
+    phase: "terminate",
+    stats: {
+      direction: "forward",
+      cutoff: 18 + 6,
+      g: totalJumps,
+      h: 0,
+      f: totalJumps,
+      nodesExpanded: Math.round(2_000 * totalJumps ** 1.7),
+      frontierForward: 0,
+      frontierBackward: 0,
+      intersection: true,
+    },
+  })
 
   return steps
 }
