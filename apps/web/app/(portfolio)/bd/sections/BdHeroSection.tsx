@@ -14,12 +14,13 @@ const connectionLabel: Record<BdConnectionState, string> = {
   open: "LINK.OPEN",
   reconnecting: "RETRYING",
   closed: "CLOSED",
+  mock: "SYN.MOCK",
 }
 
 export function BdHeroSection({ status, connection, source }: Props) {
   const live = status.connected
   return (
-    <section className="relative border-b border-bd-rule px-6 sm:px-10 md:px-12 lg:px-20 py-14 md:py-20">
+    <section className="relative overflow-hidden border-b border-bd-rule px-6 sm:px-10 md:px-12 lg:px-20 py-14 md:py-20">
       {/* Decorative top tag-row, in The Designers Republic style. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-10 font-bd-mono text-[10px] uppercase tracking-[0.3em] text-bd-cream/45">
         <span>TX.001</span>

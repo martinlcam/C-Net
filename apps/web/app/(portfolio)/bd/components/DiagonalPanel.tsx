@@ -61,13 +61,13 @@ export function DiagonalPanel({
       >
         {(label || meta) && (
           <div
-            className={`flex items-center justify-between border-b px-3 py-1.5 font-bd-mono text-[10px] uppercase tracking-[0.18em] ${BORDER_CLASS[tone]}`}
+            className={`relative z-10 flex shrink-0 items-center justify-between border-b bg-bd-panel px-3 py-1.5 font-bd-mono text-[10px] uppercase tracking-[0.18em] ${BORDER_CLASS[tone]}`}
           >
             <span className={accent}>{label}</span>
             <span className="text-bd-cream/40">{meta}</span>
           </div>
         )}
-        <div className="min-h-0 flex-1">{children}</div>
+        <div className="relative z-0 min-h-0 flex-1 overflow-hidden">{children}</div>
       </div>
     </div>
   )

@@ -33,16 +33,12 @@ export function BdSignalsSection({ buffer, status }: Props) {
         <DiagonalPanel
           className="col-span-12 lg:col-span-8 h-[360px]"
           label="EEG.RAW / CH4 / 256HZ"
-          meta="ROLLING 5S"
-          tone="live"
+          meta={live ? "ROLLING 5S" : "OFFLINE"}
+          tone={live ? "live" : "alarm"}
           cut="tr"
           surface="#16161a"
         >
-          {live ? (
-            <EegOscilloscope buffer={buffer} />
-          ) : (
-            <NoSignalScreen note={status.note} />
-          )}
+          {live ? <EegOscilloscope buffer={buffer} /> : <NoSignalScreen note={status.note} />}
         </DiagonalPanel>
 
         <DiagonalPanel

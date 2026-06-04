@@ -62,9 +62,9 @@ export function BdSpecimenSection({ status }: Props) {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex items-baseline justify-between border-b border-bd-rule pb-1.5">
-      <span className="text-bd-cream/40">{k}</span>
-      <span className="text-bd-cream">{v}</span>
+    <div className="grid grid-cols-[minmax(4.5rem,auto)_1fr] items-baseline gap-x-3 gap-y-0.5 border-b border-bd-rule pb-1.5">
+      <span className="text-bd-cream/40 shrink-0">{k}</span>
+      <span className="text-bd-cream text-right sm:text-left">{v}</span>
     </div>
   )
 }

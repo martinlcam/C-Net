@@ -201,24 +201,20 @@ export function HeaderSection() {
                 </Link>
               )
             })}
-            <div className="flex items-center justify-center py-2 pt-4">
-              <div className={`h-px w-full ${isBd ? "bg-bd-rule" : "bg-black"}`} />
-            </div>
-            {status === "loading" ? (
+            {!isBd && (
+              <div className="flex items-center justify-center py-2 pt-4">
+                <div className="h-px w-full bg-black" />
+              </div>
+            )}
+            {isBd ? null : status === "loading" ? (
               <div className="px-4 py-3">
-                <div
-                  className={`h-4 w-24 animate-pulse rounded ${
-                    isBd ? "bg-bd-cream/10" : "bg-gray-200"
-                  }`}
-                />
+                <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
               </div>
             ) : session ? (
               <>
                 <Link
                   href="/cnet/dashboard"
-                  className={`block px-4 py-3 text-[17px] font-medium text-[#ad70eb] rounded-[12px] transition-colors duration-200 ${
-                    isBd ? "hover:bg-bd-panel" : "hover:bg-purple-50"
-                  }`}
+                  className="block px-4 py-3 text-[17px] font-medium text-[#ad70eb] rounded-[12px] hover:bg-purple-50 transition-colors duration-200"
                   onClick={closeMobileMenu}
                 >
                   C-Net
@@ -264,11 +260,7 @@ export function HeaderSection() {
             ) : (
               <button
                 type="button"
-                className={`w-full text-left px-4 py-3 text-[17px] font-medium rounded-[12px] transition-colors duration-200 ${
-                  isBd
-                    ? "text-bd-cream hover:bg-bd-panel"
-                    : "text-black hover:bg-gray-100"
-                }`}
+                className="w-full text-left px-4 py-3 text-[17px] font-medium text-black rounded-[12px] hover:bg-gray-100 transition-colors duration-200"
                 onClick={() => {
                   openModal()
                   closeMobileMenu()
@@ -289,7 +281,7 @@ export function HeaderSection() {
         />
 
         <div className="hidden md:flex items-center gap-4">
-          {status === "loading" ? (
+          {isBd ? null : status === "loading" ? (
             <div
               className={`h-12 w-24 animate-pulse rounded-xl ${
                 isBd ? "bg-bd-cream/10" : "bg-gray-100"
