@@ -1,0 +1,19 @@
+{
+  "name": "@cnet/realtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/server.ts",
+    "start": "bun src/server.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cnet/core": "workspace:*",
+    "ioredis": "^5.4.2"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.13",
+    "typescript": "^5.9.2"
+  }
+}

@@ -12,6 +12,8 @@ const config: Config = {
       fontFamily: {
         sans: ["Satoshi", "system-ui", "-apple-system", "sans-serif"],
         satoshi: ["Satoshi", "system-ui", "-apple-system", "sans-serif"],
+        "bd-mono": ["var(--font-bd-mono)", "ui-monospace", "monospace"],
+        "bd-display": ["var(--font-bd-display)", "Space Grotesk", "system-ui", "sans-serif"],
       },
       colors: {
         "primary-purple": {
@@ -82,6 +84,17 @@ const config: Config = {
           "80": "#404040",
           "90": "#262626",
           "100": "#171717",
+        },
+        bd: {
+          bg: "#0d0d0f",
+          panel: "#16161a",
+          cream: "#faf6f1",
+          purple: "#ad70eb",
+          live: "#c6ff00",
+          alarm: "#ff3344",
+          rule: "rgba(250,246,241,0.15)",
+          dim: "rgba(250,246,241,0.55)",
+          muted: "rgba(250,246,241,0.35)",
         },
       },
     },

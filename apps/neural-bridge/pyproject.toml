@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cnet-neural-bridge"
+version = "0.1.0"
+description = "Muse 2 EEG -> Redis pub/sub bridge for the C-Net Braindance page"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Martin Cam" }]
+dependencies = [
+    "bleak>=0.22.0",
+    "bitstring>=4.2",
+    "redis>=5.0",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+neural-bridge = "neural_bridge.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["neural_bridge*"]
