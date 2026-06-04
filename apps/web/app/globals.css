@@ -241,4 +241,23 @@ body[data-bd="1"] ::-webkit-scrollbar-thumb:hover {
   .bd-scroll {
     animation: bd-scroll 60s linear infinite;
   }
+  /* Full-page 45° line field (Vectorheart burst segments). */
+  .bd-vector-grid {
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        transparent 0,
+        transparent 24px,
+        rgba(250, 246, 241, 0.045) 24px,
+        rgba(250, 246, 241, 0.045) 25px
+      ),
+      repeating-linear-gradient(
+        -60deg,
+        transparent 0,
+        transparent 36px,
+        rgba(173, 112, 235, 0.055) 36px,
+        rgba(173, 112, 235, 0.055) 37px
+      );
+    mask-image: radial-gradient(ellipse 90% 75% at 50% 42%, black 15%, transparent 78%);
+  }
 }

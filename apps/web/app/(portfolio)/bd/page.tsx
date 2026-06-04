@@ -3,6 +3,7 @@
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google"
 import { useEffect } from "react"
 import { BdFooter } from "./components/BdFooter"
+import { BdVectorField } from "./components/BdVectorField"
 import { HeaderSection } from "../sections/HeaderSection"
 import { BdHeroSection } from "./sections/BdHeroSection"
 import { BdSignalsSection } from "./sections/BdSignalsSection"
@@ -38,14 +39,17 @@ export default function BdPage() {
 
   return (
     <div
-      className={`${plexMono.variable} ${spaceGrotesk.variable} min-h-screen w-full bg-bd-bg text-bd-cream`}
+      className={`${plexMono.variable} ${spaceGrotesk.variable} relative min-h-screen w-full bg-bd-bg text-bd-cream`}
     >
+      <BdVectorField />
+      <div className="relative z-[1]">
       <HeaderSection />
       <div className="h-[65px]" aria-hidden="true" />
       <BdHeroSection status={status} connection={connection} source={source} />
       <BdSignalsSection buffer={buffer} status={status} />
       <BdSpecimenSection status={status} />
       <BdFooter />
+      </div>
     </div>
   )
 }
