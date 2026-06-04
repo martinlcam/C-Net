@@ -41,6 +41,8 @@ export function HeaderSection() {
   const mobileMenuRef = useRef<HTMLDivElement>(null)
 
   const isBd = pathname === "/bd"
+  const isBfida = pathname === "/bfida"
+  const heroRailPage = pathname === "/" || isBfida || isBd
 
   const isActive = (href: string) => {
     if (href.startsWith("/#")) return pathname === "/"
@@ -99,7 +101,11 @@ export function HeaderSection() {
     >
       <div
         className={`hidden md:flex w-[58px] h-16 items-center justify-center shrink-0 transition-all ${
-          isAtTop ? (isBd ? "border-r border-bd-rule" : "border-r border-black") : ""
+          isAtTop && heroRailPage
+            ? isBd
+              ? "border-r border-bd-rule"
+              : "border-r border-black"
+            : ""
         }`}
       />
       <div className="flex-1 flex items-center justify-between px-6">

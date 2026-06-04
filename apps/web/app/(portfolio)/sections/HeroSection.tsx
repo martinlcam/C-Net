@@ -3,6 +3,7 @@
 import { Text } from "@radix-ui/themes"
 import { animate, stagger, svg } from "animejs"
 import { useEffect, useRef } from "react"
+import { PortfolioHeroFrame } from "../components/PortfolioHeroFrame"
 import { Button } from "@/stories/button/button"
 
 export function HeroSection() {
@@ -21,18 +22,7 @@ export function HeroSection() {
   }, [])
 
   return (
-    <div className="border-b border-black md:border-l">
-      <div className="flex">
-        <div className="hidden md:flex w-[58px] border-r border-black flex-col items-center pt-2 shrink-0">
-          <div className="flex flex-col items-center text-[48px] font-normal text-black leading-none tracking-tight">
-            <span>C</span>
-            <span className="text-[24px]">│</span>
-            <span>N</span>
-            <span>E</span>
-            <span>T</span>
-          </div>
-        </div>
-
+    <PortfolioHeroFrame>
         <section
           id="home"
           className="flex-1 relative min-h-[70vh] flex items-center px-5 sm:px-8 md:px-10 py-10 sm:py-14 md:py-16 overflow-hidden"
@@ -128,7 +118,6 @@ export function HeroSection() {
             </div>
           </div>
         </section>
-      </div>
-    </div>
+    </PortfolioHeroFrame>
   )
 }
