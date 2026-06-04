@@ -1,2 +1,0 @@
-[console_scripts]
-neural-bridge = neural_bridge.__main__:main

@@ -1,4 +1,0 @@
-bleak>=0.22.0
-bitstring>=4.2
-redis>=5.0
-python-dotenv>=1.0

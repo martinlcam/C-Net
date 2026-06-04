@@ -59,3 +59,12 @@ bun.lockb
 
 *storybook.log
 storybook-static
+
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+*.pyc
+
+# Throwaway diagnostic scripts
+_diag_*.py
