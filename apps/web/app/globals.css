@@ -1,4 +1,18 @@
 @import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* BD palette — explicit @theme so Tailwind v4 always emits bg-bd-* utilities */
+@theme {
+  --color-bd-bg: #0d0d0f;
+  --color-bd-panel: #16161a;
+  --color-bd-cream: #faf6f1;
+  --color-bd-purple: #ad70eb;
+  --color-bd-live: #c6ff00;
+  --color-bd-alarm: #ff3344;
+  --color-bd-rule: rgba(250, 246, 241, 0.15);
+  --color-bd-dim: rgba(250, 246, 241, 0.55);
+  --color-bd-muted: rgba(250, 246, 241, 0.35);
+}
 
 /* Satoshi Font */
 @font-face {
@@ -87,5 +101,144 @@
   /* Smooth section scroll offset for fixed header */
   section[id] {
     scroll-margin-top: 80px;
+  }
+}
+
+/* =========================================================================
+   BD (Braindance) — Vectorheart theme scope
+   Activated by `document.body.dataset.bd = "1"` while /bd is mounted.
+   ========================================================================= */
+body[data-bd="1"] {
+  background-color: #0d0d0f;
+  color: #faf6f1;
+}
+
+body[data-bd="1"] ::-webkit-scrollbar-track {
+  background: #0d0d0f;
+}
+body[data-bd="1"] ::-webkit-scrollbar-thumb {
+  background: rgba(250, 246, 241, 0.18);
+}
+body[data-bd="1"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(250, 246, 241, 0.32);
+}
+
+@layer utilities {
+  /*
+   * Vectorheart chamfer — do NOT clip-path the bordered box (that eats the
+   * stroke at the cut). Instead, park a small wedge + 45° seam on top.
+   * Set --bd-surface to match the panel/page behind the corner.
+   * Set --bd-frame-border to match the panel border colour.
+   */
+  .bd-chamfer {
+    position: absolute;
+    width: var(--bd-chamfer-size, 14px);
+    height: var(--bd-chamfer-size, 14px);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .bd-chamfer-tr {
+    top: -1px;
+    right: -1px;
+    background: var(--bd-surface, #0d0d0f);
+    clip-path: polygon(100% 0, 0 0, 100% 100%);
+  }
+  .bd-chamfer-tr::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: calc(var(--bd-chamfer-size, 14px) * 1.45);
+    height: 1px;
+    background: var(--bd-frame-border, rgba(250, 246, 241, 0.15));
+    transform-origin: 100% 0;
+    transform: rotate(-45deg);
+  }
+  .bd-chamfer-bl {
+    bottom: -1px;
+    left: -1px;
+    background: var(--bd-surface, #0d0d0f);
+    clip-path: polygon(0 100%, 0 0, 100% 100%);
+  }
+  .bd-chamfer-bl::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: calc(var(--bd-chamfer-size, 14px) * 1.45);
+    height: 1px;
+    background: var(--bd-frame-border, rgba(250, 246, 241, 0.15));
+    transform-origin: 0 100%;
+    transform: rotate(-45deg);
+  }
+  /* Hairline corner-brackets used to frame panels. */
+  .bd-corner-brackets {
+    position: relative;
+  }
+  .bd-corner-brackets::before,
+  .bd-corner-brackets::after {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: #c6ff00;
+    border-style: solid;
+    border-width: 0;
+    pointer-events: none;
+  }
+  .bd-corner-brackets::before {
+    top: -1px;
+    left: -1px;
+    border-top-width: 1px;
+    border-left-width: 1px;
+  }
+  .bd-corner-brackets::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom-width: 1px;
+    border-right-width: 1px;
+  }
+  /* Diagonal hatch fill for "no signal" backgrounds. */
+  .bd-hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0 6px,
+      rgba(250, 246, 241, 0.04) 6px 7px
+    );
+  }
+  /* Subtle grid for HUD plates. */
+  .bd-grid {
+    background-image:
+      linear-gradient(rgba(250, 246, 241, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(250, 246, 241, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  /* Barcode-strip decoration. */
+  .bd-barcode {
+    background-image: repeating-linear-gradient(
+      90deg,
+      #faf6f1 0 2px,
+      transparent 2px 4px,
+      #faf6f1 4px 5px,
+      transparent 5px 9px,
+      #faf6f1 9px 11px,
+      transparent 11px 14px
+    );
+  }
+  /* Slow boot-blink for live indicators. */
+  @keyframes bd-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+  }
+  .bd-pulse {
+    animation: bd-pulse 1.6s ease-in-out infinite;
+  }
+  /* Marquee-style horizontal scroll for ticker readouts. */
+  @keyframes bd-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .bd-scroll {
+    animation: bd-scroll 60s linear infinite;
   }
 }

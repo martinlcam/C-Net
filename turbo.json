@@ -13,7 +13,13 @@
     "CORS_ORIGIN",
     "RESEND_API_KEY",
     "NEXT_PUBLIC_API_URL",
-    "API_PORT"
+    "API_PORT",
+    "BD_INGEST_KEY",
+    "REALTIME_PORT",
+    "NEXT_PUBLIC_REALTIME_WS_URL",
+    "NEXT_PUBLIC_BD_MOCK",
+    "BD_REDIS_CHANNEL_SAMPLES",
+    "BD_REDIS_CHANNEL_STATUS"
   ],
   "tasks": {
     "api:generate": {
