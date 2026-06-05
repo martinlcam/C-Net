@@ -1,7 +1,7 @@
 "use client"
 
+import Link from "next/link"
 import { PortfolioHeroFrame } from "../../components/PortfolioHeroFrame"
-import { Button } from "@/stories/button/button"
 import type { BdConnectionState, BdStatusFrame } from "../lib/bd-types"
 
 type Props = {
@@ -16,7 +16,6 @@ const connectionLabel: Record<BdConnectionState, string> = {
   open: "LINK.OPEN",
   reconnecting: "RETRYING",
   closed: "CLOSED",
-  mock: "SYN.MOCK",
 }
 
 export function BdHeroSection({ status, connection, source }: Props) {
@@ -107,15 +106,12 @@ export function BdHeroSection({ status, connection, source }: Props) {
             <span className="text-bd-live">actions on my computer</span> — brain patterns in,
             control out. This view is the telemetry layer while that loop is being built.
           </p>
-          <Button
-            type="button"
-            disabled
-            variant="outline"
-            title="Full write-up coming soon"
-            className="rounded-none border-bd-cream/25 bg-transparent px-6 py-3 h-auto font-bd-mono text-[10px] uppercase tracking-[0.24em] text-bd-cream/45 cursor-not-allowed hover:bg-transparent"
+          <Link
+            href="/bd/writeup"
+            className="inline-block rounded-none border border-bd-cream/30 bg-transparent px-6 py-3 font-bd-mono text-[10px] uppercase tracking-[0.24em] text-bd-cream/70 transition-colors hover:border-bd-live hover:text-bd-live"
           >
-            Challenges &amp; history — coming soon
-          </Button>
+            Challenges &amp; history →
+          </Link>
         </div>
       </section>
     </PortfolioHeroFrame>
