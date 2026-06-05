@@ -23,13 +23,13 @@ except ImportError:  # pragma: no cover — dotenv is a hard dep, but be polite
 
 
 def _load_env() -> None:
-    """Load .env from this folder, then walk up to the repo root."""
+    """Load the monorepo-root .env. All bridge config (MUSE_ADDRESS, REDIS_URL,
+    BD_NOTCH_HZ, MUSE_PRESET, channels) lives there alongside the rest of the
+    project's env — there is intentionally no per-app .env for the bridge."""
     if load_dotenv is None:
         return
-    here = Path(__file__).resolve().parent.parent
-    # local first, then repo root .env
-    load_dotenv(here / ".env", override=False)
-    repo_root = here.parent.parent
+    # __main__.py -> neural_bridge -> apps/neural-bridge -> apps -> repo root
+    repo_root = Path(__file__).resolve().parents[3]
     load_dotenv(repo_root / ".env", override=False)
 
 

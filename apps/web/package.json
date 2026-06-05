@@ -11,11 +11,11 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^latest",
     "@cnet/api-client": "workspace:*",
     "@cnet/core": "workspace:*",
     "@cnet/db": "workspace:*",
     "@cnet/engine": "workspace:*",
-    "@auth/drizzle-adapter": "^latest",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-dropdown-menu": "^2.1.2",
@@ -34,6 +34,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "jsonwebtoken": "^9.0.2",
+    "katex": "^0.17.0",
     "next": "^16.1.1",
     "next-auth": "^5.0.0-beta.25",
     "react": "^19.2.3",
@@ -50,6 +51,7 @@
     "@storybook/addon-vitest": "^10.2.3",
     "@storybook/nextjs-vite": "^10.2.3",
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/katex": "^0.16.8",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
