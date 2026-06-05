@@ -1,23 +1,24 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { BD_BANDS, type EegSample } from "../lib/bd-types"
 import type { BdRingBuffer } from "../lib/use-bd-stream"
 
 /**
  * BandPowerBars — live EEG band powers (delta…gamma).
  *
- * The heavy DSP now happens server-side in the Python bridge (BrainFlow: detrend
- * → 0.5 Hz high-pass → mains notch → Welch PSD → per-band power), which arrives
- * as `bands` frames and lands on `buffer.latestBands`. This component only:
+ * The heavy DSP happens server-side in the Python bridge (BrainFlow: detrend →
+ * 0.5 Hz high-pass → mains notch → Welch PSD → per-band power), arriving as
+ * `bands` frames on `buffer.latestBands`. This component only:
  *
  *   • averages the per-channel absolute powers into one spectrum,
- *   • freezes on motion (blink / head-turn) via a quick check on the raw EEG ring,
  *   • smooths over time so you read trends, not jitter,
  *   • renders one of two views:
  *       REL %  — each band's share of total power (delta-led; that's 1/f physics).
  *       LOG dB — each band's level in dB below the loudest band, so the quiet
  *                bands are readable and each moves with its own activity.
+ *
+ * There's no motion freeze — the bars stay live through blinks/movement (the
+ * bridge filtering handles most of it, and the freeze was more annoying than useful).
  */
 
 const BANDS: ReadonlyArray<[name: string, low: number, high: number]> = [
@@ -28,10 +29,6 @@ const BANDS: ReadonlyArray<[name: string, low: number, high: number]> = [
   ["GAMMA", 30, 44],
 ]
 
-// Peak excursion (µV) above which a window is treated as a motion/blink artifact.
-const ARTIFACT_UV = 220
-// Samples inspected for the motion check (~1 s @ 256 Hz).
-const MOTION_WINDOW = 256
 // EMA factor for the displayed values (~1.3 s time constant at ~6 Hz).
 const SMOOTH = 0.12
 // LOG-mode: dB below the loudest band that maps to an empty bar.
@@ -54,38 +51,10 @@ function averageChannels(abs: number[][]): number[] {
   return out
 }
 
-/**
- * Quick motion gate: per-channel mean-removed peak excursion on the raw EEG ring.
- * Blinks/jaw-clenches/head-turns are 10-100× brain amplitude, so a simple
- * threshold catches them. (The band powers themselves are already filtered by
- * the bridge; this just freezes the display so motion doesn't read as a surge.)
- */
-function isMotion(ring: BdRingBuffer["eeg"]): boolean {
-  const have = Math.min(MOTION_WINDOW, ring.pushed)
-  if (have < 32) return false
-  let maxAbs = 0
-  for (let c = 0; c < 4; c++) {
-    let sum = 0
-    for (let i = 0; i < have; i++) {
-      const idx = (ring.head - have + i + ring.cap) % ring.cap
-      sum += (ring.samples[idx] as EegSample)[c]
-    }
-    const mean = sum / have
-    for (let i = 0; i < have; i++) {
-      const idx = (ring.head - have + i + ring.cap) % ring.cap
-      const d = (ring.samples[idx] as EegSample)[c] - mean
-      const a = d < 0 ? -d : d
-      if (a > maxAbs) maxAbs = a
-    }
-  }
-  return maxAbs > ARTIFACT_UV
-}
-
 type Props = { buffer: BdRingBuffer }
 
 export function BandPowerBars({ buffer }: Props) {
   const [values, setValues] = useState<number[]>(() => BANDS.map(() => 0))
-  const [noisy, setNoisy] = useState(false)
   const [hasData, setHasData] = useState(false)
   const [mode, setMode] = useState<Mode>("rel")
 
@@ -104,13 +73,6 @@ export function BandPowerBars({ buffer }: Props) {
       const latest = buffer.latestBands
       if (!latest) return
       setHasData(true)
-
-      // Hold the last good values during motion.
-      if (isMotion(buffer.eeg)) {
-        setNoisy(true)
-        return
-      }
-      setNoisy(false)
 
       const raw = averageChannels(latest.abs)
       const sm = smoothRef.current
@@ -160,11 +122,6 @@ export function BandPowerBars({ buffer }: Props) {
           WAITING DSP
         </div>
       )}
-      {noisy && (
-        <div className="pointer-events-none absolute right-3 top-2 z-10 font-bd-mono text-[9px] uppercase tracking-[0.2em] text-bd-alarm bd-pulse">
-          ⚠ MOTION
-        </div>
-      )}
 
       {BANDS.map(([name, lo, hi], i) => {
         const v = values[i] ?? 0
@@ -184,12 +141,7 @@ export function BandPowerBars({ buffer }: Props) {
         }
 
         return (
-          <div
-            key={name}
-            className={`flex flex-col items-stretch justify-end gap-1.5 min-h-0 transition-opacity ${
-              noisy ? "opacity-40" : "opacity-100"
-            }`}
-          >
+          <div key={name} className="flex flex-col items-stretch justify-end gap-1.5 min-h-0">
             <div className="relative flex-1 bg-bd-cream/[0.04] border border-bd-rule overflow-hidden">
               <div
                 className="absolute inset-x-0 bottom-0 bg-bd-live transition-[height] duration-300 ease-out"

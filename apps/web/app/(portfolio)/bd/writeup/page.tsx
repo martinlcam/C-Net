@@ -1,5 +1,8 @@
 "use client"
 
+import { Text } from "@radix-ui/themes"
+import katex from "katex"
+import "katex/dist/katex.min.css"
 import Link from "next/link"
 import { AuthModal } from "@/components/AuthModal"
 import { FooterSection } from "../../sections/FooterSection"
@@ -31,116 +34,193 @@ export default function BdWriteupPage() {
 
         <Prose>
           <p>
-            Hey, I’m Martin. This is the story of how I got my brainwaves streaming live onto
-            this website, and all the ways it went wrong before it went right. Fair warning:
-            most of this is a Bluetooth horror story with a happy ending.
+            Hey, I’m Martin. This is the story of how I got my brainwaves streaming live onto this
+            website, and fuck I tried to get AI to write this but its genuinley horrible.
           </p>
-          <p>
-            I’d wanted to do this for a while — a little corner of my portfolio that’s just…
-            me, live. Not a project screenshot, not a case study. The actual electrical activity
-            coming off my head, right now, painted onto a screen. I call it BD, short for
-            Braindance (yeah, it’s a Cyberpunk reference). The long-term dream is bigger: train
-            a model on these signals and let my brain trigger things on my computer. Brain in,
-            control out. But you have to crawl before you run, and step one was just this — get
-            the data flowing.
+          <p className="line-through">
+            I’d wanted to do this for a while — a little corner of my portfolio that’s just… me,
+            live. Not a project screenshot, not a case study. The actual electrical activity coming
+            off my head, right now, painted onto a screen. I call it BD, short for Braindance (yeah,
+            it’s a Cyberpunk reference). The long-term dream is bigger: train a model on these
+            signals and let my brain trigger things on my computer. Brain in, control out. But you
+            have to crawl before you run, and step one was just this — get the data flowing.
           </p>
+
+          <p>deadass who writes like this</p>
 
           <H2>The pipe</H2>
           <p>
-            The plan was clean on paper. A Muse EEG headband talks Bluetooth to a little Python
-            program — the “bridge.” The bridge shoves each batch of samples into Redis;
-            specifically Redis pub/sub, which is less “database” and more “loudspeaker.” You
-            publish a message, everyone listening hears it instantly, and then it’s gone. A tiny
-            Bun server subscribes to that loudspeaker and fans the data out over WebSockets to
-            your browser. Nothing is ever stored. You’re watching the pipe, not a recording.
+            A EEG headband talks Bluetooth to a little Python program -- the “bridge.” The bridge
+            shoves each batch of samples into Redis; specifically Redis pub/sub, which is less
+            “database” and more “loudspeaker.” You publish a message, everyone listening hears it
+            instantly, and then it’s gone. A tiny Bun server subscribes to that loudspeaker and fans
+            the data out over WebSockets to your browser.
           </p>
           <p>
-            The thing I’m quietly proud of is that none of the pieces know about each other. The
-            bridge doesn’t know browsers exist. The browser doesn’t know Python exists. They
-            both just talk to Redis. Which means when I eventually build the brain-control model,
-            it just… subscribes to the same loudspeaker. No rewrites.
-          </p>
-          <p>
-            So I built the whole front end first, faked the data, and made it look the way I
-            wanted — sharp, high-contrast, a bit brutalist, with a radioactive-lime trace that
-            says “this is alive.” Then I went to plug in the actual headband. And that’s where I
-            lost about a day of my life.
+            I am quite proud of the fact that none of the pieces know about each other. The bridge
+            doesn’t know browsers exist. The browser doesn’t know Python exists. They both just talk
+            to Redis. Which means when I eventually build the brain-control model, it just…
+            subscribes to the same loudspeaker. No rewrites.
           </p>
 
           <H2>Bluetooth hell</H2>
+          <p>Getting a consumer EEG headband to talk to a Windows desktop is genuinely fried.</p>
           <p>
-            Here’s what nobody tells you: getting a consumer EEG headband to talk to a Windows
-            desktop is genuinely cursed.
+            The headband showed up in about every scan. Strong signal, sitting right next to me. But
+            every single time I tried to actually connect, it would get partway in and then die with
+            the same error -- <em>“Could not get GATT services: Unreachable.”</em> The Bluetooth
+            equivalent of someone picking up the phone and immediately hanging up.
           </p>
           <p>
-            The headband showed up in every scan. Strong signal, sitting right next to me. But
-            every single time I tried to actually connect, it would get partway in and then die
-            with the same useless error — <em>“Could not get GATT services: Unreachable.”</em>{" "}
-            The Bluetooth equivalent of someone picking up the phone and immediately hanging up.
+            Yeah Claude sat down with this one for like 2 hours. I thought it was a pairing problem,
+            so I tried pairing it in Windows settings -- turns out Windows had “advanced discovery”
+            switched off and literally couldn’t see the thing. Turned that on, tried to pair, got
+            “try connecting your device again.” Tried pairing it programmatically through the raw
+            Windows API. Failed. I updated the Bluetooth driver from 2022 all the way to 2026. I ran
+            system repair tools, because it turned out a Windows update had half-installed itself
+            and quietly corrupted things. Last place to look was the card
           </p>
           <p>
-            I went down every rabbit hole. I thought it was a pairing problem, so I tried pairing
-            it in Windows settings — turns out Windows had “advanced discovery” switched off and
-            literally couldn’t see the thing. Turned that on, tried to pair, got “try connecting
-            your device again.” Tried pairing it programmatically through the raw Windows API.
-            Failed. I updated the Bluetooth driver from 2022 all the way to 2026. I ran system
-            repair tools, because it turned out a Windows update had half-installed itself and
-            quietly corrupted things. At one point I genuinely asked, out loud, “is the card
-            cooked?”
-          </p>
-          <p>
-            It wasn’t the card. The card was fine. The real culprit was the chipset: my desktop
-            has a MediaTek Bluetooth adapter, and MediaTek’s handling of this particular flavor
-            of Bluetooth on Windows is famously broken. I proved it in the most satisfying way
-            possible — I installed a completely different, purpose-built Muse program, and it
-            failed in the <em>exact</em> same place. Two unrelated pieces of software, same wall.
-            It was never my code. It was never going to work on that machine.
+            It wasn’t the card. The card was fine. The real culprit was the chipset: my desktop has
+            a MediaTek Bluetooth adapter, and MediaTek’s handling of this particular flavor of
+            Bluetooth on Windows is famously broken. I installed a completely different,
+            purpose-built Muse program, and it failed in the <em>exact</em> same place. Two
+            unrelated pieces of software, same wall.
           </p>
 
           <H2>The pivot</H2>
+          <p>Truth be told I probably should have done it this way to begin with.</p>
           <p>
-            The fix turned out to be embarrassingly simple in hindsight: use Linux.
-          </p>
-          <p>
-            I have a Proxmox box — basically a little server humming away in my homelab — and it
-            has an Intel Bluetooth adapter. Intel and Linux together don’t have any of Windows’
-            hangups. I cloned the project over, ran the bridge, and it connected on the first
-            try. After a full day of fist-fighting Windows, Linux just… did it. I sat there a
-            little stunned.
+            I have a Proxmox box -- basically a little server heating my room -- and it has an Intel
+            Bluetooth adapter. Intel and Linux together don’t have any of Windows’ hangups. I cloned
+            the project over, ran the bridge, and it also didnt run. Turns out that the{" "}
+            <a
+              href="https://www.alexng.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              <Text color="cyan">goofy ahh</Text>
+            </a>{" "}
+            that sold me the motherboard for this server didnt sell me bluetooth atennas. Tinfoil
+            wrapped around the contacts got me though.
           </p>
 
           <H2>Wait, what is this thing?</H2>
           <p>
-            Right when I thought I was home free, a fun plot twist. I’d assumed the whole time I
-            had a Muse 2. We pulled the device’s identity straight off its control channel and —
-            nope. It’s the <em>original</em> Muse, the 2016 model. No heart-rate sensor, four EEG
-            channels, older than I thought. Which explained a few things, and means the
-            heart-rate dial on the page is just always going to read “—.” Honestly, kind of
-            charming that the thing reading my brain is nearly a decade old.
+            Fun plot twist. I’d assumed the whole time I had a Muse 2. I pulled the device’s
+            identity straight off its control channel and -- nope. It’s the <em>original</em> Muse,
+            the 2016 model. No heart-rate sensor, four EEG channels, older than I thought. Which
+            explained a few things, and means the heart-rate dial on the page is just always going
+            to read “—.” Honestly, kind of charming that the thing reading my brain is nearly a
+            decade old.
           </p>
           <p>
-            There was one last gremlin. On Linux you can’t connect to a Bluetooth device while
-            you’re also scanning for it — they fight over the radio. Once I learned to stop
-            scanning <em>before</em> connecting, the link finally held.
+            One last nit. On Linux you can’t connect to a Bluetooth device while you’re also
+            scanning for it — they fight over the radio. Once I learned to stop scanning{" "}
+            <em>before</em> connecting, the link finally held.
           </p>
 
-          <H2>Live</H2>
+          <H2>Reading the readout</H2>
           <p>
-            And then it worked. Four wobbling lines on a black screen, and they’re mine. I closed
-            my eyes and watched the alpha band climb — that’s the textbook “yes, this is really a
-            brain” signature — and there it was.
+            And then it worked — four wobbling lines that are unmistakably mine. But raw brainwaves
+            are less obvious than they look, so here’s what the graphs on the page actually mean.
           </p>
+
           <p>
-            It is a genuinely strange feeling to look at a number on a screen and know that it’s a
-            thought, or at least the electrical weather of one.
+            <strong>The waveforms (µV).</strong> Each trace is a voltage at one electrode, in
+            microvolts. The headband’s 12-bit ADC hands the bridge a number from 0–4095, which maps
+            to a real voltage centered on zero:
+          </p>
+          <MathBlock
+            tex={String.raw`V \;=\; (\text{raw} - 2048)\,\times\,0.48828125\ \ \mu\text{V}`}
+          />
+          <p>
+            Brain signals are tiny — tens of µV — so the per-channel{" "}
+            <em>FLAT&nbsp;/&nbsp;OK&nbsp;/&nbsp;HOT</em> tag is just the standard deviation of the
+            trace over the last second:
+          </p>
+          <MathBlock
+            tex={String.raw`\sigma \;=\; \sqrt{\frac{1}{N}\sum_{i=1}^{N}\bigl(x_i-\mu\bigr)^2}\,,
+              \qquad \mu=\frac{1}{N}\sum_{i=1}^{N}x_i`}
+          />
+          <p>
+            Near-zero spread (<MathInline tex={String.raw`\sigma < 2\,\mu\text{V}`} />) means the
+            pad isn’t touching skin; a giant spread means it’s railing. Real EEG lives in between.
+          </p>
+
+          <p>
+            <strong>The bands (δ θ α β γ).</strong> Slice that signal by frequency and you get the
+            classic EEG bands:
+          </p>
+          <MathBlock
+            tex={String.raw`\underbrace{\delta}_{1\text{–}4}\ \ \underbrace{\theta}_{4\text{–}8}\ \
+              \underbrace{\alpha}_{8\text{–}13}\ \ \underbrace{\beta}_{13\text{–}30}\ \
+              \underbrace{\gamma}_{30\text{–}44}\quad[\text{Hz}]`}
+          />
+          <p>
+            Loosely: delta = deep sleep, theta = drowsy/meditative, alpha = relaxed with eyes
+            closed, beta = alert and thinking, gamma = fast stuff (and, on a consumer headband, a
+            pile of muscle noise). The “power” in a band is the area under the power spectral
+            density <MathInline tex="S(f)" /> across that range:
+          </p>
+          <MathBlock
+            tex={String.raw`P_{\text{band}} \;=\; \int_{f_{\text{lo}}}^{f_{\text{hi}}} S(f)\,df
+              \quad\bigl[\mu\text{V}^2\bigr]`}
+          />
+
+          <p>
+            <strong>Why delta always wins — the 1/f law.</strong> EEG power isn’t spread evenly; it
+            falls off with frequency, so the low bands inherently hoard most of it:
+          </p>
+          <MathBlock
+            tex={String.raw`S(f)\;\propto\;\frac{1}{f^{\beta}}\,,\qquad \beta\approx 1\text{–}2`}
+          />
+          <p>That’s why, if you show each band as a plain share of the total —</p>
+          <MathBlock
+            tex={String.raw`P_{\text{rel}} \;=\; \frac{P_{\text{band}}}{\sum_{b} P_{b}}\times 100\%`}
+          />
+          <p>
+            — delta parks at 60–80% essentially forever. That’s physics, not me dozing off. To
+            actually <em>see</em> the quiet bands, the <strong>LOG dB</strong> toggle puts each one
+            on a base-10 logarithmic scale relative to the loudest band:
+          </p>
+          <MathBlock
+            tex={String.raw`\text{dB} \;=\; 10\,\log_{10}\!\left(\frac{P_{\text{band}}}{P_{\text{peak}}}\right)`}
+          />
+          <p>
+            Every <MathInline tex={String.raw`10\,\text{dB}`} /> (one <em>bel</em>) is a 10× change
+            in power, so <MathInline tex={String.raw`-20\,\text{dB}`} /> is a band 100× quieter than
+            the loudest. The logarithm crushes that giant 1/f range flat — alpha, beta and gamma
+            stop being slivers and start moving with their own activity, which is how you can watch
+            the alpha bump rise when you close your eyes.
+          </p>
+
+          <p>
+            <strong>The horseshoe (HSI).</strong> The little head with four dots is contact quality
+            — “Horseshoe Indicator,” after the band’s shape. The 2016 Muse doesn’t broadcast it, so
+            it’s derived from each channel’s spread (smoothed over a few seconds so a blink doesn’t
+            flip it) and bucketed the way Muse does:
+          </p>
+          <MathBlock
+            tex={String.raw`\text{HSI}(\sigma)=\begin{cases}
+              4 & \sigma<2\ \text{or}\ \sigma>150\\[3pt]
+              2 & \sigma<5\ \text{or}\ \sigma>60\\[3pt]
+              1 & \text{otherwise}
+              \end{cases}\quad[\mu\text{V}]`}
+          />
+          <p>
+            1 = good, 2 = ok, 4 = poor. Get all four dots green and everything else on the page
+            suddenly means something. It’s a genuinely strange feeling to look at a number and know
+            it’s a thought — or at least the electrical weather of one.
           </p>
 
           <H2>What’s next</H2>
           <p>
-            This is just the telemetry layer. The real project is on the other side of the
-            stream: feeding these signals into a model that learns my patterns and turns them
-            into actions on my machine. That loop is the part I actually care about. This page is
-            me making sure the wire works first — and making it look good while I’m at it.
+            This is just the telemetry layer. The real project is on the other side of the stream:
+            feeding these signals into a model that learns my patterns and turns them into actions
+            on my machine. That loop is the part I actually care about. This page is me making sure
+            the wire works first -- and making it look good while I’m at it.
           </p>
           <p>Anyway. My brain’s up there now. Thanks for reading.</p>
         </Prose>
@@ -174,4 +254,23 @@ function H2({ children }: { children: React.ReactNode }) {
       {children}
     </h2>
   )
+}
+
+/** Display equation — KaTeX-typeset, in a tinted block with a purple accent rail. */
+function MathBlock({ tex }: { tex: string }) {
+  const html = katex.renderToString(tex, { displayMode: true, throwOnError: false })
+  return (
+    <div
+      className="my-6 overflow-x-auto rounded-md border-l-2 border-[#ad70eb]/40 bg-black/[0.02] px-4 py-3 text-gray-900"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted local KaTeX output.
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  )
+}
+
+/** Inline equation — KaTeX-typeset, flows with the surrounding text. */
+function MathInline({ tex }: { tex: string }) {
+  const html = katex.renderToString(tex, { displayMode: false, throwOnError: false })
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted local KaTeX output.
+  return <span className="text-gray-900" dangerouslySetInnerHTML={{ __html: html }} />
 }

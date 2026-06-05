@@ -130,9 +130,11 @@ export function EegOscilloscope({ buffer, windowSec = 5, sampleRate = 256 }: Pro
         ctx.font = '600 13px var(--font-bd-mono), ui-monospace, monospace'
       }
 
-      // Plot each channel.
+      // Plot each channel. Scale to samples we actually have — the bridge
+      // batches over BLE so the ring often holds fewer than windowSec*rate
+      // points even when live; stretching to `have` fills the panel edge-to-edge.
       ctx.lineWidth = 1.25
-      const stepX = width / (sampleCount - 1)
+      const stepX = width / Math.max(1, have - 1)
       for (let c = 0; c < 4; c++) {
         ctx.strokeStyle = c === 0 || c === 3 ? "#ad70eb" : "#c6ff00"
         ctx.beginPath()

@@ -80,7 +80,7 @@ export function ImuTrace({ buffer, kind, windowSec = 6, sampleRate = 52 }: Props
       ctx.lineTo(w, Math.round(h / 2) + 0.5)
       ctx.stroke()
 
-      const stepX = w / (sampleCount - 1)
+      const stepX = w / Math.max(1, have - 1)
       const amp = h * 0.42
       const mid = h / 2
 
