@@ -81,18 +81,31 @@ export function EegOscilloscope({ buffer, windowSec = 5, sampleRate = 256 }: Pro
       ctx.font = '10px var(--font-bd-mono), ui-monospace, monospace'
       ctx.textBaseline = "top"
 
-      // For each channel, sweep the ring once to find peak amplitude (auto-gain).
+      // Sweep the ring once: per-channel peak (for auto-gain) plus mean and
+      // mean-of-squares (for a signal-health readout via the standard deviation).
       const peaks: [number, number, number, number] = [1, 1, 1, 1]
+      const sum = [0, 0, 0, 0]
+      const sumSq = [0, 0, 0, 0]
       for (let i = 0; i < have; i++) {
         const idx = (ring.head - have + i + ring.cap) % ring.cap
         const s = ring.samples[idx] as EegSample
         for (let c = 0; c < 4; c++) {
-          const v = Math.abs(s[c])
+          const x = s[c]
+          const v = x < 0 ? -x : x
           if (v > peaks[c]) peaks[c] = v
+          sum[c] += x
+          sumSq[c] += x * x
         }
       }
       // Pad peaks so the trace doesn't kiss the lane edge.
       for (let c = 0; c < 4; c++) peaks[c] = Math.max(peaks[c], 8) * 1.1
+      // Per-channel std-dev = AC signal strength. ~0 => flat/disconnected,
+      // moderate => live EEG, very large => railing / bad contact / motion.
+      const std = [0, 0, 0, 0]
+      for (let c = 0; c < 4; c++) {
+        const mean = sum[c] / have
+        std[c] = Math.sqrt(Math.max(0, sumSq[c] / have - mean * mean))
+      }
 
       // Lane separators + labels.
       ctx.strokeStyle = "rgba(250,246,241,0.10)"
@@ -103,11 +116,16 @@ export function EegOscilloscope({ buffer, windowSec = 5, sampleRate = 256 }: Pro
         ctx.lineTo(width, y)
         ctx.stroke()
       }
-      ctx.fillStyle = labelColor
       for (let c = 0; c < 4; c++) {
         const y = c * laneHeight + 6
+        ctx.fillStyle = labelColor
         ctx.fillText(BD_CHANNELS.EEG[c], 8, y)
-        ctx.fillText(`${peaks[c].toFixed(0)} uV`, width - 56, y)
+        // Signal-health from std-dev: FLAT (dead / no contact), OK (live EEG),
+        // or HOT (railing / bad contact / motion).
+        const sd = std[c]
+        const status = sd < 2 ? "FLAT" : sd > 120 ? "HOT" : "OK"
+        ctx.fillStyle = sd < 2 ? "#ff3344" : sd > 120 ? "#ffb020" : "#c6ff00"
+        ctx.fillText(`${sd.toFixed(0)}uV ${status}`, width - 96, y)
       }
 
       // Plot each channel.

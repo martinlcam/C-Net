@@ -1,13 +1,23 @@
-import { BD_CHANNELS } from "../lib/bd-types"
+"use client"
+
+import { useEffect, useRef, useState } from "react"
+import { BD_CHANNELS, type EegSample } from "../lib/bd-types"
+import type { BdRingBuffer } from "../lib/use-bd-stream"
 
 type Props = {
+  buffer?: BdRingBuffer
+  /** Device-provided HSI, if the headband sends it (Muse 2/S). The original
+   *  2016 Muse does not, so we fall back to a signal-derived estimate. */
   hsi?: [number, number, number, number]
 }
 
 /**
- * Horseshoe-fit indicator. The Muse exposes per-electrode quality as a small
- * integer: 1 = good, 2 = ok, 4 = bad. We render the four electrodes as labeled
- * dots in their physical position around the head (TP9 / AF7 / AF8 / TP10).
+ * Horseshoe-fit indicator. "HSI" = Horseshoe Indicator — Muse's name for the
+ * per-electrode contact-quality reading, after the horseshoe shape of the band.
+ * Quality is a small integer: 1 = good, 2 = ok, 4 = bad. The 2016 Muse doesn't
+ * transmit it, so we derive it from each channel's standard deviation: a flat
+ * channel (no contact) has ~0 spread; a railing/drifting one has a huge spread;
+ * healthy EEG sits in between.
  */
 const COLORS: Record<number, string> = {
   1: "#c6ff00", // good — lime
@@ -20,12 +30,39 @@ function color(q: number | undefined): string {
   return COLORS[q] ?? COLORS[4]
 }
 
-/**
- * Indices (top-down view of a head):
- *   AF7  AF8
- *    \ __ /
- *   TP9    TP10
- */
+const FIT_WINDOW = 512 // ~2 s @ 256 Hz — long enough for a steady fit estimate.
+
+/** Map a channel's µV std-dev to a Muse-style 1/2/4 quality. */
+function qualityFromStd(sd: number): number {
+  if (sd < 2 || sd > 150) return 4 // flat/disconnected, or railing/heavy motion
+  if (sd < 5 || sd > 60) return 2 // weak, or noisy/drifting
+  return 1 // healthy EEG range
+}
+
+function computeStd(
+  ring: BdRingBuffer["eeg"]
+): [number, number, number, number] | undefined {
+  const have = Math.min(FIT_WINDOW, ring.pushed)
+  if (have < 64) return undefined
+  const sum = [0, 0, 0, 0]
+  const sumSq = [0, 0, 0, 0]
+  for (let i = 0; i < have; i++) {
+    const idx = (ring.head - have + i + ring.cap) % ring.cap
+    const s = ring.samples[idx] as EegSample
+    for (let c = 0; c < 4; c++) {
+      const x = s[c]
+      sum[c] += x
+      sumSq[c] += x * x
+    }
+  }
+  const std: [number, number, number, number] = [0, 0, 0, 0]
+  for (let c = 0; c < 4; c++) {
+    const mean = sum[c] / have
+    std[c] = Math.sqrt(Math.max(0, sumSq[c] / have - mean * mean))
+  }
+  return std
+}
+
 const ELECTRODES = [
   { i: 0, label: "TP9", cx: 12, cy: 64 }, // left ear
   { i: 1, label: "AF7", cx: 34, cy: 18 }, // left forehead
@@ -33,7 +70,48 @@ const ELECTRODES = [
   { i: 3, label: "TP10", cx: 88, cy: 64 }, // right ear
 ] as const
 
-export function ContactQualityHud({ hsi }: Props) {
+export function ContactQualityHud({ buffer, hsi: deviceHsi }: Props) {
+  const [computed, setComputed] = useState<
+    [number, number, number, number] | undefined
+  >()
+  // Smoothed std per channel (~3 s). Contact fit is a physical property, so a
+  // brief head-turn shouldn't flip a dot to red — only *sustained* bad contact
+  // (or a chronically flat channel) should move it.
+  const smoothStd = useRef<[number, number, number, number] | null>(null)
+
+  useEffect(() => {
+    if (!buffer || deviceHsi) return
+    let raf = 0
+    let last = 0
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop)
+      if (now - last < 300) return
+      last = now
+      const std = computeStd(buffer.eeg)
+      if (!std) return
+      const prev = smoothStd.current
+      let sm: [number, number, number, number]
+      if (!prev) {
+        smoothStd.current = std
+        sm = std
+      } else {
+        const A = 0.1 // ~3 s time constant at 300 ms updates
+        for (let c = 0; c < 4; c++) prev[c] = prev[c] * (1 - A) + std[c] * A
+        sm = prev
+      }
+      setComputed([
+        qualityFromStd(sm[0]),
+        qualityFromStd(sm[1]),
+        qualityFromStd(sm[2]),
+        qualityFromStd(sm[3]),
+      ])
+    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [buffer, deviceHsi])
+
+  const hsi = deviceHsi ?? computed
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-baseline justify-between px-3 pt-3">
@@ -41,7 +119,7 @@ export function ContactQualityHud({ hsi }: Props) {
           HSI.FIT
         </div>
         <div className="font-bd-mono text-[10px] uppercase tracking-[0.18em] text-bd-cream/40">
-          {hsi ? "LIVE" : "WAIT"}
+          {hsi ? (deviceHsi ? "LIVE" : "DERIVED") : "WAIT"}
         </div>
       </div>
       <div className="relative flex-1 px-4 pb-3">

@@ -48,7 +48,7 @@ export function BdSignalsSection({ buffer, status }: Props) {
           cut="bl"
           surface="#16161a"
         >
-          <ContactQualityHud hsi={status.hsi} />
+          <ContactQualityHud buffer={buffer} hsi={status.hsi} />
         </DiagonalPanel>
       </div>
 
