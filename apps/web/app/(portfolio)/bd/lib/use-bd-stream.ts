@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import type {
+  BdBands,
   BdConnectionState,
   BdFrame,
   BdSampleFrame,
@@ -22,6 +23,10 @@ export type BdRingBuffer = {
   ppg: { samples: Ppg3[]; head: number; cap: number; pushed: number }
   acc: { samples: Vec3[]; head: number; cap: number; pushed: number }
   gyro: { samples: Vec3[]; head: number; cap: number; pushed: number }
+  /** Latest server-computed absolute band powers (BrainFlow), or null until the
+   *  first `bands` frame arrives. Mutated in place like the rings — consumers
+   *  read it off their own rAF loop, no React re-render per update. */
+  latestBands: BdBands | null
 }
 
 const EEG_CAP = 256 * 8 // 8 seconds of EEG
@@ -34,6 +39,7 @@ function makeBuffer(): BdRingBuffer {
     ppg: { samples: new Array(PPG_CAP).fill([0, 0, 0]), head: 0, cap: PPG_CAP, pushed: 0 },
     acc: { samples: new Array(IMU_CAP).fill([0, 0, 0]), head: 0, cap: IMU_CAP, pushed: 0 },
     gyro: { samples: new Array(IMU_CAP).fill([0, 0, 0]), head: 0, cap: IMU_CAP, pushed: 0 },
+    latestBands: null,
   }
 }
 
@@ -123,6 +129,9 @@ export function useBdStream(): BdStreamApi {
         }
         if (frame.t === "sample") {
           ingestSample(buffer, frame)
+        } else if (frame.t === "bands") {
+          // Stash in place — BandPowerBars reads it off its own rAF loop.
+          buffer.latestBands = { ts: frame.ts, abs: frame.abs }
         } else if (frame.t === "status") {
           setStatus(frame)
         }
