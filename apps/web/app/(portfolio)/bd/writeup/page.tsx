@@ -117,15 +117,11 @@ export default function BdWriteupPage() {
           </p>
           <p>
             One last nit. On Linux you can’t connect to a Bluetooth device while you’re also
-            scanning for it — they fight over the radio. Once I learned to stop scanning{" "}
+            scanning for it -- they fight over the radio. Once I learned to stop scanning{" "}
             <em>before</em> connecting, the link finally held.
           </p>
 
           <H2>Reading the readout</H2>
-          <p>
-            And then it worked — four wobbling lines that are unmistakably mine. But raw brainwaves
-            are less obvious than they look, so here’s what the graphs on the page actually mean.
-          </p>
 
           <p>
             <strong>The waveforms (µV).</strong> Each trace is a voltage at one electrode, in
@@ -136,7 +132,7 @@ export default function BdWriteupPage() {
             tex={String.raw`V \;=\; (\text{raw} - 2048)\,\times\,0.48828125\ \ \mu\text{V}`}
           />
           <p>
-            Brain signals are tiny — tens of µV — so the per-channel{" "}
+            Brain signals are tiny -- tens of µV -- so the per-channel{" "}
             <em>FLAT&nbsp;/&nbsp;OK&nbsp;/&nbsp;HOT</em> tag is just the standard deviation of the
             trace over the last second:
           </p>
@@ -162,7 +158,7 @@ export default function BdWriteupPage() {
             Loosely: delta = deep sleep, theta = drowsy/meditative, alpha = relaxed with eyes
             closed, beta = alert and thinking, gamma = fast stuff (and, on a consumer headband, a
             pile of muscle noise). The “power” in a band is the area under the power spectral
-            density <MathInline tex="S(f)" /> across that range:
+            density <MathInline tex={String.raw`S(f)`} /> across that range:
           </p>
           <MathBlock
             tex={String.raw`P_{\text{band}} \;=\; \int_{f_{\text{lo}}}^{f_{\text{hi}}} S(f)\,df
@@ -170,18 +166,18 @@ export default function BdWriteupPage() {
           />
 
           <p>
-            <strong>Why delta always wins — the 1/f law.</strong> EEG power isn’t spread evenly; it
+            <strong>Why delta always wins -- the 1/f law.</strong> EEG power isn’t spread evenly; it
             falls off with frequency, so the low bands inherently hoard most of it:
           </p>
           <MathBlock
             tex={String.raw`S(f)\;\propto\;\frac{1}{f^{\beta}}\,,\qquad \beta\approx 1\text{–}2`}
           />
-          <p>That’s why, if you show each band as a plain share of the total —</p>
+          <p>That’s why, if you show each band as a plain share of the total --</p>
           <MathBlock
             tex={String.raw`P_{\text{rel}} \;=\; \frac{P_{\text{band}}}{\sum_{b} P_{b}}\times 100\%`}
           />
           <p>
-            — delta parks at 60–80% essentially forever. That’s physics, not me dozing off. To
+            -- delta parks at 60–80% essentially forever. That’s physics, not me being a dumbass. To
             actually <em>see</em> the quiet bands, the <strong>LOG dB</strong> toggle puts each one
             on a base-10 logarithmic scale relative to the loudest band:
           </p>
@@ -191,14 +187,14 @@ export default function BdWriteupPage() {
           <p>
             Every <MathInline tex={String.raw`10\,\text{dB}`} /> (one <em>bel</em>) is a 10× change
             in power, so <MathInline tex={String.raw`-20\,\text{dB}`} /> is a band 100× quieter than
-            the loudest. The logarithm crushes that giant 1/f range flat — alpha, beta and gamma
+            the loudest. The logarithm crushes that giant 1/f range flat -- alpha, beta and gamma
             stop being slivers and start moving with their own activity, which is how you can watch
             the alpha bump rise when you close your eyes.
           </p>
 
           <p>
             <strong>The horseshoe (HSI).</strong> The little head with four dots is contact quality
-            — “Horseshoe Indicator,” after the band’s shape. The 2016 Muse doesn’t broadcast it, so
+            -- “Horseshoe Indicator,” after the band’s shape. The 2016 Muse doesn’t broadcast it, so
             it’s derived from each channel’s spread (smoothed over a few seconds so a blink doesn’t
             flip it) and bucketed the way Muse does:
           </p>
@@ -211,8 +207,7 @@ export default function BdWriteupPage() {
           />
           <p>
             1 = good, 2 = ok, 4 = poor. Get all four dots green and everything else on the page
-            suddenly means something. It’s a genuinely strange feeling to look at a number and know
-            it’s a thought — or at least the electrical weather of one.
+            suddenly means something.
           </p>
 
           <H2>What’s next</H2>
@@ -222,7 +217,7 @@ export default function BdWriteupPage() {
             on my machine. That loop is the part I actually care about. This page is me making sure
             the wire works first -- and making it look good while I’m at it.
           </p>
-          <p>Anyway. My brain’s up there now. Thanks for reading.</p>
+          <p>Sigma Sigma Boy</p>
         </Prose>
 
         <div className="mt-16 border-t border-gray-200 pt-8">
