@@ -90,21 +90,20 @@ export function BdHeroSection({ status, connection, source }: Props) {
 
         <div className="mt-10 max-w-3xl space-y-5">
           <p className="font-bd-display text-base md:text-lg leading-relaxed text-bd-cream/75">
-            A public, real-time readout of neural signals from my desk. The path in is homelab
+            A real-time readout of neural signals from my desk. The routing is homelab
             infrastructure: a{" "}
             <span className="text-bd-cream">Proxmox</span> VM on Linux, a small{" "}
             <span className="text-bd-cream">Python</span> bridge, and{" "}
             <span className="text-bd-cream">Redis</span> pub/sub via{" "}
-            <span className="text-bd-cream">ioredis</span> — batched frames fan out over WebSocket
-            to this page at ~30&nbsp;Hz. Nothing is stored; you are watching the pipe, not a
-            replay.
+            <span className="text-bd-cream">ioredis</span> -- batched frames fan out over WebSocket
+            to this page at ~30&nbsp;Hz.
           </p>
           <p className="font-bd-display text-lg md:text-xl leading-snug text-bd-cream">
             The work that matters is on the other side of the stream:{" "}
             <span className="text-bd-live">machine learning</span> models trained on live features
             to infer intent and trigger{" "}
-            <span className="text-bd-live">actions on my computer</span> — brain patterns in,
-            control out. This view is the telemetry layer while that loop is being built.
+            <span className="text-bd-live">actions on my computer</span> -- brain pattern in,
+            control out. This view is pure telemetry.
           </p>
           <Link
             href="/bd/writeup"
