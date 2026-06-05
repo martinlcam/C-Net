@@ -10,11 +10,12 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import subprocess
 import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-from bleak import BleakClient
+from bleak import BleakClient, BleakScanner
 
 from . import muse_protocol as mp
 from .decoders import (
@@ -171,7 +172,14 @@ async def stream_once(
         },
     )
 
-    async with BleakClient(address) as client:
+    # On Linux/BlueZ, BleakClient(address_string) launches its own internal scan
+    # to resolve the address, which races with any other scan and hangs. Resolve
+    # the device first (the scanner stops cleanly), then connect to that object.
+    device = await BleakScanner.find_device_by_address(address, timeout=20.0)
+    if device is None:
+        raise RuntimeError(f"device {address} not advertising (scan timed out)")
+
+    async with BleakClient(device) as client:
         if not client.is_connected:
             raise RuntimeError("BleakClient reported not-connected after async-with")
         device_name = getattr(client, "address", address)
@@ -195,13 +203,17 @@ async def stream_once(
             except Exception as err:  # noqa: BLE001
                 print(f"[bridge] warn: start_notify({uuid}) failed: {err}", flush=True)
 
-        # Issue control commands: halt, set preset, resume. Without the resume
-        # the headband sits silent post-connect.
-        await client.write_gatt_char(mp.UUID_STREAM_TOGGLE, mp.CMD_HALT, response=False)
-        await client.write_gatt_char(
-            mp.UUID_STREAM_TOGGLE, mp.cmd_preset(preset), response=False
-        )
+        # The original Muse 2016 (RevE) DROPS the BLE connection if it receives the
+        # halt command, and ignores the p21 preset — it streams on its native preset
+        # (32) the moment it gets the resume ('d') command. So send only resume.
+        # (Newer Muse 2/S models want halt -> preset -> resume; branch per-model if
+        # we ever add them — which is why `preset` is currently left unused.)
         await client.write_gatt_char(mp.UUID_STREAM_TOGGLE, mp.CMD_RESUME, response=False)
+
+        # Reset the drop-detection clock now that streaming has actually been
+        # requested. Subscription setup above can eat several seconds, and we don't
+        # want that counted against the first-packet timeout.
+        last_packet_ts = _now_ms()
 
         print("[bridge] streaming. Ctrl+C to stop.", flush=True)
         _publish(
@@ -263,11 +275,12 @@ async def stream_once(
                 )
                 last_status_ms = now
 
-            # Drop-detection: if nothing has arrived for 5 s, the headband
-            # has gone away (battery, taken off, etc.). Break and let the
-            # outer loop reconnect.
-            if now - last_packet_ts > 5000:
-                print("[bridge] no packets in 5s — disconnecting", flush=True)
+            # Drop-detection: if nothing has arrived for 15 s, the headband
+            # has gone away (battery, taken off, etc.). Break and let the outer
+            # loop reconnect. 15 s (not 5 s) leaves room for the first packet to
+            # arrive after a slow BlueZ connect + subscribe.
+            if now - last_packet_ts > 15000:
+                print("[bridge] no packets in 15s — disconnecting", flush=True)
                 break
 
             # Belt-and-suspenders keepalive every 10 s.
@@ -292,6 +305,22 @@ async def stream_once(
             "note": "DISCONNECTED",
         },
     )
+
+
+def _bluetoothctl_remove(address: str) -> None:
+    """Best-effort `bluetoothctl remove <addr>` between reconnects to clear a
+    stale BlueZ device object — a half-open entry from a failed connect makes the
+    next scan/connect hang. Linux/BlueZ only; silently ignored if unavailable."""
+    try:
+        subprocess.run(
+            ["bluetoothctl", "remove", address],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+    except Exception:  # noqa: BLE001
+        pass
 
 
 async def run_forever(
@@ -344,5 +373,7 @@ async def run_forever(
                 },
             )
 
+        # Clear any stale BlueZ device object so the next scan/connect doesn't hang.
+        _bluetoothctl_remove(address)
         print("[bridge] sleeping 3s before reconnect ...", flush=True)
         await asyncio.sleep(3)
