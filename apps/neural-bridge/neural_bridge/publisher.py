@@ -12,12 +12,14 @@ import json
 import os
 import subprocess
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Optional
 
 from bleak import BleakClient, BleakScanner
 
 from . import muse_protocol as mp
+from .bandpower import BANDPOWER_AVAILABLE, compute_band_powers
 from .decoders import (
     decode_acc,
     decode_eeg,
@@ -28,6 +30,10 @@ from .decoders import (
 
 SAMPLE_FLUSH_MS = 100
 STATUS_HEARTBEAT_MS = 1000
+
+EEG_RATE = 256  # Muse EEG sample rate (Hz)
+BANDPOWER_WINDOW = 512  # rolling EEG window for the PSD (~2 s @ 256 Hz)
+BANDPOWER_INTERVAL_MS = 200  # publish band powers at ~5 Hz
 
 
 @dataclass
@@ -234,8 +240,14 @@ async def stream_once(
         last_flush_ms = _now_ms()
         last_keepalive_ms = _now_ms()
 
+        # Rolling EEG buffer + cadence for server-side band-power computation.
+        eeg_window: deque = deque(maxlen=BANDPOWER_WINDOW)
+        last_bands_ms = _now_ms()
+        notch_hz = float(os.environ.get("BD_NOTCH_HZ", "60"))
+
         # Main service loop. Heavy lifting happens inside the bleak callbacks;
-        # this loop just drains the buffers and emits status heartbeats.
+        # this loop drains the buffers, emits status heartbeats, and publishes
+        # band powers computed with BrainFlow.
         while client.is_connected:
             await asyncio.sleep(0.025)
             now = _now_ms()
@@ -251,6 +263,7 @@ async def stream_once(
                     frame = {"t": "sample", "ts": now}
                     if eeg:
                         frame["eeg"] = eeg
+                        eeg_window.extend(eeg)  # feed the rolling band-power buffer
                     if ppg:
                         frame["ppg"] = ppg
                     if acc:
@@ -274,6 +287,27 @@ async def stream_once(
                     },
                 )
                 last_status_ms = now
+
+            # Band powers: compute server-side with BrainFlow over the rolling
+            # window and publish on the samples channel as a `bands` frame. The
+            # browser just renders these — no FFT in JS.
+            if (
+                BANDPOWER_AVAILABLE
+                and now - last_bands_ms >= BANDPOWER_INTERVAL_MS
+                and len(eeg_window) >= EEG_RATE
+            ):
+                try:
+                    bands = compute_band_powers(list(eeg_window), EEG_RATE, notch_hz)
+                except Exception as err:  # noqa: BLE001
+                    bands = None
+                    print(f"[bridge] band-power error: {err}", flush=True)
+                if bands is not None:
+                    _publish(
+                        redis_client,
+                        channel_samples,
+                        {"t": "bands", "ts": now, "rate": EEG_RATE, "abs": bands},
+                    )
+                last_bands_ms = now
 
             # Drop-detection: if nothing has arrived for 15 s, the headband
             # has gone away (battery, taken off, etc.). Break and let the outer

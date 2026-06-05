@@ -60,7 +60,27 @@ export type BdHelloFrame = {
   viewerCount: number
 }
 
-export type BdFrame = BdSampleFrame | BdStatusFrame | BdHelloFrame
+/**
+ * Band powers computed server-side by the bridge (BrainFlow). These are
+ * ABSOLUTE per-channel powers — `abs[channel] = [delta, theta, alpha, beta,
+ * gamma]` — so the UI can derive relative %, log dB, or per-channel views from
+ * the same numbers. Order matches BD_CHANNELS.EEG (TP9, AF7, AF8, TP10).
+ */
+export type BdBandsFrame = {
+  t: "bands"
+  ts: number
+  /** EEG sample rate the powers were computed at (Hz). */
+  rate: number
+  abs: number[][]
+}
+
+/** Latest band powers stashed on the ring buffer for the band-power component. */
+export type BdBands = { ts: number; abs: number[][] }
+
+/** Frequency band order in every `abs` row. */
+export const BD_BANDS = ["DELTA", "THETA", "ALPHA", "BETA", "GAMMA"] as const
+
+export type BdFrame = BdSampleFrame | BdStatusFrame | BdHelloFrame | BdBandsFrame
 
 export type BdConnectionState =
   | "idle"

@@ -25,6 +25,13 @@ const COLORS: Record<number, string> = {
   4: "#ff3344", // bad — alarm
 }
 
+/** Muse HSI uses 1 / 2 / 4 (not a continuous 1–4 scale; 3 is unused). */
+const HSI_LABEL: Record<number, string> = {
+  1: "GOOD",
+  2: "OK",
+  4: "POOR",
+}
+
 function color(q: number | undefined): string {
   if (q === undefined) return "rgba(250,246,241,0.20)"
   return COLORS[q] ?? COLORS[4]
@@ -151,18 +158,19 @@ export function ContactQualityHud({ buffer, hsi: deviceHsi }: Props) {
                 <circle
                   cx={e.cx}
                   cy={e.cy}
-                  r={4}
+                  r={5.5}
                   fill={fill}
                   stroke="rgba(13,13,15,0.8)"
-                  strokeWidth={0.8}
+                  strokeWidth={0.9}
                 />
                 <text
                   x={e.cx}
-                  y={e.cy + (e.cy > 40 ? 12 : -6)}
+                  y={e.cy + (e.cy > 40 ? 16 : -9)}
                   textAnchor="middle"
-                  fontSize="5"
+                  fontSize="8.5"
+                  fontWeight="600"
                   fontFamily="var(--font-bd-mono), monospace"
-                  fill="rgba(250,246,241,0.55)"
+                  fill="rgba(250,246,241,0.82)"
                 >
                   {e.label}
                 </text>
@@ -171,21 +179,35 @@ export function ContactQualityHud({ buffer, hsi: deviceHsi }: Props) {
           })}
         </svg>
       </div>
-      <div className="border-t border-bd-rule px-3 py-2 grid grid-cols-4 gap-1 font-bd-mono text-[10px] text-bd-cream/70 tabular-nums">
+      <div className="border-t border-bd-rule px-3 py-2.5 grid grid-cols-4 gap-2 font-bd-mono tabular-nums">
         {BD_CHANNELS.EEG.map((label, i) => {
           const q = hsi?.[i]
           return (
-            <div key={label} className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className="inline-block h-1.5 w-1.5"
-                style={{ background: color(q) }}
-              />
-              <span className="text-bd-cream/45">{label}</span>
-              <span className="ml-auto">{q ?? "-"}</span>
+            <div key={label} className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2 w-2 shrink-0"
+                  style={{ background: color(q) }}
+                />
+                <span className="text-[13px] font-semibold tracking-[0.08em] text-bd-cream/85">
+                  {label}
+                </span>
+              </div>
+              <span className="text-[15px] font-medium text-bd-cream pl-3.5">
+                {q ?? "—"}
+                {q !== undefined && (
+                  <span className="ml-1 text-[10px] uppercase tracking-[0.12em] text-bd-cream/45">
+                    {HSI_LABEL[q] ?? "?"}
+                  </span>
+                )}
+              </span>
             </div>
           )
         })}
+      </div>
+      <div className="border-t border-bd-rule px-3 py-1.5 font-bd-mono text-[9px] uppercase tracking-[0.16em] text-bd-cream/40">
+        HSI 1 · good · 2 · ok · 4 · poor contact
       </div>
     </div>
   )
