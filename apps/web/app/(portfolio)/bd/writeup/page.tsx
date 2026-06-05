@@ -50,7 +50,11 @@ export default function BdWriteupPage() {
 
           <H2>The pipe</H2>
           <p>
-            A EEG headband talks Bluetooth to a little Python program -- the “bridge.” The bridge
+            Huge shoutout to my good friend <a href="https://www.flatypus.me/" target="_blank" rel="noopener noreferrer" className="hover:underline">Hinson</a> for supplying me with the EEG hardware, the only blocker for this project initially.
+            Apprently he klepped it at a flea market wayy back.
+          </p>
+          <p>
+            The EEG headband talks Bluetooth to a little Python program -- the “bridge.” The bridge
             shoves each batch of samples into Redis; specifically Redis pub/sub, which is less
             “database” and more “loudspeaker.” You publish a message, everyone listening hears it
             instantly, and then it’s gone. A tiny Bun server subscribes to that loudspeaker and fans
@@ -64,7 +68,7 @@ export default function BdWriteupPage() {
           </p>
 
           <H2>Bluetooth hell</H2>
-          <p>Getting a consumer EEG headband to talk to a Windows desktop is genuinely fried.</p>
+          <p>Getting a consumer EEG headband to talk to a Windows desktop is...interesting.</p>
           <p>
             The headband showed up in about every scan. Strong signal, sitting right next to me. But
             every single time I tried to actually connect, it would get partway in and then die with
