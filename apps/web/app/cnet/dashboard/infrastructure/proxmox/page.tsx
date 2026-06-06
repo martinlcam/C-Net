@@ -8,7 +8,7 @@ import { Button } from "@/stories/button/button"
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 async function fetchVMs(): Promise<ProxmoxVM[]> {
-  const response = await fetch(`${API_BASE}/api/proxmox/vms`)
+  const response = await fetch(`${API_BASE}/proxmox/vms`, { credentials: "include" })
   if (!response.ok) {
     throw new Error("Failed to fetch VMs")
   }
@@ -17,8 +17,9 @@ async function fetchVMs(): Promise<ProxmoxVM[]> {
 }
 
 async function startVM(vmid: number): Promise<{ success: boolean; taskId: string }> {
-  const response = await fetch(`${API_BASE}/api/proxmox/vms/${vmid}/start`, {
+  const response = await fetch(`${API_BASE}/proxmox/vms/${vmid}/start`, {
     method: "POST",
+    credentials: "include",
   })
   if (!response.ok) {
     throw new Error("Failed to start VM")
@@ -27,8 +28,9 @@ async function startVM(vmid: number): Promise<{ success: boolean; taskId: string
 }
 
 async function stopVM(vmid: number): Promise<{ success: boolean; taskId: string }> {
-  const response = await fetch(`${API_BASE}/api/proxmox/vms/${vmid}/stop`, {
+  const response = await fetch(`${API_BASE}/proxmox/vms/${vmid}/stop`, {
     method: "POST",
+    credentials: "include",
   })
   if (!response.ok) {
     throw new Error("Failed to stop VM")
@@ -37,8 +39,9 @@ async function stopVM(vmid: number): Promise<{ success: boolean; taskId: string 
 }
 
 async function restartVM(vmid: number): Promise<{ success: boolean; taskId: string }> {
-  const response = await fetch(`${API_BASE}/api/proxmox/vms/${vmid}/restart`, {
+  const response = await fetch(`${API_BASE}/proxmox/vms/${vmid}/restart`, {
     method: "POST",
+    credentials: "include",
   })
   if (!response.ok) {
     throw new Error("Failed to restart VM")
@@ -99,7 +102,7 @@ export default function ProxmoxPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-bold text-primary-purple-80">Proxmox VMs & Containers</h1>
+        <h1 className="text-4xl font-bold text-neutral-100">Proxmox VMs & Containers</h1>
         <Button onClick={() => refetch()} disabled={isLoading}>
           Refresh
         </Button>
