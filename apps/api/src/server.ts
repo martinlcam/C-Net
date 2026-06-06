@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser"
 import cors, { type CorsOptions } from "cors"
 import express from "express"
 import { RegisterRoutes } from "./generated/routes"
@@ -70,6 +71,8 @@ export function createApp(): express.Express {
     })
   )
   app.use(express.json())
+  // Parse cookies so the JWT auth middleware can read the NextAuth session cookie.
+  app.use(cookieParser())
 
   RegisterRoutes(app)
 
