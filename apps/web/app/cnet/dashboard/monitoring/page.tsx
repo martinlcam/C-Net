@@ -8,7 +8,7 @@ import { LoadingSpinner } from "@/stories/loading-spinner/loading-spinner"
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 async function fetchMetrics(): Promise<{ nodes: NodeMetrics[]; timestamp: string }> {
-  const response = await fetch(`${API_BASE}/api/metrics/current`)
+  const response = await fetch(`${API_BASE}/metrics/current`, { credentials: "include" })
   if (!response.ok) {
     throw new Error("Failed to fetch metrics")
   }
@@ -52,7 +52,7 @@ export default function MonitoringPage() {
 
   return (
     <div>
-      <h1 className="text-4xl font-bold text-primary-purple-80 mb-8">Monitoring</h1>
+      <h1 className="text-4xl font-bold text-neutral-100 mb-8">Monitoring</h1>
 
       <div className="grid md:grid-cols-3 gap-6 mb-8">
         <MetricsCard
@@ -98,11 +98,11 @@ export default function MonitoringPage() {
 
       {nodes.length > 1 ? (
         <div className="bg-white rounded-lg border border-neutral-30 p-6">
-          <h2 className="text-2xl font-semibold text-primary-purple-70 mb-4">All Nodes</h2>
+          <h2 className="text-2xl font-semibold text-neutral-100 mb-4">All Nodes</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {nodes.map((node) => (
               <div key={node.node} className="border border-neutral-30 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-primary-purple-60 mb-2">{node.node}</h3>
+                <h3 className="text-lg font-semibold text-neutral-100 mb-2">{node.node}</h3>
                 <div className="space-y-2 text-sm text-neutral-70">
                   <div>CPU: {node.cpu.usage.toFixed(1)}%</div>
                   <div>Memory: {node.memory.percent.toFixed(1)}%</div>

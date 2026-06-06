@@ -20,3 +20,10 @@ export type {
   ServiceStatus,
   ServiceType,
 } from "./services/types"
+export { type SonarCloudConfig, SonarCloudService } from "./sonar/service"
+export type {
+  SonarHotspotRaw,
+  SonarHotspotSearchResponse,
+  SonarIssueRaw,
+  SonarSearchResponse,
+} from "./sonar/types"

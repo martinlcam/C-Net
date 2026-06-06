@@ -65,7 +65,7 @@ export default function IntegrationsPage() {
   const fetchCredentials = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE}/api/services/credentials`)
+      const response = await fetch(`${API_BASE}/services/credentials`, { credentials: "include" })
       if (!response.ok) {
         throw new Error("Failed to fetch credentials")
       }
@@ -139,12 +139,13 @@ export default function IntegrationsPage() {
       }
 
       const url = editingId
-        ? `${API_BASE}/api/services/credentials/${editingId}`
-        : `${API_BASE}/api/services/credentials`
+        ? `${API_BASE}/services/credentials/${editingId}`
+        : `${API_BASE}/services/credentials`
       const method = editingId ? "PATCH" : "POST"
 
       const response = await fetch(url, {
         method,
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
@@ -190,8 +191,9 @@ export default function IntegrationsPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/services/credentials/${id}`, {
+      const response = await fetch(`${API_BASE}/services/credentials/${id}`, {
         method: "DELETE",
+        credentials: "include",
       })
 
       if (!response.ok) {
@@ -210,8 +212,9 @@ export default function IntegrationsPage() {
       setTestingId(credentialId)
       setTestResult(null)
 
-      const response = await fetch(`${API_BASE}/api/services/credentials/test`, {
+      const response = await fetch(`${API_BASE}/services/credentials/test`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credentialId }),
       })
@@ -261,7 +264,7 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary-purple-60">Service Integrations</h1>
+          <h1 className="text-3xl font-bold text-neutral-100">Service Integrations</h1>
           <p className="mt-2 text-neutral-70">
             Manage credentials for Pi-hole, Plex, Minecraft, and NAS services
           </p>

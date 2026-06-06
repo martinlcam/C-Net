@@ -15,6 +15,20 @@
       "when": 1775981965492,
       "tag": "0001_melodic_the_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780738660706,
+      "tag": "0002_dark_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780741418167,
+      "tag": "0003_odd_james_howlett",
+      "breakpoints": true
     }
   ]
 }

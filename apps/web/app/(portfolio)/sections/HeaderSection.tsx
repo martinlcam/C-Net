@@ -6,13 +6,6 @@ import { signOut, useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
 import { useAuthModal } from "@/lib/stores/auth-modal"
 import { Button } from "@/stories/button/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/stories/dropdown-menu/dropdown-menu"
 
 const mobileNavItems = [
   { title: "Home", href: "/#home" },
@@ -231,18 +224,14 @@ export function HeaderSection() {
                   >
                     {session.user?.name || "User"}
                   </p>
-                  <p
-                    className={`text-xs truncate ${isBd ? "text-bd-cream/50" : "text-gray-600"}`}
-                  >
+                  <p className={`text-xs truncate ${isBd ? "text-bd-cream/50" : "text-gray-600"}`}>
                     {session.user?.email}
                   </p>
                 </div>
                 <Link
                   href="/cnet/dashboard"
                   className={`block px-4 py-3 text-[17px] font-medium rounded-[12px] transition-colors duration-200 ${
-                    isBd
-                      ? "text-bd-cream hover:bg-bd-panel"
-                      : "text-black hover:bg-gray-100"
+                    isBd ? "text-bd-cream hover:bg-bd-panel" : "text-black hover:bg-gray-100"
                   }`}
                   onClick={closeMobileMenu}
                 >
@@ -251,9 +240,7 @@ export function HeaderSection() {
                 <button
                   type="button"
                   className={`w-full text-left px-4 py-3 text-[17px] font-medium rounded-[12px] transition-colors duration-200 ${
-                    isBd
-                      ? "text-bd-cream hover:bg-bd-panel"
-                      : "text-black hover:bg-gray-100"
+                    isBd ? "text-bd-cream hover:bg-bd-panel" : "text-black hover:bg-gray-100"
                   }`}
                   onClick={() => {
                     signOut()
@@ -294,44 +281,17 @@ export function HeaderSection() {
               }`}
             />
           ) : session ? (
-            <>
-              <Button
-                asChild
-                variant="outline"
-                className={`rounded-[12px] px-7 py-3.5 h-12 text-lg font-medium ${
-                  isBd
-                    ? "border-bd-purple/50 text-bd-purple hover:bg-bd-panel"
-                    : "border-[#ddc9f7] text-[#ad70eb] hover:bg-purple-50"
-                }`}
-              >
-                <Link href="/cnet/dashboard">C-Net</Link>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <div
-                      className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                        isBd ? "bg-bd-cream text-bd-bg" : "bg-black text-white"
-                      }`}
-                    >
-                      {session.user?.name?.charAt(0).toUpperCase() || "U"}
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-black">{session.user?.name || "User"}</p>
-                    <p className="text-xs text-gray-600">{session.user?.email}</p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/cnet/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>Sign Out</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
+            <Button
+              asChild
+              variant="outline"
+              className={`rounded-[12px] px-7 py-3.5 h-12 text-lg font-medium ${
+                isBd
+                  ? "border-bd-purple/50 text-bd-purple hover:bg-bd-panel"
+                  : "border-[#ddc9f7] text-[#ad70eb] hover:bg-purple-50"
+              }`}
+            >
+              <Link href="/cnet/dashboard">C-Net</Link>
+            </Button>
           ) : (
             <Button
               onClick={openModal}
