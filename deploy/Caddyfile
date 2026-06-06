@@ -1,0 +1,19 @@
+# deploy/Caddyfile — single origin for the Cloudflare Tunnel.
+# TLS terminates at Cloudflare; Caddy serves plain HTTP on :80 to cloudflared.
+# reverse_proxy auto-upgrades WebSocket connections.
+:80 {
+	# Backend API: strip /svc, forward to Express (serves its tsoa routes at root).
+	handle_path /svc/* {
+		reverse_proxy 127.0.0.1:4000
+	}
+
+	# Realtime WebSocket: strip /ws, forward to the Bun WS server (serves /bd/live, /bd/ingest).
+	handle_path /ws/* {
+		reverse_proxy 127.0.0.1:4002
+	}
+
+	# Everything else -> Next.js (portfolio + /cnet + /bd + /api/auth/*).
+	handle {
+		reverse_proxy 127.0.0.1:3001
+	}
+}
