@@ -119,7 +119,7 @@ const server = Bun.serve<ClientData>({
           ? raw
           : raw instanceof Buffer
             ? raw.toString("utf8")
-            : new TextDecoder().decode(raw as ArrayBufferView)
+            : new TextDecoder().decode(raw as Uint8Array)
 
       if (!text || text.length > 256 * 1024) return
 
