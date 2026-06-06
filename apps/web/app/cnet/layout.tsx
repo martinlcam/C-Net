@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { SignOutButton } from "@/components/SignOutButton"
 import { requireAuthorizedEmail } from "@/lib/authorization"
 import { Button } from "@/stories/button/button"
 
@@ -12,11 +13,11 @@ export default async function CNetLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="min-h-screen bg-neutral-10">
+    <div className="min-h-screen bg-[#faf6f1]">
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-neutral-30 min-h-screen p-4">
-          <h2 className="text-2xl font-bold text-primary-purple-60 mb-6">C-Net Dashboard</h2>
+        <aside className="w-64 bg-white border-r border-neutral-30 min-h-screen p-4 flex flex-col">
+          <h2 className="text-2xl font-bold text-neutral-100 mb-6">C-Net</h2>
           <nav className="space-y-2">
             <Link href="/cnet/dashboard">
               <Button variant="ghost" className="w-full justify-start">
@@ -44,6 +45,10 @@ export default async function CNetLayout({ children }: { children: React.ReactNo
               </Link>
             </div>
           </nav>
+
+          <div className="mt-auto pt-4 border-t border-neutral-30">
+            <SignOutButton />
+          </div>
         </aside>
 
         {/* Main Content */}
