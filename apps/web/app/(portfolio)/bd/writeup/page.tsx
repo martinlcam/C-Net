@@ -4,6 +4,10 @@ import { Text } from "@radix-ui/themes"
 import katex from "katex"
 import "katex/dist/katex.min.css"
 import Link from "next/link"
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter"
+import python from "react-syntax-highlighter/dist/esm/languages/prism/python"
+import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript"
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { AuthModal } from "@/components/AuthModal"
 import { FooterSection } from "../../sections/FooterSection"
 import { HeaderSection } from "../../sections/HeaderSection"
@@ -50,7 +54,16 @@ export default function BdWriteupPage() {
 
           <H2>The pipe</H2>
           <p>
-            Huge shoutout to my good friend <a href="https://www.flatypus.me/" target="_blank" rel="noopener noreferrer" className="hover:underline">Hinson</a> for supplying me with the EEG hardware, the only blocker for this project initially.
+            Huge shoutout to my good friend{" "}
+            <a
+              href="https://www.flatypus.me/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              <Text color="cyan">Hinson</Text>
+            </a>{" "}
+            for supplying me with the EEG hardware, the only blocker for this project initially.
             Apprently he klepped it at a flea market wayy back.
           </p>
           <p>
@@ -66,6 +79,8 @@ export default function BdWriteupPage() {
             to Redis. Which means when I eventually build the brain-control model, it just…
             subscribes to the same loudspeaker. No rewrites.
           </p>
+          <CodeBlock label="bridge · publisher.py" lang="python" code={CODE_BRIDGE} />
+          <CodeBlock label="realtime + browser" lang="typescript" code={CODE_RELAY} />
 
           <H2>Bluetooth hell</H2>
           <p>Getting a consumer EEG headband to talk to a Windows desktop is...interesting.</p>
@@ -119,11 +134,13 @@ export default function BdWriteupPage() {
             to read “—.” Honestly, kind of charming that the thing reading my brain is nearly a
             decade old.
           </p>
+          <CodeBlock label="bridge · publisher.py" lang="python" code={CODE_RESUME} />
           <p>
             One last nit. On Linux you can’t connect to a Bluetooth device while you’re also
             scanning for it -- they fight over the radio. Once I learned to stop scanning{" "}
             <em>before</em> connecting, the link finally held.
           </p>
+          <CodeBlock label="bridge · publisher.py" lang="python" code={CODE_BLUEZ} />
 
           <H2>Reading the readout</H2>
 
@@ -148,6 +165,12 @@ export default function BdWriteupPage() {
             Near-zero spread (<MathInline tex={String.raw`\sigma < 2\,\mu\text{V}`} />) means the
             pad isn’t touching skin; a giant spread means it’s railing. Real EEG lives in between.
           </p>
+          <p>
+            Those traces are just the ring buffer painted onto a canvas -- once per animation frame
+            we walk the most recent samples, auto-scale each channel into its own lane, and stroke
+            the line:
+          </p>
+          <CodeBlock label="web · EegOscilloscope.tsx" lang="typescript" code={CODE_DRAW} />
 
           <p>
             <strong>The bands (δ θ α β γ).</strong> Slice that signal by frequency and you get the
@@ -162,12 +185,13 @@ export default function BdWriteupPage() {
             Loosely: delta = deep sleep, theta = drowsy/meditative, alpha = relaxed with eyes
             closed, beta = alert and thinking, gamma = fast stuff (and, on a consumer headband, a
             pile of muscle noise). The “power” in a band is the area under the power spectral
-            density <MathInline tex={String.raw`S(f)`} /> across that range:
+            density <MathInline tex="S(f)" /> across that range:
           </p>
           <MathBlock
             tex={String.raw`P_{\text{band}} \;=\; \int_{f_{\text{lo}}}^{f_{\text{hi}}} S(f)\,df
               \quad\bigl[\mu\text{V}^2\bigr]`}
           />
+          <CodeBlock label="bridge · bandpower.py" lang="python" code={CODE_BANDS} />
 
           <p>
             <strong>Why delta always wins -- the 1/f law.</strong> EEG power isn’t spread evenly; it
@@ -273,3 +297,100 @@ function MathInline({ tex }: { tex: string }) {
   // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted local KaTeX output.
   return <span className="text-gray-900" dangerouslySetInnerHTML={{ __html: html }} />
 }
+
+SyntaxHighlighter.registerLanguage("python", python)
+SyntaxHighlighter.registerLanguage("typescript", typescript)
+
+/** Syntax-highlighted code block — dark Prism theme against the cream page. */
+function CodeBlock({
+  code,
+  lang = "python",
+  label,
+}: {
+  code: string
+  lang?: string
+  label?: string
+}) {
+  return (
+    <div className="my-6 overflow-hidden rounded-md border border-black/10 bg-[#282c34]">
+      {label ? (
+        <div className="px-4 pt-3 pb-1 font-bd-mono text-[10px] uppercase tracking-[0.18em] text-gray-500">
+          {label}
+        </div>
+      ) : null}
+      <SyntaxHighlighter
+        language={lang}
+        style={oneDark}
+        customStyle={{
+          margin: 0,
+          padding: label ? "0.35rem 1.1rem 1rem" : "1rem 1.1rem",
+          background: "#282c34",
+          fontSize: "0.92rem",
+          lineHeight: 1.6,
+          overflowX: "auto",
+        }}
+        codeTagProps={{ style: { fontFamily: "var(--font-bd-mono), ui-monospace, monospace" } }}
+      >
+        {code}
+      </SyntaxHighlighter>
+    </div>
+  )
+}
+
+const CODE_BRIDGE = `# subscribe to each EEG electrode -- every BLE notification is decoded + buffered
+for uuid in (TP9, AF7, AF8, TP10):
+    await client.start_notify(uuid, on_eeg)
+
+def on_eeg(sender, data: bytearray):
+    pkt = decode_eeg(data)                 # 12-bit packed payload -> microvolts
+    slot = buf.eeg_by_seq[pkt.sequence]    # align the 4 channels by packet number
+    slot[EEG_CHANNEL_INDEX[sender.uuid]] = pkt.samples_uv
+
+# ~10x a second: drain the aligned samples and shove a frame into Redis
+while client.is_connected:
+    await asyncio.sleep(0.1)
+    eeg = drain_aligned(buf)               # [[tp9, af7, af8, tp10], ...]
+    redis.publish("bd:samples", json.dumps({"t": "sample", "eeg": eeg}))`
+
+const CODE_RELAY = `// realtime (Bun): forward everything on the Redis channels to every WS viewer
+redisSub.subscribe("bd:samples", "bd:status")
+redisSub.on("message", (_channel, payload) => server.publish("bd", payload))
+
+// browser: each WebSocket message becomes a typed frame, routed by its \`t\`
+ws.onmessage = (ev) => {
+  const frame = JSON.parse(ev.data)
+  if (frame.t === "sample") ingest(buffer, frame)        // -> ring buffer
+  else if (frame.t === "bands") buffer.latestBands = frame
+}`
+
+const CODE_RESUME = `# the 2016 Muse drops the link on 'halt' and ignores presets;
+# it just needs the resume command ('d') to start streaming.
+await client.write_gatt_char(STREAM_TOGGLE, CMD_RESUME, response=False)`
+
+const CODE_BLUEZ = `# connecting by address string makes BlueZ run its own scan, which
+# fights the active one and hangs. resolve to a device object first:
+device = await BleakScanner.find_device_by_address(address)
+async with BleakClient(device) as client:   # connect to the object, not the string
+    ...`
+
+const CODE_DRAW = `// oscilloscope: once per animation frame, walk the ring buffer and draw 4 lanes
+for (let c = 0; c < 4; c++) {
+  ctx.beginPath()
+  for (let i = 0; i < onScreen; i++) {
+    const s = ring.samples[(ring.head - onScreen + i + ring.cap) % ring.cap]
+    const x = i * stepX
+    const y = laneMid[c] - (s[c] / peak[c]) * amp        // auto-scaled into the lane
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  }
+  ctx.stroke()
+}`
+
+const CODE_BANDS = `# bridge: absolute per-channel band power via BrainFlow, ~5x a second
+bands = []
+for ch in window.T:                                  # each of the 4 EEG channels
+    DataFilter.detrend(ch, LINEAR)
+    DataFilter.perform_highpass(ch, 256, 0.5, 2, BUTTERWORTH, 0)     # kill drift
+    DataFilter.perform_bandstop(ch, 256, 58, 62, 2, BUTTERWORTH, 0)  # mains notch
+    psd = DataFilter.get_psd_welch(ch, nfft, nfft // 2, 256, HANNING)
+    bands.append([get_band_power(psd, lo, hi) for lo, hi in BANDS])  # delta..gamma
+redis.publish("bd:samples", json.dumps({"t": "bands", "abs": bands}))`
