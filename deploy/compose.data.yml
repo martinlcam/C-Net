@@ -1,0 +1,26 @@
+# deploy/compose.data.yml — data services for the C-Net LXC.
+# The app runs natively under systemd; only Postgres + Redis are containers.
+# Reads POSTGRES_PASSWORD and REDIS_PASSWORD from the LXC's /opt/cnet/.env.
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    ports: ["127.0.0.1:5432:5432"]   # app connects via localhost only
+    volumes: ["pg_data:/var/lib/postgresql/data"]
+    environment:
+      POSTGRES_DB: cnet
+      POSTGRES_USER: cnet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    # Exposed on the LXC's interfaces so the host-resident neural-bridge can publish.
+    # Keep restricted to the Proxmox internal network by host/PVE firewall — never via the tunnel.
+    ports: ["6379:6379"]
+    volumes: ["redis_data:/data"]
+
+volumes:
+  pg_data: { name: cnet_pg_data }
+  redis_data: { name: cnet_redis_data }
