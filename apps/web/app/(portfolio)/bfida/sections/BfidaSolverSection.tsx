@@ -6,10 +6,10 @@ import { AlgorithmStats } from "../components/AlgorithmStats"
 import { BoardToggle } from "../components/BoardToggle"
 import { PegBoard } from "../components/PegBoard"
 import { PseudocodePanel } from "../components/PseudocodePanel"
+import { buildTrace } from "../lib/algorithm-trace"
 import { type Board, type BoardKind, type Cell, makeBoard } from "../lib/boards"
 import { applyJump } from "../lib/move-logic"
 import { SOLUTIONS } from "../lib/solutions"
-import { buildTrace } from "../lib/algorithm-trace"
 
 function buildInitialBoard(kind: BoardKind): Board {
   const sol = SOLUTIONS[kind]
@@ -52,7 +52,7 @@ export function BfidaSolverSection() {
   const currentStep = trace[Math.min(stepIdx, totalSteps - 1)]
   const upcomingJump =
     currentStep && currentStep.jumpIndex !== null
-      ? solution.jumps[currentStep.jumpIndex] ?? null
+      ? (solution.jumps[currentStep.jumpIndex] ?? null)
       : null
 
   useEffect(() => {
@@ -107,8 +107,8 @@ export function BfidaSolverSection() {
               Watch the algorithm<span className="text-[#bea9e9]">.</span>
             </h2>
             <p className="text-gray-600 max-w-2xl">
-              Step through a canonical optimal solution. The pseudocode panel lights up the lines
-              of <em>Bidirectional BFIDA*</em> that drive each decision.
+              Step through a canonical optimal solution. The pseudocode panel lights up the lines of{" "}
+              <em>Bidirectional BFIDA*</em> that drive each decision.
             </p>
           </div>
           <div className="shrink-0">

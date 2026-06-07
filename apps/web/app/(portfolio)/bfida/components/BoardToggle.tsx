@@ -30,9 +30,7 @@ export function BoardToggle({ value, onChange, className }: BoardToggleProps) {
             aria-selected={active}
             onClick={() => onChange(opt.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex flex-col items-center leading-tight ${
-              active
-                ? "bg-black text-white"
-                : "bg-transparent text-gray-700 hover:bg-gray-100"
+              active ? "bg-black text-white" : "bg-transparent text-gray-700 hover:bg-gray-100"
             }`}
           >
             <span>{opt.label}</span>

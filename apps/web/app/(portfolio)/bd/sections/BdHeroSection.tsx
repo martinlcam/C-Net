@@ -65,11 +65,12 @@ export function BdHeroSection({ status, connection, source }: Props) {
                 </span>
               </div>
               <div className="grid grid-cols-2">
-                <KV label="DEVICE" value={status.deviceName ?? "—"} className="border-r border-bd-rule" />
                 <KV
-                  label="BATTERY"
-                  value={status.battery == null ? "—" : `${status.battery}%`}
+                  label="DEVICE"
+                  value={status.deviceName ?? "—"}
+                  className="border-r border-bd-rule"
                 />
+                <KV label="BATTERY" value={status.battery == null ? "—" : `${status.battery}%`} />
                 <KV
                   label="ADDR"
                   value={status.address ? status.address.slice(-8) : "—"}
@@ -91,8 +92,7 @@ export function BdHeroSection({ status, connection, source }: Props) {
         <div className="mt-10 max-w-3xl space-y-5">
           <p className="font-bd-display text-base md:text-lg leading-relaxed text-bd-cream/75">
             A real-time readout of neural signals from my desk. The routing is homelab
-            infrastructure: a{" "}
-            <span className="text-bd-cream">Proxmox</span> VM on Linux, a small{" "}
+            infrastructure: a <span className="text-bd-cream">Proxmox</span> VM on Linux, a small{" "}
             <span className="text-bd-cream">Python</span> bridge, and{" "}
             <span className="text-bd-cream">Redis</span> pub/sub via{" "}
             <span className="text-bd-cream">ioredis</span> -- batched frames fan out over WebSocket
@@ -101,9 +101,8 @@ export function BdHeroSection({ status, connection, source }: Props) {
           <p className="font-bd-display text-lg md:text-xl leading-snug text-bd-cream">
             The work that matters is on the other side of the stream:{" "}
             <span className="text-bd-live">machine learning</span> models trained on live features
-            to infer intent and trigger{" "}
-            <span className="text-bd-live">actions on my computer</span> -- brain pattern in,
-            control out. This view is pure telemetry.
+            to infer intent and trigger <span className="text-bd-live">actions on my computer</span>{" "}
+            -- brain pattern in, control out. This view is pure telemetry.
           </p>
           <Link
             href="/bd/writeup"
@@ -117,7 +116,15 @@ export function BdHeroSection({ status, connection, source }: Props) {
   )
 }
 
-function KV({ label, value, className = "" }: { label: string; value: string; className?: string }) {
+function KV({
+  label,
+  value,
+  className = "",
+}: {
+  label: string
+  value: string
+  className?: string
+}) {
   return (
     <div className={`px-3 py-2.5 ${className}`}>
       <div className="font-bd-mono text-[9px] uppercase tracking-[0.22em] text-bd-cream/40">

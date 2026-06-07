@@ -46,8 +46,7 @@ export function PegBoard({
     return jumpsFrom(board, selected).map((j) => j.to)
   }, [board, mode, selected, hintDestinations])
 
-  const isLegalDest = (p: Position) =>
-    legalDestinations.some((d) => d[0] === p[0] && d[1] === p[1])
+  const isLegalDest = (p: Position) => legalDestinations.some((d) => d[0] === p[0] && d[1] === p[1])
 
   const totalWidth = CELL * BOARD_SIZE
   const totalHeight = CELL * BOARD_SIZE
@@ -116,13 +115,7 @@ export function PegBoard({
                 {/* Invisible full-cell hit target so clicks land anywhere in the square,
                     not just on the small hole ring. fill="transparent" is hit-testable;
                     fill="none" would not be. */}
-                <rect
-                  x={c * CELL}
-                  y={r * CELL}
-                  width={CELL}
-                  height={CELL}
-                  fill="transparent"
-                />
+                <rect x={c * CELL} y={r * CELL} width={CELL} height={CELL} fill="transparent" />
 
                 {showDestinationHalo && (
                   <circle
