@@ -100,7 +100,7 @@ export function ImuTrace({ buffer, kind, windowSec = 6, sampleRate = 52 }: Props
       }
 
       // Axis legend in top-right.
-      ctx.font = '10px var(--font-bd-mono), ui-monospace, monospace'
+      ctx.font = "10px var(--font-bd-mono), ui-monospace, monospace"
       ctx.textBaseline = "top"
       for (let a = 0; a < 3; a++) {
         ctx.fillStyle = AXIS_COLORS[a]

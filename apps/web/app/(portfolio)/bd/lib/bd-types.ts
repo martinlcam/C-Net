@@ -82,9 +82,4 @@ export const BD_BANDS = ["DELTA", "THETA", "ALPHA", "BETA", "GAMMA"] as const
 
 export type BdFrame = BdSampleFrame | BdStatusFrame | BdHelloFrame | BdBandsFrame
 
-export type BdConnectionState =
-  | "idle"
-  | "connecting"
-  | "open"
-  | "reconnecting"
-  | "closed"
+export type BdConnectionState = "idle" | "connecting" | "open" | "reconnecting" | "closed"

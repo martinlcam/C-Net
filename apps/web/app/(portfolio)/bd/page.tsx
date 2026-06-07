@@ -2,13 +2,13 @@
 
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google"
 import { useEffect } from "react"
+import { HeaderSection } from "../sections/HeaderSection"
 import { BdFooter } from "./components/BdFooter"
 import { BdVectorField } from "./components/BdVectorField"
-import { HeaderSection } from "../sections/HeaderSection"
+import { useBdStream } from "./lib/use-bd-stream"
 import { BdHeroSection } from "./sections/BdHeroSection"
 import { BdSignalsSection } from "./sections/BdSignalsSection"
 import { BdSpecimenSection } from "./sections/BdSpecimenSection"
-import { useBdStream } from "./lib/use-bd-stream"
 
 // Fonts are loaded once at module scope so Next.js can inline them.
 const plexMono = IBM_Plex_Mono({
@@ -43,12 +43,12 @@ export default function BdPage() {
     >
       <BdVectorField />
       <div className="relative z-[1]">
-      <HeaderSection />
-      <div className="h-[65px]" aria-hidden="true" />
-      <BdHeroSection status={status} connection={connection} source={source} />
-      <BdSignalsSection buffer={buffer} status={status} />
-      <BdSpecimenSection status={status} />
-      <BdFooter />
+        <HeaderSection />
+        <div className="h-[65px]" aria-hidden="true" />
+        <BdHeroSection status={status} connection={connection} source={source} />
+        <BdSignalsSection buffer={buffer} status={status} />
+        <BdSpecimenSection status={status} />
+        <BdFooter />
       </div>
     </div>
   )

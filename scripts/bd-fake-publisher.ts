@@ -71,7 +71,7 @@ function eegAt(c: number, t: number): number {
 
 function ppgAt(c: number, t: number): number {
   const phase = (t * HR_HZ) % 1
-  const beat = Math.exp(-Math.pow((phase - 0.1) / 0.06, 2))
+  const beat = Math.exp(-(((phase - 0.1) / 0.06) ** 2))
   const base = 12000 + 600 * Math.sin(t * 0.3 + c)
   if (c === 1) return base + 1200 * beat + 30 * rnd()
   if (c === 2) return base + 200 * beat + 30 * rnd()

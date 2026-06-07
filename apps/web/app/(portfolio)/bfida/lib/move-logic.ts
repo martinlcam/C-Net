@@ -1,4 +1,11 @@
-import { type Board, type BoardKind, type Cell, type Jump, type Position, makeBoard } from "./boards"
+import {
+  type Board,
+  type BoardKind,
+  type Cell,
+  type Jump,
+  makeBoard,
+  type Position,
+} from "./boards"
 
 const DIRS: Array<readonly [number, number]> = [
   [-1, 0],
@@ -67,7 +74,8 @@ export function findJump(board: Board, from: Position, to: Position): Jump | nul
   const candidates = jumpsFrom(board, from)
   return (
     candidates.find(
-      (j) => j.to[0] === to[0] && j.to[1] === to[1] && j.from[0] === from[0] && j.from[1] === from[1]
+      (j) =>
+        j.to[0] === to[0] && j.to[1] === to[1] && j.from[0] === from[0] && j.from[1] === from[1]
     ) ?? null
   )
 }
