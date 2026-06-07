@@ -4,6 +4,26 @@ Operator guide for moving C-Net from Vercel to a self-hosted Proxmox LXC.
 Work top-to-bottom. Commands run on the **PVE host shell** or **inside the LXC** as labelled.
 Replace `martin.cam` only if your domain differs.
 
+## Handoff to the Proxmox agent
+
+This runbook is meant to be executed by an agent **on the Proxmox box**, top to bottom, in order.
+A few steps require a human and cannot be done headless — the agent must **pause and ask the
+operator** at each of these:
+
+| Step | Needs the human because |
+|------|-------------------------|
+| **6. Cloudflare Tunnel** | `cloudflared tunnel login` opens a browser URL to authorize the Cloudflare account. |
+| **7. Google OAuth redirect** | Adding the callback URIs happens in the Google Cloud Console (no CLI). |
+| **8. GitHub runner** | The `./config.sh --token …` value comes from the repo's Settings → Actions → Runners page. |
+| **3. `.env` secrets** | The agent can `openssl rand` the passwords, but `GOOGLE_ID` / `GOOGLE_SECRET` come from the operator. The `.env` is intentionally **not** in git. |
+
+Other notes for the agent:
+- **Clone `main`** (post-merge) into the LXC at `/opt/cnet` — do **not** reuse the older repo copy
+  that already exists on the PVE host.
+- The neural-bridge stays on the **PVE host**; only its `REDIS_URL` changes (step 9).
+- The **storage-tank bind mount** (spec §7.2) is a *future* feature and is intentionally left out
+  of this migration — skip anything storage-related for now.
+
 ## 0. Prerequisites
 - Proxmox node with internet access and a Debian LXC template available.
 - A Cloudflare account managing `martin.cam` DNS (you already have this).
