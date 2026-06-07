@@ -39,9 +39,7 @@ function qualityFromStd(sd: number): number {
   return 1 // healthy EEG range
 }
 
-function computeStd(
-  ring: BdRingBuffer["eeg"]
-): [number, number, number, number] | undefined {
+function computeStd(ring: BdRingBuffer["eeg"]): [number, number, number, number] | undefined {
   const have = Math.min(FIT_WINDOW, ring.pushed)
   if (have < 64) return undefined
   const sum = [0, 0, 0, 0]
@@ -71,9 +69,7 @@ const ELECTRODES = [
 ] as const
 
 export function ContactQualityHud({ buffer, hsi: deviceHsi }: Props) {
-  const [computed, setComputed] = useState<
-    [number, number, number, number] | undefined
-  >()
+  const [computed, setComputed] = useState<[number, number, number, number] | undefined>()
   // Smoothed std per channel (~3 s). Contact fit is a physical property, so a
   // brief head-turn shouldn't flip a dot to red — only *sustained* bad contact
   // (or a chronically flat channel) should move it.

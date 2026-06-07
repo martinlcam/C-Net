@@ -43,8 +43,8 @@ export function BdSpecimenSection({ status }: Props) {
                 EDITORIAL.NOTE
               </div>
               <p className="font-bd-display text-sm leading-relaxed text-bd-cream/75">
-                READOUT IS PUBLIC AND EPHEMERAL™. NO SAMPLES ARE PERSISTED. THE BRAINDANCE EDITOR
-                IS A WORK OF JOURNALISM, NOT MEDICINE©. RAW DATA STREAMED VIA REDIS PUB/SUB OVER
+                READOUT IS PUBLIC AND EPHEMERAL™. NO SAMPLES ARE PERSISTED. THE BRAINDANCE EDITOR IS
+                A WORK OF JOURNALISM, NOT MEDICINE©. RAW DATA STREAMED VIA REDIS PUB/SUB OVER
                 WEBSOCKET, RENDERED AT 30 HZ, IGNORED AT THE READER'S DISCRETION®.
               </p>
               <div className="mt-auto pt-3 border-t border-bd-rule grid grid-cols-3 gap-2 font-bd-mono text-[9px] uppercase tracking-[0.22em] text-bd-cream/40">

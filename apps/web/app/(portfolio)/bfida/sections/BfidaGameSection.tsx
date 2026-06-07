@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { Button } from "@/stories/button/button"
-import { PegBoard } from "../components/PegBoard"
 import { BoardToggle } from "../components/BoardToggle"
+import { PegBoard } from "../components/PegBoard"
 import type { BoardKind, Position } from "../lib/boards"
 import {
   applyJump,
@@ -79,8 +79,8 @@ export function BfidaGameSection() {
               Play it<span className="text-[#bea9e9]">.</span>
             </h2>
             <p className="text-gray-600 max-w-xl">
-              Click a marble to select it, then click an empty hole two cells away to jump.
-              The jumped-over marble is removed. Try to leave just one.
+              Click a marble to select it, then click an empty hole two cells away to jump. The
+              jumped-over marble is removed. Try to leave just one.
             </p>
           </div>
           <BoardToggle value={kind} onChange={handleSwitch} />
@@ -99,12 +99,8 @@ export function BfidaGameSection() {
 
           <div className="flex flex-col gap-4">
             <div className="border border-black p-5 bg-white">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">
-                Pegs remaining
-              </p>
-              <p className="text-5xl font-bold text-black font-mono leading-none mb-1">
-                {pegs}
-              </p>
+              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Pegs remaining</p>
+              <p className="text-5xl font-bold text-black font-mono leading-none mb-1">{pegs}</p>
               <p className="text-xs text-gray-500">started with {startingPegs}</p>
             </div>
             <div className="border border-black p-5 bg-white">
@@ -134,9 +130,7 @@ export function BfidaGameSection() {
                 <p className="text-sm font-semibold text-black">
                   No more moves - {pegs} pegs left.
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  Reset and try a different opening.
-                </p>
+                <p className="text-xs text-gray-600 mt-1">Reset and try a different opening.</p>
               </div>
             )}
 
@@ -144,8 +138,8 @@ export function BfidaGameSection() {
               <p className="text-xs text-gray-500 leading-relaxed">
                 Heads up: the 37-hole European board has{" "}
                 <span className="text-black font-medium">no single-peg solution</span> from a
-                center-empty start - it's a known parity result, not a bug. The best you can do
-                from here is two pegs.
+                center-empty start - it's a known parity result, not a bug. The best you can do from
+                here is two pegs.
               </p>
             )}
           </div>
