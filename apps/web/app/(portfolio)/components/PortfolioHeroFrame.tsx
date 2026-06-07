@@ -24,6 +24,7 @@ export function PortfolioHeroFrame({ theme = "portfolio", children }: Props) {
           }`}
         >
           {theme === "bd" ? (
+            // biome-ignore lint/a11y/useAriaPropsSupportedByRole: decorative vertical label div
             <div
               className={`flex flex-col items-center gap-y-5 font-normal ${text} tracking-tight`}
               aria-label="脳波念 — brain, wave, intent"

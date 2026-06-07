@@ -25,6 +25,7 @@ function RayBurst({
   length: number
 }) {
   return (
+    // biome-ignore lint/a11y/noSvgWithoutTitle: decorative background vector field, aria-hidden
     <svg className={className} viewBox="0 0 400 400" fill="none" aria-hidden>
       {anglesDeg.map((deg, i) => {
         const rad = (deg * Math.PI) / 180
@@ -70,6 +71,7 @@ export function BdVectorField() {
         anglesDeg={RAYS_60_LL}
         length={420}
       />
+      {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative background SVG, aria-hidden */}
       <svg
         className="absolute left-[4%] top-[22%] h-[280px] w-[200px] text-bd-live/[0.14]"
         viewBox="0 0 120 280"
@@ -88,6 +90,7 @@ export function BdVectorField() {
           />
         ))}
       </svg>
+      {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative background SVG, aria-hidden */}
       <svg
         className="absolute right-[12%] top-[48%] h-32 w-32 text-bd-cream/[0.1]"
         viewBox="0 0 100 100"

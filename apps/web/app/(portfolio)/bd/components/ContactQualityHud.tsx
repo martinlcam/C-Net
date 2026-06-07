@@ -119,6 +119,7 @@ export function ContactQualityHud({ buffer, hsi: deviceHsi }: Props) {
         </div>
       </div>
       <div className="relative flex-1 px-4 pb-3">
+        {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative data-viz SVG */}
         <svg
           viewBox="0 0 100 80"
           preserveAspectRatio="xMidYMid meet"
