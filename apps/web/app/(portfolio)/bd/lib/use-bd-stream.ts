@@ -52,10 +52,10 @@ function pushInto<T>(buf: BdRingBuffer["eeg"] | BdRingBuffer["ppg"], items: T[])
 }
 
 function ingestSample(buf: BdRingBuffer, frame: BdSampleFrame) {
-  if (frame.eeg?.length > 0) pushInto(buf.eeg, frame.eeg)
-  if (frame.ppg?.length > 0) pushInto(buf.ppg, frame.ppg)
-  if (frame.acc?.length > 0) pushInto(buf.acc, frame.acc)
-  if (frame.gyro?.length > 0) pushInto(buf.gyro, frame.gyro)
+  if (frame.eeg && frame.eeg.length > 0) pushInto(buf.eeg, frame.eeg)
+  if (frame.ppg && frame.ppg.length > 0) pushInto(buf.ppg, frame.ppg)
+  if (frame.acc && frame.acc.length > 0) pushInto(buf.acc, frame.acc)
+  if (frame.gyro && frame.gyro.length > 0) pushInto(buf.gyro, frame.gyro)
 }
 
 const DEFAULT_STATUS: BdStatusFrame = {
