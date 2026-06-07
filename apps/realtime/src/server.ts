@@ -72,9 +72,7 @@ const server = Bun.serve<ClientData>({
       const ok = srv.upgrade(req, {
         data: { role: "viewer", id: genId("v"), openedAt: Date.now() },
       })
-      return ok
-        ? undefined
-        : new Response("expected websocket upgrade", { status: 426 })
+      return ok ? undefined : new Response("expected websocket upgrade", { status: 426 })
     }
 
     if (url.pathname === "/bd/ingest") {
@@ -85,9 +83,7 @@ const server = Bun.serve<ClientData>({
       const ok = srv.upgrade(req, {
         data: { role: "ingest", id: genId("p"), openedAt: Date.now() },
       })
-      return ok
-        ? undefined
-        : new Response("expected websocket upgrade", { status: 426 })
+      return ok ? undefined : new Response("expected websocket upgrade", { status: 426 })
     }
 
     return new Response("not found", { status: 404 })
@@ -132,8 +128,7 @@ const server = Bun.serve<ClientData>({
       }
       if (!parsed || typeof parsed !== "object" || !("t" in parsed)) return
       const t = (parsed as { t: unknown }).t
-      const channel =
-        t === "status" ? CH_STATUS : t === "sample" ? CH_SAMPLES : null
+      const channel = t === "status" ? CH_STATUS : t === "sample" ? CH_SAMPLES : null
       if (!channel) return
 
       // Republish to Redis. The bus subscriber loop will deliver it back to
@@ -157,9 +152,7 @@ const server = Bun.serve<ClientData>({
   },
 })
 
-console.log(
-  `[bd] realtime up on :${PORT}  channels=[${CH_SAMPLES}, ${CH_STATUS}]  topic=${TOPIC}`
-)
+console.log(`[bd] realtime up on :${PORT}  channels=[${CH_SAMPLES}, ${CH_STATUS}]  topic=${TOPIC}`)
 
 const shutdown = async (sig: string) => {
   console.log(`[bd] ${sig} — closing`)

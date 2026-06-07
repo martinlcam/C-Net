@@ -17,21 +17,21 @@ export function BfidaHeroSection() {
             <p>
               Ever since I was young, I remember a 37-hole peg solitaire board tucked away in the
               drawer of my grandma's couch table -- a small wooden board covered in cool glass
-              marbles, with the one in the middle always missing. I'd jump marble over marble,
-              watch the pile shrink, and try to leave just one in the center. To this day I have
-              never managed it. Turns out the 37-hole European board, with a center-empty start,
-              has no single-peg-in-the-center solution at all - a 3-colour parity argument proves
-              it - so my younger self was chasing the impossible. This page is my second attempt.
+              marbles, with the one in the middle always missing. I'd jump marble over marble, watch
+              the pile shrink, and try to leave just one in the center. To this day I have never
+              managed it. Turns out the 37-hole European board, with a center-empty start, has no
+              single-peg-in-the-center solution at all - a 3-colour parity argument proves it - so
+              my younger self was chasing the impossible. This page is my second attempt.
             </p>
             <p>
               Peg solitaire turns out to be a beloved playground for{" "}
               <span className="text-black font-medium">classical AI heuristic search</span>. The
-              algorithm that powers the demo below, <em>Bidirectional Breadth-First Iterative
-              Deepening A*</em>, sits on a lineage that goes back to A* (1968), Korf's IDA* (1985),
-              and Zhou and Hansen's breadth-first heuristic search (2006) - foundational
-              symbolic-AI work from the era before deep learning ate the world. In 2012 Barker and
-              Korf combined them into a bidirectional variant that solves a board in seconds where
-              previous state-of-the-art took an hour.
+              algorithm that powers the demo below,{" "}
+              <em>Bidirectional Breadth-First Iterative Deepening A*</em>, sits on a lineage that
+              goes back to A* (1968), Korf's IDA* (1985), and Zhou and Hansen's breadth-first
+              heuristic search (2006) - foundational symbolic-AI work from the era before deep
+              learning ate the world. In 2012 Barker and Korf combined them into a bidirectional
+              variant that solves a board in seconds where previous state-of-the-art took an hour.
             </p>
             <p>
               <a

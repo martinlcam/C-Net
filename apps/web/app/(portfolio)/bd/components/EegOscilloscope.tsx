@@ -78,7 +78,7 @@ export function EegOscilloscope({ buffer, windowSec = 5, sampleRate = 256 }: Pro
 
       const laneHeight = height / 4
       const labelColor = "rgba(250,246,241,0.45)"
-      ctx.font = '600 13px var(--font-bd-mono), ui-monospace, monospace'
+      ctx.font = "600 13px var(--font-bd-mono), ui-monospace, monospace"
       ctx.textBaseline = "top"
 
       // Sweep the ring once: per-channel peak (for auto-gain) plus mean and
@@ -124,10 +124,10 @@ export function EegOscilloscope({ buffer, windowSec = 5, sampleRate = 256 }: Pro
         // or HOT (railing / bad contact / motion).
         const sd = std[c]
         const status = sd < 2 ? "FLAT" : sd > 120 ? "HOT" : "OK"
-        ctx.font = '11px var(--font-bd-mono), ui-monospace, monospace'
+        ctx.font = "11px var(--font-bd-mono), ui-monospace, monospace"
         ctx.fillStyle = sd < 2 ? "#ff3344" : sd > 120 ? "#ffb020" : "#c6ff00"
         ctx.fillText(`${sd.toFixed(0)}µV ${status}`, width - 108, y)
-        ctx.font = '600 13px var(--font-bd-mono), ui-monospace, monospace'
+        ctx.font = "600 13px var(--font-bd-mono), ui-monospace, monospace"
       }
 
       // Plot each channel. Scale to samples we actually have — the bridge

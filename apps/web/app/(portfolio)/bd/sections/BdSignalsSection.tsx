@@ -21,6 +21,7 @@ export function BdSignalsSection({ buffer, status }: Props) {
     <section className="border-b border-bd-rule px-6 sm:px-10 md:px-12 lg:px-20 py-10 md:py-14">
       <div className="flex items-baseline justify-between mb-6">
         <h2 className="font-bd-mono text-[11px] uppercase tracking-[0.32em] text-bd-cream/55">
+          {/* biome-ignore lint/suspicious/noCommentText: intentional code-styled heading rendered as literal text */}
           // SIGNAL DECK
         </h2>
         <span className="font-bd-mono text-[10px] uppercase tracking-[0.22em] text-bd-cream/35">

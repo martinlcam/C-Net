@@ -37,11 +37,7 @@ export function DiagonalPanel({
   className = "",
 }: PanelProps) {
   const accent =
-    tone === "live"
-      ? "text-bd-live"
-      : tone === "alarm"
-        ? "text-bd-alarm"
-        : "text-bd-cream/60"
+    tone === "live" ? "text-bd-live" : tone === "alarm" ? "text-bd-alarm" : "text-bd-cream/60"
 
   const frameStyle = {
     "--bd-surface": surface,
