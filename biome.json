@@ -49,6 +49,7 @@
     "lineWidth": 100
   },
   "javascript": {
+    "globals": ["Bun"],
     "parser": {
       "unsafeParameterDecoratorsEnabled": true
     },
