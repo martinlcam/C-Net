@@ -17,7 +17,10 @@ set +a
 echo "==> Fetching $REF"
 git fetch origin
 git checkout "$REF"
-git pull --ff-only
+# Fast-forward only when on a branch; a detached SHA (rollback to an old commit) has nothing to pull.
+if git symbolic-ref -q HEAD >/dev/null; then
+  git pull --ff-only
+fi
 
 echo "==> Installing dependencies"
 bun install --frozen-lockfile
