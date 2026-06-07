@@ -1,0 +1,13 @@
+# Enforce LF line endings repo-wide so Biome (LF) passes on every platform.
+# text=auto lets git auto-detect binary; eol=lf forces LF on text files at checkout.
+* text=auto eol=lf
+
+# Explicit binaries (never touch their bytes).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
