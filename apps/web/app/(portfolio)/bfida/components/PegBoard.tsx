@@ -96,8 +96,9 @@ export function PegBoard({
               : undefined
 
             return (
-              // biome-ignore lint/suspicious/noArrayIndexKey: r,c are board coordinates, not array indices
+              // biome-ignore lint/a11y/noStaticElementInteractions: SVG board cell is intentionally interactive (role + keyboard handler below)
               <g
+                // biome-ignore lint/suspicious/noArrayIndexKey: r,c are fixed 7x7 board coordinates, stable keys
                 key={`cell-${r}-${c}`}
                 role={interactive ? "button" : "presentation"}
                 tabIndex={interactive ? -1 : undefined}
