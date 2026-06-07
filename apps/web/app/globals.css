@@ -227,16 +227,25 @@ body[data-bd="1"] ::-webkit-scrollbar-thumb:hover {
   }
   /* Slow boot-blink for live indicators. */
   @keyframes bd-pulse {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.35; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
   }
   .bd-pulse {
     animation: bd-pulse 1.6s ease-in-out infinite;
   }
   /* Marquee-style horizontal scroll for ticker readouts. */
   @keyframes bd-scroll {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
   .bd-scroll {
     animation: bd-scroll 60s linear infinite;
