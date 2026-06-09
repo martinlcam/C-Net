@@ -8,12 +8,15 @@ type BoardKind = "english" | "european"
 const STARTING_PEGS: Record<BoardKind, number> = { english: 32, european: 36 }
 const FIRST_NAME_RE = /^[A-Za-z]{1,20}$/
 const INITIAL_RE = /^[A-Za-z]$/
+const MAX_TIME_MS = 24 * 60 * 60 * 1000
 
 interface RecordScoreRequest {
   firstName: string
   lastInitial: string
   boardKind: BoardKind
   pegsRemaining: number
+  /** Elapsed play time (first move to last move) in milliseconds. */
+  timeMs: number
 }
 
 interface ScoreEntry {
@@ -22,6 +25,7 @@ interface ScoreEntry {
   lastInitial: string
   boardKind: BoardKind
   pegsRemaining: number
+  timeMs: number
   createdAt: string
 }
 
@@ -43,7 +47,7 @@ export class BfidaController extends Controller {
       .select()
       .from(bfidaScores)
       .where(board ? eq(bfidaScores.boardKind, board) : undefined)
-      .orderBy(asc(bfidaScores.pegsRemaining), asc(bfidaScores.createdAt))
+      .orderBy(asc(bfidaScores.pegsRemaining), asc(bfidaScores.timeMs), asc(bfidaScores.createdAt))
       .limit(20)
 
     return rows.map((r) => ({
@@ -52,6 +56,7 @@ export class BfidaController extends Controller {
       lastInitial: r.lastInitial,
       boardKind: r.boardKind,
       pegsRemaining: r.pegsRemaining,
+      timeMs: r.timeMs,
       createdAt: r.createdAt.toISOString(),
     }))
   }
@@ -87,6 +92,10 @@ export class BfidaController extends Controller {
       this.setStatus(400)
       return { error: `pegsRemaining must be an integer between 1 and ${maxPegs}.` }
     }
+    if (!Number.isInteger(body.timeMs) || body.timeMs < 0 || body.timeMs > MAX_TIME_MS) {
+      this.setStatus(400)
+      return { error: "timeMs must be a non-negative integer within 24h." }
+    }
 
     const inserted = await db
       .insert(bfidaScores)
@@ -95,6 +104,7 @@ export class BfidaController extends Controller {
         lastInitial: initialRaw.toUpperCase(),
         boardKind: body.boardKind,
         pegsRemaining: body.pegsRemaining,
+        timeMs: body.timeMs,
       })
       .returning()
 
@@ -111,6 +121,7 @@ export class BfidaController extends Controller {
       lastInitial: row.lastInitial,
       boardKind: row.boardKind,
       pegsRemaining: row.pegsRemaining,
+      timeMs: row.timeMs,
       createdAt: row.createdAt.toISOString(),
     }
   }
