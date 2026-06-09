@@ -45,7 +45,7 @@ export function RecordScoreForm({ boardKind, pegsRemaining, onRecorded }: Record
 
   if (status === "done") {
     return (
-      <div className="border border-[#bea9e9] bg-[#bea9e9]/20 p-4 rounded-xl">
+      <div className="border border-[#bea9e9] bg-[#bea9e9]/20 p-4">
         <p className="text-sm font-semibold text-black">Added to the leaderboard.</p>
         <p className="text-xs text-gray-700 mt-1">{pegLabel} — nice.</p>
       </div>
@@ -53,7 +53,7 @@ export function RecordScoreForm({ boardKind, pegsRemaining, onRecorded }: Record
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-black p-5 bg-white rounded-xl">
+    <form onSubmit={handleSubmit} className="border border-black p-5 bg-white rounded-[8px]">
       <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
         Record your score — {pegLabel}
       </p>
@@ -66,7 +66,7 @@ export function RecordScoreForm({ boardKind, pegsRemaining, onRecorded }: Record
           autoComplete="off"
           inputMode="text"
           maxLength={20}
-          className="border border-black rounded-lg px-3 py-2 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-[#bea9e9]"
+          className="border border-black rounded-[8px] px-3 py-2 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-[#bea9e9]"
         />
         <input
           value={initial}
@@ -76,12 +76,12 @@ export function RecordScoreForm({ boardKind, pegsRemaining, onRecorded }: Record
           autoComplete="off"
           inputMode="text"
           maxLength={1}
-          className="border border-black rounded-lg px-3 py-2 text-sm text-black bg-white uppercase focus:outline-none focus:ring-2 focus:ring-[#bea9e9] w-20"
+          className="border border-black rounded-[8px] px-3 py-2 text-sm text-black bg-white uppercase focus:outline-none focus:ring-2 focus:ring-[#bea9e9] w-20"
         />
         <Button
           type="submit"
           disabled={!valid || status === "saving"}
-          className="w-full bg-black text-white hover:bg-gray-800 rounded-xl py-3 text-base font-medium h-auto disabled:opacity-40"
+          className="w-full bg-black text-white hover:bg-gray-800 rounded-[8px] py-3 text-base font-medium h-auto disabled:opacity-40"
         >
           {status === "saving" ? "Saving…" : "Record score"}
         </Button>

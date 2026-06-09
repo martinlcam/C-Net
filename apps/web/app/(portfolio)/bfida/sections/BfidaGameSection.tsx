@@ -93,7 +93,7 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
         </div>
 
         <div className="grid md:grid-cols-[1fr,minmax(220px,280px)] gap-8 md:gap-12 items-start">
-          <div className="rounded-2xl border border-black bg-white p-4 sm:p-6 md:p-8">
+          <div className="rounded-[8px] border border-black bg-white p-4 sm:p-6 md:p-8">
             <PegBoard
               board={board}
               mode="play"
@@ -117,13 +117,13 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
             <Button
               onClick={handleReset}
               variant="outline"
-              className="w-full border-black text-black hover:bg-gray-100 rounded-xl py-3 text-base font-medium h-auto"
+              className="w-full border-black text-black hover:bg-gray-100 rounded-[8px] py-3 text-base font-medium h-auto"
             >
               Reset board
             </Button>
 
             {won && (
-              <div className="border border-[#bea9e9] bg-[#bea9e9]/20 p-4 rounded-xl">
+              <div className="border border-[#bea9e9] bg-[#bea9e9]/20 p-4">
                 <p className="text-sm font-semibold text-black">1 peg remaining - optimal!</p>
                 <p className="text-xs text-gray-700 mt-1">
                   You matched the minimum. Try the other board.
@@ -132,7 +132,7 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
             )}
 
             {stuck && !won && (
-              <div className="border border-gray-300 bg-gray-50 p-4 rounded-xl">
+              <div className="border border-gray-300 bg-gray-50 p-4">
                 <p className="text-sm font-semibold text-black">
                   No more moves - {pegs} pegs left.
                 </p>

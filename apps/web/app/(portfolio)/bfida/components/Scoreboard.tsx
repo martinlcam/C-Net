@@ -37,7 +37,7 @@ export function Scoreboard({ refreshKey = 0, initialBoard = "european" }: Scoreb
   }, [board, refreshKey])
 
   return (
-    <div className="rounded-2xl border border-black bg-white p-4 sm:p-6 md:p-8">
+    <div className="rounded-[8px] border border-black bg-white p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h3 className="text-2xl font-bold text-black tracking-tight">
           Leaderboard<span className="text-[#bea9e9]">.</span>

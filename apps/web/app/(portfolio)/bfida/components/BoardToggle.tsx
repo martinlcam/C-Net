@@ -16,7 +16,7 @@ const OPTIONS: { id: BoardKind; label: string; sub: string }[] = [
 export function BoardToggle({ value, onChange, className }: BoardToggleProps) {
   return (
     <div
-      className={`inline-flex p-1 rounded-xl border border-black bg-white ${className ?? ""}`}
+      className={`inline-flex p-1 rounded-[8px] border border-black bg-white ${className ?? ""}`}
       role="tablist"
       aria-label="Board selection"
     >
@@ -29,7 +29,7 @@ export function BoardToggle({ value, onChange, className }: BoardToggleProps) {
             role="tab"
             aria-selected={active}
             onClick={() => onChange(opt.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex flex-col items-center leading-tight ${
+            className={`px-4 py-2 rounded-[8px] text-sm font-medium transition-all flex flex-col items-center leading-tight ${
               active ? "bg-black text-white" : "bg-transparent text-gray-700 hover:bg-gray-100"
             }`}
           >
