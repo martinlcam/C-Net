@@ -43,6 +43,10 @@ bun run bridge           # Run the Python neural-bridge
 - **Realtime:** the bridge publishes JSON frames to Redis channels `bd:samples` / `bd:status`; `apps/realtime` subscribes and fans them out to `/bd/live` WebSocket viewers. Frame shapes are intentionally never reshaped on either side.
 - **Deployment:** see `docs/superpowers/specs/2026-06-06-proxmox-migration-design.md` and `docs/RUNBOOK-proxmox-deploy.md` for the Proxmox/self-hosting setup.
 
+## Database migrations — MUST be committed
+
+Generated Drizzle migration files (`packages/db/drizzle/**`, including the SQL and `meta/_journal.json`) **must be committed**. Production applies migrations via `scripts/deploy.sh` → `bun run db:migrate`, which runs only the migration files present in the repo. A migration you generate locally with `bun run db:generate` but forget to commit will **not** reach prod — the deploy will build against schema the database doesn't have, causing runtime errors and drift. So: generate, commit the migration files in the same change as the schema edit, then push.
+
 ## Code Style
 
 - Use `type X = { ... }` for object shapes. Reach for `interface` only when you need declaration merging.
