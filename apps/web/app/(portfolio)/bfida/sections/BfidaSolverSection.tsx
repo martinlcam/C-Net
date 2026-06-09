@@ -130,28 +130,28 @@ export function BfidaSolverSection() {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={handlePlayPause}
-                className="bg-black hover:bg-gray-800 text-white rounded-xl px-4 py-2 text-sm font-medium h-auto"
+                className="bg-black hover:bg-gray-800 text-white rounded-[8px] px-4 py-2 text-sm font-medium h-auto"
               >
                 {playing ? "Pause" : isFinalStep ? "Replay" : "Play"}
               </Button>
               <Button
                 onClick={() => handleStep(-1)}
                 variant="outline"
-                className="border-black text-black hover:bg-gray-100 rounded-xl px-3 py-2 text-sm font-medium h-auto"
+                className="border-black text-black hover:bg-gray-100 rounded-[8px] px-3 py-2 text-sm font-medium h-auto"
               >
                 ‹ Step
               </Button>
               <Button
                 onClick={() => handleStep(1)}
                 variant="outline"
-                className="border-black text-black hover:bg-gray-100 rounded-xl px-3 py-2 text-sm font-medium h-auto"
+                className="border-black text-black hover:bg-gray-100 rounded-[8px] px-3 py-2 text-sm font-medium h-auto"
               >
                 Step ›
               </Button>
               <Button
                 onClick={handleReset}
                 variant="outline"
-                className="border-black text-black hover:bg-gray-100 rounded-xl px-3 py-2 text-sm font-medium h-auto"
+                className="border-black text-black hover:bg-gray-100 rounded-[8px] px-3 py-2 text-sm font-medium h-auto"
               >
                 Reset
               </Button>
@@ -171,7 +171,7 @@ export function BfidaSolverSection() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-black bg-white p-4 sm:p-6 md:p-8">
+            <div className="rounded-[8px] border border-black bg-white p-4 sm:p-6 md:p-8">
               <PegBoard
                 board={board}
                 mode="replay"
@@ -190,7 +190,7 @@ export function BfidaSolverSection() {
               </span>
             </div>
 
-            <div className="border border-black bg-white rounded-xl p-4">
+            <div className="border border-black bg-white p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">
                 Considered jumps
               </p>
