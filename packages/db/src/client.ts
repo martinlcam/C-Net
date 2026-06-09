@@ -4,7 +4,10 @@ import * as schema from "./schema/index"
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" && process.env.DATABASE_SSL !== "false" ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === "production" && process.env.DATABASE_SSL !== "false"
+      ? { rejectUnauthorized: false }
+      : false,
 })
 
 export const db = drizzle(pool, { schema })
