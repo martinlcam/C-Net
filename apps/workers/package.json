@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "bun run src/worker.ts --watch",
     "build": "tsc",
-    "start": "node dist/worker.js"
+    "start": "bun dist/worker.js"
   },
   "dependencies": {
     "@cnet/core": "workspace:*",
