@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/stories/button/button"
 import { BoardToggle } from "../components/BoardToggle"
 import { PegBoard } from "../components/PegBoard"
+import { RecordScoreForm } from "../components/RecordScoreForm"
 import type { BoardKind, Position } from "../lib/boards"
 import {
   applyJump,
@@ -14,9 +15,14 @@ import {
   startingBoard,
 } from "../lib/move-logic"
 
-export function BfidaGameSection() {
-  const [kind, setKind] = useState<BoardKind>("english")
-  const [board, setBoard] = useState(() => startingBoard("english"))
+type BfidaGameSectionProps = {
+  /** Called after a score is successfully recorded, so the leaderboard can refresh. */
+  onScoreRecorded?: () => void
+}
+
+export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
+  const [kind, setKind] = useState<BoardKind>("european")
+  const [board, setBoard] = useState(() => startingBoard("european"))
   const [selected, setSelected] = useState<Position | null>(null)
   const [moves, setMoves] = useState(0)
 
@@ -132,6 +138,15 @@ export function BfidaGameSection() {
                 </p>
                 <p className="text-xs text-gray-600 mt-1">Reset and try a different opening.</p>
               </div>
+            )}
+
+            {stuck && (
+              <RecordScoreForm
+                key={`${kind}-${moves}`}
+                boardKind={kind}
+                pegsRemaining={pegs}
+                onRecorded={() => onScoreRecorded?.()}
+              />
             )}
 
             {kind === "european" && (
