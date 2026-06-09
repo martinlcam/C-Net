@@ -8,7 +8,16 @@ export type ScoreEntry = {
   lastInitial: string
   boardKind: BoardKind
   pegsRemaining: number
+  timeMs: number
   createdAt: string
+}
+
+/** Milliseconds -> "m:ss" (e.g. 73210 -> "1:13"). */
+export function formatTime(ms: number): string {
+  const totalSec = Math.floor(ms / 1000)
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${m}:${s.toString().padStart(2, "0")}`
 }
 
 /** A valid first name: 1-20 letters, nothing else. */
@@ -45,6 +54,7 @@ export async function recordScore(input: {
   lastInitial: string
   boardKind: BoardKind
   pegsRemaining: number
+  timeMs: number
 }): Promise<ScoreEntry> {
   const res = await fetch(`${API_BASE}/bfida/scores`, {
     method: "POST",

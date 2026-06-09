@@ -14,12 +14,18 @@ import {
 type RecordScoreFormProps = {
   boardKind: BoardKind
   pegsRemaining: number
+  timeMs: number
   onRecorded: () => void
 }
 
 type Status = "idle" | "saving" | "done" | "error"
 
-export function RecordScoreForm({ boardKind, pegsRemaining, onRecorded }: RecordScoreFormProps) {
+export function RecordScoreForm({
+  boardKind,
+  pegsRemaining,
+  timeMs,
+  onRecorded,
+}: RecordScoreFormProps) {
   const [firstName, setFirstName] = useState("")
   const [initial, setInitial] = useState("")
   const [status, setStatus] = useState<Status>("idle")
@@ -34,7 +40,7 @@ export function RecordScoreForm({ boardKind, pegsRemaining, onRecorded }: Record
     setStatus("saving")
     setError(null)
     try {
-      await recordScore({ firstName, lastInitial: initial, boardKind, pegsRemaining })
+      await recordScore({ firstName, lastInitial: initial, boardKind, pegsRemaining, timeMs })
       setStatus("done")
       onRecorded()
     } catch (err) {

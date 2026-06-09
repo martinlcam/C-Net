@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/stories/button/button"
 import { BoardToggle } from "../components/BoardToggle"
 import { PegBoard } from "../components/PegBoard"
@@ -14,6 +14,7 @@ import {
   positionsEqual,
   startingBoard,
 } from "../lib/move-logic"
+import { formatTime } from "../lib/scores"
 
 type BfidaGameSectionProps = {
   /** Called after a score is successfully recorded, so the leaderboard can refresh. */
@@ -25,23 +26,41 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
   const [board, setBoard] = useState(() => startingBoard("european"))
   const [selected, setSelected] = useState<Position | null>(null)
   const [moves, setMoves] = useState(0)
+  const [startAt, setStartAt] = useState<number | null>(null)
+  const [endAt, setEndAt] = useState<number | null>(null)
+  const [, setTick] = useState(0)
 
   const pegs = pegsRemaining(board)
   const stuck = isStuck(board)
   const won = pegs === 1
   const startingPegs = kind === "english" ? 32 : 36
 
+  // Tick the live timer while a game is in progress (started, not yet ended).
+  useEffect(() => {
+    if (startAt === null || endAt !== null) return
+    const id = setInterval(() => setTick((t) => t + 1), 250)
+    return () => clearInterval(id)
+  }, [startAt, endAt])
+
+  // Live elapsed for display; the recorded time freezes at the last move.
+  const elapsedMs = startAt === null ? 0 : (endAt ?? Date.now()) - startAt
+  const timeMs = startAt !== null && endAt !== null ? endAt - startAt : 0
+
   const handleSwitch = (next: BoardKind) => {
     setKind(next)
     setBoard(startingBoard(next))
     setSelected(null)
     setMoves(0)
+    setStartAt(null)
+    setEndAt(null)
   }
 
   const handleReset = () => {
     setBoard(startingBoard(kind))
     setSelected(null)
     setMoves(0)
+    setStartAt(null)
+    setEndAt(null)
   }
 
   const handleClick = (pos: Position) => {
@@ -68,9 +87,13 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
       setSelected(null)
       return
     }
-    setBoard(applyJump(board, jump))
+    const now = Date.now()
+    const nextBoard = applyJump(board, jump)
+    setBoard(nextBoard)
     setMoves((m) => m + 1)
     setSelected(null)
+    if (startAt === null) setStartAt(now)
+    if (isStuck(nextBoard)) setEndAt(now)
   }
 
   return (
@@ -113,6 +136,12 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Moves</p>
               <p className="text-3xl font-bold text-black font-mono leading-none">{moves}</p>
             </div>
+            <div className="border border-black p-5 bg-white">
+              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Time</p>
+              <p className="text-3xl font-bold text-black font-mono leading-none">
+                {formatTime(elapsedMs)}
+              </p>
+            </div>
 
             <Button
               onClick={handleReset}
@@ -145,6 +174,7 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
                 key={`${kind}-${moves}`}
                 boardKind={kind}
                 pegsRemaining={pegs}
+                timeMs={timeMs}
                 onRecorded={() => onScoreRecorded?.()}
               />
             )}
