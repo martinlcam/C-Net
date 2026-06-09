@@ -1,0 +1,1 @@
+ALTER TABLE "bfida_scores" ADD COLUMN "time_ms" integer DEFAULT 0 NOT NULL;

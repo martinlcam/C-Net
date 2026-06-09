@@ -12,5 +12,7 @@ export const bfidaScores = pgTable("bfida_scores", {
   lastInitial: text("last_initial").notNull(),
   boardKind: bfidaBoardKindEnum("board_kind").notNull(),
   pegsRemaining: integer("pegs_remaining").notNull(),
+  /** Elapsed play time, first move to last move, in milliseconds. */
+  timeMs: integer("time_ms").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
