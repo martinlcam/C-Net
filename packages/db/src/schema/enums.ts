@@ -18,3 +18,4 @@ export const auditActionEnum = pgEnum("audit_action", [
 export const serviceEnum = pgEnum("service_type", ["pi-hole", "plex", "minecraft", "nas"])
 export const statusEnum = pgEnum("service_status", ["up", "down", "degraded"])
 export const logStatusEnum = pgEnum("log_status", ["success", "failed"])
+export const bfidaBoardKindEnum = pgEnum("bfida_board_kind", ["english", "european"])

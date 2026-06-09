@@ -1,5 +1,6 @@
 export * from "./accounts"
 export * from "./audit-logs"
+export * from "./bfida-scores"
 export * from "./enums"
 export * from "./infrastructure-configs"
 export * from "./metrics-snapshots"
