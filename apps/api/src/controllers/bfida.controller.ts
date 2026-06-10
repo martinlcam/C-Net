@@ -1,6 +1,6 @@
 import { db } from "@cnet/db"
 import { bfidaScores } from "@cnet/db/schema"
-import { asc, eq } from "drizzle-orm"
+import { asc, count, eq } from "drizzle-orm"
 import { Body, Controller, Get, Post, Query, Response, Route } from "tsoa"
 
 type BoardKind = "english" | "european"
@@ -29,6 +29,14 @@ interface ScoreEntry {
   createdAt: string
 }
 
+interface ScoresPage {
+  data: ScoreEntry[]
+  page: number
+  pageSize: number
+  total: number
+  hasMore: boolean
+}
+
 interface ScoreErrorResponse {
   error: string
 }
@@ -40,25 +48,44 @@ function normalizeFirstName(raw: string): string {
 
 @Route("bfida")
 export class BfidaController extends Controller {
-  /* GET /bfida/scores?board=english|european — public leaderboard, fewest pegs first */
+  /* GET /bfida/scores?board=english|european&page=0&pageSize=25 — paginated leaderboard,
+     ranked by fewest pegs, then fastest time. */
   @Get("scores")
-  public async listScores(@Query() board?: BoardKind): Promise<ScoreEntry[]> {
+  public async listScores(
+    @Query() board?: BoardKind,
+    @Query() page = 0,
+    @Query() pageSize = 25
+  ): Promise<ScoresPage> {
+    const safePage = Number.isInteger(page) && page >= 0 ? page : 0
+    const safeSize = Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100 ? pageSize : 25
+    const where = board ? eq(bfidaScores.boardKind, board) : undefined
+
+    const totalRows = await db.select({ value: count() }).from(bfidaScores).where(where)
+    const total = totalRows[0]?.value ?? 0
+
     const rows = await db
       .select()
       .from(bfidaScores)
-      .where(board ? eq(bfidaScores.boardKind, board) : undefined)
+      .where(where)
       .orderBy(asc(bfidaScores.pegsRemaining), asc(bfidaScores.timeMs), asc(bfidaScores.createdAt))
-      .limit(20)
+      .limit(safeSize)
+      .offset(safePage * safeSize)
 
-    return rows.map((r) => ({
-      id: r.id,
-      firstName: r.firstName,
-      lastInitial: r.lastInitial,
-      boardKind: r.boardKind,
-      pegsRemaining: r.pegsRemaining,
-      timeMs: r.timeMs,
-      createdAt: r.createdAt.toISOString(),
-    }))
+    return {
+      data: rows.map((r) => ({
+        id: r.id,
+        firstName: r.firstName,
+        lastInitial: r.lastInitial,
+        boardKind: r.boardKind,
+        pegsRemaining: r.pegsRemaining,
+        timeMs: r.timeMs,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      page: safePage,
+      pageSize: safeSize,
+      total,
+      hasMore: (safePage + 1) * safeSize < total,
+    }
   }
 
   /* POST /bfida/scores — public submission; validated + normalized server-side */

@@ -43,10 +43,24 @@ export function normalizeFirstName(raw: string): string {
   return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
 }
 
-export async function fetchScores(board: BoardKind): Promise<ScoreEntry[]> {
-  const res = await fetch(`${API_BASE}/bfida/scores?board=${board}`)
+export type ScoresPage = {
+  data: ScoreEntry[]
+  page: number
+  pageSize: number
+  total: number
+  hasMore: boolean
+}
+
+export async function fetchScoresPage(
+  board: BoardKind,
+  page: number,
+  pageSize: number
+): Promise<ScoresPage> {
+  const res = await fetch(
+    `${API_BASE}/bfida/scores?board=${board}&page=${page}&pageSize=${pageSize}`
+  )
   if (!res.ok) throw new Error("Failed to load leaderboard")
-  return (await res.json()) as ScoreEntry[]
+  return (await res.json()) as ScoresPage
 }
 
 export async function recordScore(input: {
