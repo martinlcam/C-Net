@@ -10,7 +10,7 @@ export function BfidaScoreboardSection({ refreshKey }: BfidaScoreboardSectionPro
     <section id="leaderboard" className="border-b border-black">
       {/* Centered column framed by a vertical rule on each side, spanning top-to-bottom.
           No horizontal padding here so the row underlines reach both rules. */}
-      <div className="max-w-5xl mx-auto border-l border-r border-black py-16 md:py-24">
+      <div className="max-w-7xl mx-auto border-l border-r border-black py-16 md:py-24">
         <Scoreboard refreshKey={refreshKey} />
       </div>
     </section>

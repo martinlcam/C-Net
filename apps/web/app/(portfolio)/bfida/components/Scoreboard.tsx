@@ -63,7 +63,7 @@ export function Scoreboard({ refreshKey = 0, initialBoard = "european" }: Scoreb
       {status === "ready" && scores.length > 0 && (
         <div>
           <div
-            className={`flex items-center gap-4 pb-2 border-b border-black text-[10px] uppercase tracking-wider text-gray-500 ${ROW_X}`}
+            className={`flex items-center gap-4 pb-2 text-[10px] uppercase tracking-wider text-gray-500 ${ROW_X}`}
           >
             <span className="w-6 shrink-0">#</span>
             <span className="flex-1">Player</span>
