@@ -8,8 +8,9 @@ type BfidaScoreboardSectionProps = {
 export function BfidaScoreboardSection({ refreshKey }: BfidaScoreboardSectionProps) {
   return (
     <section id="leaderboard" className="border-b border-black">
-      {/* Centered column framed by vertical rules that span the section top-to-bottom — no inner box. */}
-      <div className="max-w-3xl mx-auto border-l border-r border-black px-8 sm:px-12 md:px-16 py-16 md:py-24">
+      {/* Centered column framed by a vertical rule on each side, spanning top-to-bottom.
+          No horizontal padding here so the row underlines reach both rules. */}
+      <div className="max-w-5xl mx-auto border-l border-r border-black py-16 md:py-24">
         <Scoreboard refreshKey={refreshKey} />
       </div>
     </section>
