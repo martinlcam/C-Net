@@ -112,14 +112,26 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
         </div>
 
         <div className="grid md:grid-cols-[1fr,minmax(220px,280px)] gap-8 md:gap-12 items-start">
-          <div className="rounded-[8px] border border-black bg-white p-4 sm:p-6 md:p-8">
-            <PegBoard
-              board={board}
-              mode="play"
-              selected={selected}
-              onCellClick={handleClick}
-              className="max-w-md mx-auto"
-            />
+          <div className="flex flex-col gap-4">
+            <div className="rounded-[8px] border border-black bg-white p-4 sm:p-6 md:p-8">
+              <PegBoard
+                board={board}
+                mode="play"
+                selected={selected}
+                onCellClick={handleClick}
+                className="max-w-md mx-auto"
+              />
+            </div>
+
+            {stuck && (
+              <RecordScoreForm
+                key={startAt ?? "new"}
+                boardKind={kind}
+                pegsRemaining={pegs}
+                timeMs={timeMs}
+                onRecorded={() => onScoreRecorded?.()}
+              />
+            )}
           </div>
 
           <div className="flex flex-col gap-4">
@@ -159,16 +171,6 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
                 </p>
                 <p className="text-xs text-gray-600 mt-1">Reset and try a different opening.</p>
               </div>
-            )}
-
-            {stuck && (
-              <RecordScoreForm
-                key={startAt ?? "new"}
-                boardKind={kind}
-                pegsRemaining={pegs}
-                timeMs={timeMs}
-                onRecorded={() => onScoreRecorded?.()}
-              />
             )}
 
             {kind === "european" && (
