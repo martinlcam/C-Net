@@ -13,6 +13,10 @@ type ScoreboardProps = {
 
 type Status = "loading" | "ready" | "error"
 
+// Horizontal padding applied per row so text is inset while the row underlines
+// still stretch edge-to-edge (to the section's left/right vertical rules).
+const ROW_X = "px-6 sm:px-10 md:px-12"
+
 export function Scoreboard({ refreshKey = 0, initialBoard = "european" }: ScoreboardProps) {
   const [board, setBoard] = useState<BoardKind>(initialBoard)
   const [scores, setScores] = useState<ScoreEntry[]>([])
@@ -38,39 +42,45 @@ export function Scoreboard({ refreshKey = 0, initialBoard = "european" }: Scoreb
 
   return (
     <div className="w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div
+        className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 ${ROW_X}`}
+      >
         <h3 className="text-3xl font-bold text-black tracking-tight">
           Leaderboard<span className="text-[#bea9e9]">.</span>
         </h3>
         <BoardToggle value={board} onChange={setBoard} />
       </div>
 
-      {status === "loading" && <p className="text-sm text-gray-500">Loading scores…</p>}
+      {status === "loading" && <p className={`text-sm text-gray-500 ${ROW_X}`}>Loading scores…</p>}
       {status === "error" && (
-        <p className="text-sm text-gray-500">Couldn't load the leaderboard right now.</p>
+        <p className={`text-sm text-gray-500 ${ROW_X}`}>Couldn't load the leaderboard right now.</p>
       )}
       {status === "ready" && scores.length === 0 && (
-        <p className="text-sm text-gray-500">No scores yet — finish a game and be the first.</p>
+        <p className={`text-sm text-gray-500 ${ROW_X}`}>
+          No scores yet — finish a game and be the first.
+        </p>
       )}
       {status === "ready" && scores.length > 0 && (
         <div>
-          <div className="flex items-center gap-4 pb-2 border-b border-black text-[10px] uppercase tracking-wider text-gray-500">
+          <div
+            className={`flex items-center gap-4 pb-2 border-b border-black text-[10px] uppercase tracking-wider text-gray-500 ${ROW_X}`}
+          >
             <span className="w-6 shrink-0">#</span>
             <span className="flex-1">Player</span>
-            <span className="w-16 text-right shrink-0">Pegs left</span>
+            <span className="w-20 text-right shrink-0">Pegs left</span>
             <span className="w-16 text-right shrink-0">Time</span>
           </div>
           <ol className="flex flex-col">
             {scores.map((s, i) => (
               <li
                 key={s.id}
-                className="flex items-center gap-4 py-2.5 border-b border-gray-200 last:border-b-0"
+                className={`flex items-center gap-4 py-2.5 border-b border-gray-200 last:border-b-0 ${ROW_X}`}
               >
                 <span className="w-6 text-sm font-mono text-gray-400 shrink-0">{i + 1}</span>
                 <span className="flex-1 text-sm font-medium text-black truncate">
                   {s.firstName} {s.lastInitial}.
                 </span>
-                <span className="w-16 text-right text-sm font-mono font-bold text-black shrink-0">
+                <span className="w-20 text-right text-sm font-mono font-bold text-black shrink-0">
                   {s.pegsRemaining}
                 </span>
                 <span className="w-16 text-right text-sm font-mono text-gray-600 shrink-0">

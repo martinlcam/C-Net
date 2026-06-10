@@ -25,7 +25,6 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
   const [kind, setKind] = useState<BoardKind>("european")
   const [board, setBoard] = useState(() => startingBoard("european"))
   const [selected, setSelected] = useState<Position | null>(null)
-  const [moves, setMoves] = useState(0)
   const [startAt, setStartAt] = useState<number | null>(null)
   const [endAt, setEndAt] = useState<number | null>(null)
   const [, setTick] = useState(0)
@@ -50,7 +49,6 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
     setKind(next)
     setBoard(startingBoard(next))
     setSelected(null)
-    setMoves(0)
     setStartAt(null)
     setEndAt(null)
   }
@@ -58,7 +56,6 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
   const handleReset = () => {
     setBoard(startingBoard(kind))
     setSelected(null)
-    setMoves(0)
     setStartAt(null)
     setEndAt(null)
   }
@@ -90,7 +87,6 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
     const now = Date.now()
     const nextBoard = applyJump(board, jump)
     setBoard(nextBoard)
-    setMoves((m) => m + 1)
     setSelected(null)
     if (startAt === null) setStartAt(now)
     if (isStuck(nextBoard)) setEndAt(now)
@@ -133,10 +129,6 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
               <p className="text-xs text-gray-500">started with {startingPegs}</p>
             </div>
             <div className="border border-black p-5 bg-white">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Moves</p>
-              <p className="text-3xl font-bold text-black font-mono leading-none">{moves}</p>
-            </div>
-            <div className="border border-black p-5 bg-white">
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Time</p>
               <p className="text-3xl font-bold text-black font-mono leading-none">
                 {formatTime(elapsedMs)}
@@ -171,7 +163,7 @@ export function BfidaGameSection({ onScoreRecorded }: BfidaGameSectionProps) {
 
             {stuck && (
               <RecordScoreForm
-                key={`${kind}-${moves}`}
+                key={startAt ?? "new"}
                 boardKind={kind}
                 pegsRemaining={pegs}
                 timeMs={timeMs}
