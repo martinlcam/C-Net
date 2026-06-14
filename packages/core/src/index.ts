@@ -1,6 +1,13 @@
+export {
+  type AllowlistEntry,
+  getAllowlistEntry,
+  isEmailAuthorized,
+  parseAllowlist,
+  parseSize,
+  type VaultRole,
+} from "./access/allowlist"
 export { verifyToken } from "./auth/jwt"
 export type { AuthenticatedUser, JWTPayload } from "./auth/types"
-export { isEmailAuthorized } from "./authorization"
 export { decrypt, encrypt, getEncryptionPassword } from "./encryption"
 export { requireEnv } from "./env"
 export { Logger, logger } from "./logger"
