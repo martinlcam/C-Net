@@ -16,7 +16,7 @@ import { type NextRequest, NextResponse } from "next/server"
 // open, so site availability never depends on this guard.
 
 const SESSION_COOKIE_FRAGMENT = "authjs.session-token"
-const ALLOWED_PREFIXES = ["/vault", "/api/auth", "/auth"]
+const ALLOWED_PREFIXES = ["/cnet/vault", "/api/auth", "/auth"]
 
 function b64urlDecode(segment: string): string {
   const b64 = segment.replace(/-/g, "+").replace(/_/g, "/")
@@ -48,7 +48,7 @@ function readRole(req: NextRequest): string | undefined {
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   if (readRole(req) === "storage" && !ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return NextResponse.redirect(new URL("/vault", req.url))
+    return NextResponse.redirect(new URL("/cnet/vault", req.url))
   }
   return NextResponse.next()
 }
