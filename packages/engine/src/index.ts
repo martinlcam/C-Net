@@ -27,3 +27,6 @@ export type {
   SonarIssueRaw,
   SonarSearchResponse,
 } from "./sonar/types"
+export type { StorageAdapter } from "./vault/adapter"
+export { FilesystemAdapter, getStorageAdapter } from "./vault/filesystem-adapter"
+export { generateThumbnail, pickGenerator, type ThumbnailKind } from "./vault/thumbnails"

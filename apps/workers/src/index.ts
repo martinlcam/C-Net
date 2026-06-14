@@ -1,4 +1,9 @@
-import { getCleanupQueue, getHealthChecksQueue, getMetricsQueue } from "@cnet/core"
+import {
+  getCleanupQueue,
+  getHealthChecksQueue,
+  getMetricsQueue,
+  getVaultMaintenanceQueue,
+} from "@cnet/core"
 import { db } from "@cnet/db"
 import { createBackupRunnerWorker } from "./workers/backup-runner"
 import { createCleanupWorker } from "./workers/cleanup"
@@ -6,6 +11,8 @@ import { createHealthCheckerWorker } from "./workers/health-checker"
 import { createMetricsCollectorWorker } from "./workers/metrics-collector"
 import { createNotificationSenderWorker } from "./workers/notification-sender"
 import { createServiceIntegrationsWorker } from "./workers/service-integrations"
+import { createVaultMaintenanceWorker } from "./workers/vault-maintenance"
+import { createVaultThumbnailsWorker } from "./workers/vault-thumbnails"
 
 let workers: Array<{ name: string; worker: unknown }> = []
 let isShuttingDown = false
@@ -20,6 +27,8 @@ export async function initializeWorkers(): Promise<void> {
     const cleanupWorker = createCleanupWorker()
     const notificationWorker = createNotificationSenderWorker()
     const integrationWorker = createServiceIntegrationsWorker()
+    const vaultThumbnailsWorker = createVaultThumbnailsWorker()
+    const vaultMaintenanceWorker = createVaultMaintenanceWorker()
 
     workers = [
       { name: "metrics", worker: metricsWorker },
@@ -28,6 +37,8 @@ export async function initializeWorkers(): Promise<void> {
       { name: "cleanup", worker: cleanupWorker },
       { name: "notifications", worker: notificationWorker },
       { name: "service-integrations", worker: integrationWorker },
+      { name: "vault-thumbnails", worker: vaultThumbnailsWorker },
+      { name: "vault-maintenance", worker: vaultMaintenanceWorker },
     ]
 
     // Set up scheduled/repeatable jobs
@@ -84,6 +95,19 @@ async function setupScheduledJobs(): Promise<void> {
       },
       jobId: "cleanup-daily-repeat",
     }
+  )
+
+  // Vault trash purge daily at 3 AM; abandoned-upload reaper hourly.
+  const vaultMaintenanceQueue = getVaultMaintenanceQueue()
+  await vaultMaintenanceQueue.add(
+    "purge-trash",
+    { type: "purge-trash" },
+    { repeat: { pattern: "0 3 * * *" }, jobId: "vault-purge-trash-daily" }
+  )
+  await vaultMaintenanceQueue.add(
+    "reap-uploads",
+    { type: "reap-uploads" },
+    { repeat: { every: 60 * 60 * 1000 }, jobId: "vault-reap-uploads-hourly" }
   )
 }
 

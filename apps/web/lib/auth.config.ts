@@ -1,9 +1,10 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
+import { getAllowlistEntry, isEmailAuthorized, type VaultRole } from "@cnet/core"
 import { db } from "@cnet/db"
 import { accounts, sessions, users, verificationTokens } from "@cnet/db/schema"
 import jwt from "jsonwebtoken"
 import type { NextRequest } from "next/server"
-import type { NextAuthConfig, Session } from "next-auth"
+import type { NextAuthConfig, NextAuthResult, Session } from "next-auth"
 import NextAuth from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import Google from "next-auth/providers/google"
@@ -53,11 +54,10 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Email whitelist - only allow martinlucam@gmail.com
-      const allowedEmail = "martinlucam@gmail.com"
+      // Allowlist gate (VAULT_ALLOWLIST): super + storage users may sign in.
       const userEmail = user.email || profile?.email || account?.email
 
-      if (userEmail !== allowedEmail) {
+      if (typeof userEmail !== "string" || !isEmailAuthorized(userEmail)) {
         console.warn(`Unauthorized sign-in attempt from: ${userEmail}`)
         return false
       }
@@ -68,11 +68,16 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id
       }
+      // Resolve role live from the allowlist (source of truth) on each refresh.
+      const rawEmail = user?.email ?? token.email
+      const email = typeof rawEmail === "string" ? rawEmail : undefined
+      token.role = (email ? getAllowlistEntry(email)?.role : undefined) ?? "storage"
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.role = (token.role as VaultRole) ?? "storage"
       }
       return session
     },
@@ -99,6 +104,9 @@ export const authConfig: NextAuthConfig = {
 const nextAuth = NextAuth(authConfig)
 
 export const auth: (...args: [NextRequest] | []) => Promise<Session | null> = nextAuth.auth
+
+// Full-typed wrapper for Next.js middleware (supports the `auth((req) => ...)` overload).
+export const authMiddleware: NextAuthResult["auth"] = nextAuth.auth
 
 export const handlers: {
   GET: (request: NextRequest) => Promise<Response>
