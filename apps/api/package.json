@@ -13,21 +13,21 @@
     "@cnet/core": "workspace:*",
     "@cnet/db": "workspace:*",
     "@cnet/engine": "workspace:*",
-    "@tsoa/runtime": "^7.0.0-alpha.0",
-    "bullmq": "^5.66.5",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "drizzle-orm": "^0.44.7",
-    "express": "^5.1.0",
-    "ioredis": "^5.4.2",
-    "pg": "^8.11.3",
-    "tsoa": "^6.6.0"
+    "@tsoa/runtime": "7.0.0-alpha.0",
+    "bullmq": "5.66.5",
+    "cookie-parser": "1.4.7",
+    "cors": "2.8.6",
+    "drizzle-orm": "0.44.7",
+    "express": "5.2.1",
+    "ioredis": "5.9.2",
+    "pg": "8.17.1",
+    "tsoa": "6.6.0"
   },
   "devDependencies": {
-    "@types/cookie-parser": "^1.4.8",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/pg": "^8.15.2",
-    "typescript": "^5.9.2"
+    "@types/cookie-parser": "1.4.10",
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/pg": "8.16.0",
+    "typescript": "5.9.3"
   }
 }
