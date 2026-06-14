@@ -26,3 +26,11 @@ export {
 export { closeRedisConnection, getRedisClient } from "./redis"
 export type { ApiError, ApiResponse, PaginatedResponse } from "./types/api"
 export { formatBytes, formatPercent, getClientIp } from "./utils"
+export { resolveCollision } from "./vault/naming"
+export {
+  type Disposition,
+  type DownloadClaims,
+  signDownload,
+  vaultSigningSecret,
+  verifyDownload,
+} from "./vault/signing"
