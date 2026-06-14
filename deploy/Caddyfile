@@ -17,3 +17,20 @@
 		reverse_proxy 127.0.0.1:3001
 	}
 }
+
+# OPTIONAL prod optimization (not required — the API already streams signed
+# vault downloads with HTTP range support through the /svc route above).
+# To take large byte transfers off the Node event loop, serve files straight
+# from the tank mount after validating the signature at the API. Requires
+# TANK_MOUNT_PATH to be readable by Caddy. The API exposes GET /vault/_authz/*
+# which returns 200 + Content-Type/Content-Disposition for a valid signature.
+#
+#	handle_path /svc/vault/dl/* {
+#		forward_auth 127.0.0.1:4000 {
+#			uri /vault/_authz/{path}?{query}
+#			copy_headers Content-Type Content-Disposition
+#		}
+#		root * {$TANK_MOUNT_PATH}
+#		rewrite * /cnet/users/{path}
+#		file_server
+#	}
