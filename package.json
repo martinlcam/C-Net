@@ -24,7 +24,7 @@
     "bridge": "cd apps/neural-bridge && .venv/bin/python -m neural_bridge run"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.0",
+    "@biomejs/biome": "2.3.11",
     "sonarqube-scanner": "4.3.6",
     "turbo": "2.9.18",
     "typescript": "5.9.3"
