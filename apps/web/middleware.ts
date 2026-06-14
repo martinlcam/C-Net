@@ -32,7 +32,10 @@ function readRole(req: NextRequest): string | undefined {
     .filter((c) => c.name.includes(SESSION_COOKIE_FRAGMENT))
     .sort((a, b) => a.name.localeCompare(b.name))
   if (chunks.length === 0) return undefined
-  const payload = chunks.map((c) => c.value).join("").split(".")[1]
+  const payload = chunks
+    .map((c) => c.value)
+    .join("")
+    .split(".")[1]
   if (!payload) return undefined
   try {
     const claims = JSON.parse(b64urlDecode(payload)) as { role?: unknown }
