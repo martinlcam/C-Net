@@ -21,6 +21,8 @@ export {
   getQueue,
   getRedisConnectionOptions,
   getServiceIntegrationsQueue,
+  getVaultMaintenanceQueue,
+  getVaultThumbnailsQueue,
   QUEUE_NAMES,
 } from "./queues"
 export { closeRedisConnection, getRedisClient } from "./redis"
