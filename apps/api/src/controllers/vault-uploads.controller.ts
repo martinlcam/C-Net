@@ -6,8 +6,8 @@ import { and, eq } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Put, Request, Route, Security } from "tsoa"
 import { actorFrom } from "../vault/access"
+import { type FileDto, toFileDto } from "../vault/dto"
 import { liveFileNames } from "../vault/siblings"
-import { type SignedUrls, signedUrlsFor } from "../vault/urls"
 import { completedUsage, wouldExceedQuota } from "../vault/usage"
 
 type CreateUploadBody = {
@@ -19,13 +19,6 @@ type CreateUploadBody = {
 }
 type CreateUploadResult = { uploadId: string; chunkSize: number; chunkCount: number }
 type UploadProgress = { receivedChunks: number[]; uploadedBytes: number; chunkCount: number }
-type FinalizeResult = {
-  id: string
-  filename: string
-  size: number
-  contentType: string
-  directoryId: string | null
-} & SignedUrls
 
 async function readBody(req: ExpressRequest): Promise<Buffer> {
   const chunks: Buffer[] = []
@@ -118,10 +111,7 @@ export class VaultUploadsController extends Controller {
 
   /** POST /vault/uploads/:id/finalize — assemble, store, graduate to vault_files. */
   @Post("{id}/finalize")
-  public async finalize(
-    @Request() req: ExpressRequest,
-    @Path() id: string
-  ): Promise<FinalizeResult> {
+  public async finalize(@Request() req: ExpressRequest, @Path() id: string): Promise<FileDto> {
     const actor = actorFrom(req)
     const upload = await this.loadUpload(actor.id, id)
     if (!upload) {
@@ -175,14 +165,7 @@ export class VaultUploadsController extends Controller {
     }
 
     this.setStatus(201)
-    return {
-      id: file.id,
-      filename: file.filename,
-      size: file.size,
-      contentType: file.contentType,
-      directoryId: file.directoryId,
-      ...signedUrlsFor(actor.id, file.id, Date.now()),
-    }
+    return toFileDto(file, Date.now())
   }
 
   private async loadUpload(ownerUserId: string, id: string) {
