@@ -1,4 +1,4 @@
-import { getQueue, resolveCollision } from "@cnet/core"
+import { getVaultThumbnailsQueue, resolveCollision } from "@cnet/core"
 import { db } from "@cnet/db"
 import { vaultFiles, vaultUploads } from "@cnet/db/schema"
 import { getStorageAdapter } from "@cnet/engine"
@@ -165,7 +165,7 @@ export class VaultUploadsController extends Controller {
 
     // Best-effort thumbnail enqueue (worker lands in Plan 2; never block finalize).
     try {
-      await getQueue("vault-thumbnails").add("thumbnail", {
+      await getVaultThumbnailsQueue().add("thumbnail", {
         userId: actor.id,
         fileId: file.id,
         contentType: file.contentType,
