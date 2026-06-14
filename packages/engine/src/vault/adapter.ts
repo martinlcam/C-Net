@@ -10,4 +10,7 @@ export interface StorageAdapter {
   resolvePath(userId: string, id: string): string
   createReadStream(userId: string, id: string, range?: { start: number; end: number }): ReadStream
   size(userId: string, id: string): Promise<number>
+  // thumbnail delivery (thumbSize returns null when no thumbnail exists yet)
+  thumbStream(userId: string, id: string): ReadStream
+  thumbSize(userId: string, id: string): Promise<number | null>
 }

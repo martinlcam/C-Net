@@ -96,4 +96,25 @@ export function registerVaultDownload(app: Express): void {
     res.setHeader("Content-Length", String(file.size))
     adapter.createReadStream(file.ownerUserId, file.id).pipe(res)
   })
+
+  // Thumbnail server: serves the generated .webp derivative (304-cacheable).
+  // Authorized by the same inline signature as the file's previewUrl.
+  app.get("/vault/thumb/:userId/:fileId", async (req: Request, res: Response) => {
+    const resolved = await resolve(req)
+    if (!resolved) {
+      res.status(403).end()
+      return
+    }
+    const { file } = resolved
+    const adapter = getStorageAdapter()
+    const size = await adapter.thumbSize(file.ownerUserId, file.id)
+    if (size === null) {
+      res.status(404).end() // no thumbnail generated yet
+      return
+    }
+    res.setHeader("Content-Type", "image/webp")
+    res.setHeader("Content-Length", String(size))
+    res.setHeader("Cache-Control", "private, max-age=3600")
+    adapter.thumbStream(file.ownerUserId, file.id).pipe(res)
+  })
 }
