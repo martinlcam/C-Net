@@ -4,7 +4,7 @@ import { and, eq, ilike, isNotNull, isNull } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Controller, Get, Query, Request, Route, Security } from "tsoa"
 import { actorFrom } from "../vault/access"
-import { type DirDto, type FileDto, toFileDto } from "../vault/dto"
+import { type DirDto, type FileDto, toFileDto, toFileDtos } from "../vault/dto"
 
 @Route("vault")
 @Security("jwt")
@@ -29,8 +29,7 @@ export class VaultViewsController extends Controller {
         )
       )
       .limit(200)
-    const now = Date.now()
-    return { files: rows.map((f) => toFileDto(f, now)) }
+    return { files: await toFileDtos(rows, actor.id, Date.now()) }
   }
 
   /** GET /vault/starred — starred files. */
@@ -48,8 +47,37 @@ export class VaultViewsController extends Controller {
           isNull(vaultFiles.deletedAt)
         )
       )
-    const now = Date.now()
-    return { files: rows.map((r) => toFileDto(r.file, now)) }
+    return {
+      files: await toFileDtos(
+        rows.map((r) => r.file),
+        actor.id,
+        Date.now()
+      ),
+    }
+  }
+
+  /** GET /vault/colored — files the user has color-tagged. */
+  @Get("colored")
+  public async colored(@Request() req: ExpressRequest): Promise<{ files: FileDto[] }> {
+    const actor = actorFrom(req)
+    const rows = await db
+      .select({ file: vaultFiles })
+      .from(vaultItemMetadata)
+      .innerJoin(vaultFiles, eq(vaultItemMetadata.fileId, vaultFiles.id))
+      .where(
+        and(
+          eq(vaultItemMetadata.userId, actor.id),
+          isNotNull(vaultItemMetadata.color),
+          isNull(vaultFiles.deletedAt)
+        )
+      )
+    return {
+      files: await toFileDtos(
+        rows.map((r) => r.file),
+        actor.id,
+        Date.now()
+      ),
+    }
   }
 
   /** GET /vault/trash — soft-deleted files and directories. */

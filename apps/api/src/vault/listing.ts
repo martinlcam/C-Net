@@ -1,18 +1,7 @@
 import { db } from "@cnet/db"
 import { vaultDirectories, vaultFiles } from "@cnet/db/schema"
 import { and, asc, eq, isNull } from "drizzle-orm"
-import { type SignedUrls, signedUrlsFor } from "./urls"
-
-export type VaultFileDto = {
-  id: string
-  filename: string
-  size: number
-  contentType: string
-  thumbKey: string | null
-  directoryId: string | null
-  createdAt: Date
-  updatedAt: Date
-} & SignedUrls
+import { type FileDto, toFileDtos } from "./dto"
 
 export type VaultDirDto = {
   id: string
@@ -29,7 +18,7 @@ export type DirectoryListing = {
   directory: VaultDirDto | null
   breadcrumbs: Breadcrumb[]
   directories: VaultDirDto[]
-  files: VaultFileDto[]
+  files: FileDto[]
 }
 
 function toDirDto(d: typeof vaultDirectories.$inferSelect): VaultDirDto {
@@ -105,16 +94,6 @@ export async function listDirectory(
     directory: current ? toDirDto(current) : null,
     breadcrumbs: await buildBreadcrumbs(ownerUserId, current),
     directories: dirs.map(toDirDto),
-    files: files.map((f) => ({
-      id: f.id,
-      filename: f.filename,
-      size: f.size,
-      contentType: f.contentType,
-      thumbKey: f.thumbKey,
-      directoryId: f.directoryId,
-      createdAt: f.createdAt,
-      updatedAt: f.updatedAt,
-      ...signedUrlsFor(ownerUserId, f.id, nowMs),
-    })),
+    files: await toFileDtos(files, ownerUserId, nowMs),
   }
 }

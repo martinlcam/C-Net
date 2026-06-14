@@ -47,6 +47,16 @@ export class FilesystemAdapter implements StorageAdapter {
     const s = await stat(this.filePath(userId, id))
     return s.size
   }
+  thumbStream(userId: string, id: string): ReadStream {
+    return createReadStream(this.thumbPath(userId, id))
+  }
+  async thumbSize(userId: string, id: string): Promise<number | null> {
+    try {
+      return (await stat(this.thumbPath(userId, id))).size
+    } catch {
+      return null
+    }
+  }
 }
 
 let singleton: FilesystemAdapter | null = null
