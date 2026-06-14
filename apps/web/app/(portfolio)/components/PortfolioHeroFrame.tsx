@@ -20,7 +20,7 @@ export function PortfolioHeroFrame({ theme = "portfolio", children }: Props) {
       <div className="flex">
         <div
           className={`hidden md:flex w-[58px] border-r ${border} flex-col items-center shrink-0 ${
-            theme === "bd" ? "justify-start py-8" : "pt-2"
+            theme === "bd" ? "justify-start py-8" : ""
           }`}
         >
           {theme === "bd" ? (
@@ -35,17 +35,7 @@ export function PortfolioHeroFrame({ theme = "portfolio", children }: Props) {
               <span className="text-[14px] leading-none text-bd-purple">│</span>
               <span className="text-[30px] leading-none text-bd-live/85">念</span>
             </div>
-          ) : (
-            <div
-              className={`flex flex-col items-center text-[48px] font-normal ${text} leading-none tracking-tight`}
-            >
-              <span>C</span>
-              <span className="text-[24px]">│</span>
-              <span>N</span>
-              <span>E</span>
-              <span>T</span>
-            </div>
-          )}
+          ) : null}
         </div>
         {children}
       </div>
