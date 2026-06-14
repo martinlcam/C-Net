@@ -12,12 +12,12 @@
   "dependencies": {
     "@cnet/core": "workspace:*",
     "@cnet/db": "workspace:*",
-    "axios": "^1.7.9",
-    "react": "^19.2.3",
-    "resend": "^4.0.0"
+    "axios": "1.13.6",
+    "react": "19.2.3",
+    "resend": "4.8.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.8",
-    "typescript": "^5.9.2"
+    "@types/react": "19.2.8",
+    "typescript": "5.9.3"
   }
 }
