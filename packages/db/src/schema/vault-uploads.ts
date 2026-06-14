@@ -16,10 +16,7 @@ export const vaultUploads = pgTable(
     chunkSize: bigint("chunk_size", { mode: "number" }).notNull(),
     chunkCount: integer("chunk_count").notNull(),
     uploadedBytes: bigint("uploaded_bytes", { mode: "number" }).notNull().default(0),
-    receivedChunks: integer("received_chunks")
-      .array()
-      .notNull()
-      .default(sql`'{}'`),
+    receivedChunks: integer("received_chunks").array().notNull().default(sql`'{}'`),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     lastChunkAt: timestamp("last_chunk_at"),
   },
