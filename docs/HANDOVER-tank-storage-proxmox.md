@@ -11,7 +11,7 @@ see. **Do not touch app code.**
 - The C-Net LXC must have tank main bind-mounted at a path exposed to the app as
   `TANK_MOUNT_PATH`. The app stores every file under
   `${TANK_MOUNT_PATH}/cnet/users/<userId>/...` (flat by file id; folders are DB-only).
-  That tree must be writable by the LXC's mapped uid/gid.
+  That tree must be writable by the LXC's mapped uid/gid
 - Per-user hard quota target: **1 TB** (some users differ — see `VAULT_ALLOWLIST`).
 - The app already enforces a **soft** quota in code (blocks over-limit uploads, shows
   remaining space). You provide the **hard** filesystem backstop, if the host supports one.
