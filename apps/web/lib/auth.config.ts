@@ -1,5 +1,5 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
-import { getAllowlistEntry, isEmailAuthorized, type VaultRole } from "@cnet/core"
+import { getAllowlistEntry, isEmailAuthorized, type VaultRole } from "@cnet/core/access/allowlist"
 import { db } from "@cnet/db"
 import { accounts, sessions, users, verificationTokens } from "@cnet/db/schema"
 import jwt from "jsonwebtoken"

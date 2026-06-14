@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./access/allowlist": "./src/access/allowlist.ts",
     "./env": "./src/env.ts"
   },
   "scripts": {
