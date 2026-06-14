@@ -43,6 +43,13 @@
       "when": 1781047531376,
       "tag": "0005_early_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781422825359,
+      "tag": "0006_red_mysterio",
+      "breakpoints": true
     }
   ]
 }
