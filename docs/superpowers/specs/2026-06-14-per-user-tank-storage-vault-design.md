@@ -37,7 +37,8 @@ local filesystem layer over the bind-mounted tank.
 | Multi-user gate | Replace the single hard-coded email with an **allowlist config** (source of truth, read live by email per request). |
 | Roles | `super` and `storage`, derived live from the allowlist — no `role`/`quota` columns on `users`. |
 | File delivery | **Signed short-lived URLs served by Caddy** with HTTP range support; bytes bypass the Node process. |
-| Uploads | **Chunked + resumable.** |
+| Uploads | **Chunked + resumable**, tracked in a dedicated `vault_uploads` session table; reaped if abandoned. |
+| Admin override | Isolated to a dedicated `AdminVaultController`; shared endpoints never read a caller-supplied user id. |
 | Quota enforcement | **App-level accounting** for UX + pre-flight rejection; **hard ZFS/LVM backstop deferred to the proxmox-claude** via a handover doc. |
 | Thumbnails | BullMQ worker: `sharp` (images) + PDF first-page raster + `ffmpeg` (video poster). |
 | Superuser scope | Superuser can browse/download/delete **any** user's vault via an admin path. |
@@ -72,18 +73,20 @@ proxmox-claude provisions their dataset. No admin UI is built in v1.
 Ported from Futurity, filesystem-flavored. New Drizzle tables in `packages/db`:
 
 ### `vault_files`
+A row here means a **real, completed file** — uploads in progress live in `vault_uploads`
+(below) and only graduate to `vault_files` on finalize. There is no `uploading` status.
+
 ```
-id                   uuid pk
+id                   uuid pk        -- equals the vault_uploads.id it graduated from;
+                                    -- also the immutable on-disk key
 owner_user_id        uuid not null  fk users(id) cascade
 directory_id         uuid null      fk vault_directories(id)   -- null = root
 filename             text not null  -- basename only
 size                 bigint not null check (size >= 0)
 content_type         text not null
-status               enum('uploading','completed','failed') not null
 thumb_key            text null      -- set when a thumbnail exists
-created_at           timestamp default now()
+created_at           timestamp default now()   -- = finalize time
 updated_at           timestamp default now()
-completed_at         timestamp null
 deleted_at           timestamp null -- soft delete
 original_directory_id uuid null     -- for restore-from-trash
 
@@ -91,8 +94,30 @@ unique (directory_id, filename, owner_user_id) where deleted_at is null
 index (owner_user_id, created_at)
 index (directory_id)
 index (deleted_at)
-index (status)
 -- pg_trgm GIN index on filename for fuzzy search
+```
+
+### `vault_uploads`
+Dedicated upload-session table so resume, progress, and cleanup don't overload
+`vault_files`. The row's `id` is allocated at upload start and **reused as the
+`vault_files.id` and on-disk key** on finalize, so the bytes never move.
+
+```
+id              uuid pk
+owner_user_id   uuid not null fk users(id) cascade
+directory_id    uuid null      -- target directory for the finished file
+filename        text not null
+content_type    text not null
+expected_size   bigint not null check (expected_size >= 0)
+chunk_size      bigint not null
+chunk_count     integer not null
+uploaded_bytes  bigint not null default 0
+received_chunks integer[] not null default '{}'  -- indices that have landed
+created_at      timestamp default now()
+last_chunk_at   timestamp null
+
+index (owner_user_id)
+index (last_chunk_at)   -- for the abandoned-upload reaper
 ```
 
 ### `vault_directories`
@@ -150,18 +175,20 @@ moves/renames need no filesystem work.
 
 ```ts
 interface StorageAdapter {
-  // chunked upload
-  appendChunk(userId: string, fileId: string, index: number, body: ReadableStream): Promise<void>
-  receivedChunks(userId: string, fileId: string): Promise<number[]>
-  finalize(userId: string, fileId: string): Promise<void>   // .part -> final
+  // chunked upload (id = vault_uploads.id, later vault_files.id)
+  appendChunk(userId: string, id: string, index: number, body: ReadableStream): Promise<void>
+  finalize(userId: string, id: string): Promise<void>       // <id>.part -> <id>
   // lifecycle
-  remove(userId: string, fileId: string): Promise<void>
-  writeThumb(userId: string, fileId: string, body: Buffer): Promise<void>
+  remove(userId: string, id: string): Promise<void>         // file or orphaned .part
+  writeThumb(userId: string, id: string, body: Buffer): Promise<void>
   // delivery support
-  resolvePath(userId: string, fileId: string): string       // for Caddy/range serving
+  resolvePath(userId: string, id: string): string           // for Caddy/range serving
   usage(userId: string): Promise<number>                    // sum of bytes (optional cross-check)
 }
 ```
+
+Received-chunk tracking is owned by the DB (`vault_uploads.received_chunks`), not the
+adapter — one source of truth for resume.
 
 `FilesystemAdapter` implements this over `<TANK_MOUNT_PATH>/cnet/users/...`. An in-memory
 fake makes vault logic unit-testable. A future `S3Adapter`/`MinioAdapter` can slot in
@@ -169,20 +196,35 @@ without touching controllers.
 
 ## 5. Upload (chunked + resumable)
 
-1. `POST /vault/files` with metadata (`directoryId?`, `filename`, `contentType`, `size`)
-   → creates a `vault_files` row with `status='uploading'`, returns `{ fileId }`.
-2. `PUT /vault/files/:id/chunks/:index` streams a chunk → adapter appends to `<fileId>.part`.
-3. `GET /vault/files/:id/chunks` returns received chunk indices so a dropped/refreshed
-   client can resume without restarting.
-4. `POST /vault/files/:id/finalize`:
-   - **Quota pre-flight:** `usage = SUM(size) WHERE owner_user_id = user AND status = 'completed'`
-     (this includes trashed-but-unpurged files, whose rows still exist — see §8) plus the
-     still-pending file's size; if `usage > quota` → reject `413`, discard `.part`.
-   - else: adapter `finalize` (`.part` → `<fileId>`), set `status='completed'`,
-     `completed_at=now()`, enqueue the thumbnail job.
+Upload sessions live in `vault_uploads`; the session `id` becomes the final `vault_files.id`.
+
+1. `POST /vault/uploads` with metadata (`directoryId?`, `filename`, `contentType`,
+   `expectedSize`, `chunkSize`) →
+   - **Quota pre-flight (at start):** reject `413` if
+     `SUM(vault_files.size for user) + SUM(vault_uploads.expected_size for user) + expectedSize > quota`.
+     Checking at start (not just finalize) stops a user from filling the disk with `.part`
+     bytes for an upload that can never fit. (The completed-files sum includes
+     trashed-but-unpurged files, whose rows still exist — see §8.)
+   - else create a `vault_uploads` row, return `{ uploadId, chunkSize, chunkCount }`.
+2. `PUT /vault/uploads/:id/chunks/:index` streams a chunk → adapter appends to `<id>.part`;
+   updates `uploaded_bytes`, appends `index` to `received_chunks`, sets `last_chunk_at`.
+3. `GET /vault/uploads/:id` returns `received_chunks` (+ `uploaded_bytes`) so a dropped or
+   refreshed client resumes without restarting.
+4. `POST /vault/uploads/:id/finalize`:
+   - verify every chunk index in `0..chunk_count-1` is present and `uploaded_bytes` matches
+     the assembled file size; mismatch → `409`, keep the session for resume.
+   - **Quota re-check** against actual size (guards against a wrong `expectedSize`).
+   - adapter `finalize` (`<id>.part` → `<id>`), **insert** the `vault_files` row (resolving
+     name collisions in the target dir per the rename policy), **delete** the `vault_uploads`
+     row, enqueue the thumbnail job.
 
 The frontend upload hook (ported from Futurity's `useUploadFileMutation`) swaps the
 "presigned S3 PUT" step for these chunk endpoints; progress UI stays.
+
+**Abandoned-upload reaper:** a scheduled BullMQ job deletes `vault_uploads` rows whose
+`last_chunk_at` (or `created_at` if no chunk ever landed) is older than `VAULT_UPLOAD_TTL`
+(default 24h) and calls `adapter.remove` on the orphaned `<id>.part`. This is the only thing
+that frees a disappeared user's partial bytes.
 
 ## 6. Delivery (signed URLs via Caddy)
 
@@ -216,16 +258,38 @@ icon); thumbnail failure never fails the upload. `ffmpeg` becomes a worker depen
   A Trash view lists soft-deleted items with restore / delete-forever. A scheduled BullMQ
   purge job removes rows past the retention window (default 30 days) and calls
   `adapter.remove` to free bytes. **Trashed files count against quota until purged.**
+- **Restore collision policy:** restore targets `original_directory_id`. If a **live** file
+  with the same `(directory_id, filename, owner_user_id)` already exists (the name was reused
+  while this file sat in trash), the partial-unique index would reject the restore, so we
+  **auto-rename** the restored file to `name (restored).ext`; if that also collides, append an
+  incrementing counter — `name (restored 2).ext`, `name (restored 3).ext` — until it is unique.
+  If `original_directory_id` no longer exists, restore to root with the same rename rule. This
+  matches Futurity's "restore to original, rename on conflict" behavior. The same
+  `name (N).ext` conflict resolver is reused for rename/move/finalize.
 - **Star/color:** `vault_item_metadata`; "Starred" view and color filter. Pure organization.
 - **Search:** filename `ILIKE` / `pg_trgm` fuzzy match, scoped to the current folder or
   global. No embeddings, no vectors.
 
-## 9. Superuser admin
+## 9. Superuser admin (impersonation semantics)
 
-`super` gets `/admin/vault/<userId>` (web) and the corresponding API path that bypasses the
-`ownerUserId === user.id` scope to browse, download, and delete any user's files and read
-their usage. Storage users have no such path. This is enforced by the role check, not by a
-separate table.
+The superuser override is isolated to a **dedicated admin controller**, never bolted onto the
+shared vault endpoints. This is a security boundary, not a convenience:
+
+- **The regular `VaultController` always derives `ownerUserId` from the authenticated session
+  and never reads a user id from query/body/header.** There is no code path in the shared
+  endpoints that lets a caller act on another user's files — eliminating the classic
+  `req.query.userId` IDOR.
+- A separate `AdminVaultController` (web: `/admin/vault/<userId>`, API: `/admin/vault/{userId}/*`)
+  is the **only** place that targets a different user. Every handler there begins with the same
+  guard, and it is the **single** authorized bypass in the codebase:
+  ```ts
+  if (user.role !== "super") throw new ForbiddenError()
+  const ownerUserId = targetUserId   // from the path param, only here
+  ```
+- Implementation rule for the plan: a review/audit step greps every vault query path to assert
+  the only `ownerUserId` that is not the session user appears inside `AdminVaultController`
+  behind the `role === "super"` guard. Admin reads (browse/download/usage) and destructive
+  actions (delete/purge) are both confined here.
 
 ## 10. proxmox-claude handover document
 
@@ -254,17 +318,24 @@ owner's rule. Structure:
 
 - **Adapter:** unit-test `FilesystemAdapter` (chunk append, resume, finalize, remove) against
   a temp dir; in-memory fake for vault-logic tests.
-- **Quota:** pre-flight rejection at/over limit; usage counts trashed-but-unpurged files.
+- **Quota:** pre-flight rejection at start (completed + active uploads + new) and re-check at
+  finalize; usage counts trashed-but-unpurged files.
 - **Authz:** storage user blocked from non-vault routes and from other users' files; super
-  reaches admin path; unlisted email rejected at sign-in.
-- **Upload resume:** drop mid-upload, query received chunks, resume, finalize — bytes intact.
+  reaches admin path; unlisted email rejected at sign-in. **Audit test:** the only non-session
+  `ownerUserId` lives in `AdminVaultController` behind the `role === "super"` guard.
+- **Upload resume:** drop mid-upload, query `received_chunks`, resume, finalize — bytes intact;
+  finalize with a missing chunk → `409` and the session survives.
+- **Abandoned-upload reaper:** a `vault_uploads` row past `VAULT_UPLOAD_TTL` and its `.part`
+  are removed; an active session is left untouched.
+- **Restore collision:** trash a file, reuse its name, restore → restored copy is auto-renamed
+  `name (restored).ext` and the live file is unchanged.
 - **Delivery:** signed URL validates; expired/forged signature denied; range requests serve
   partial content.
 - **Build gate:** `bun run lint:check` and `bunx turbo build` (tsoa codegen + tsc) pass;
   migration files committed with the schema change.
 
 ## Open items deferred to the plan
-- Exact chunk size / parallelism and the resume-handshake wire format.
+- Default chunk size + client parallelism (client sends `chunkSize`; pick a sane default).
 - Whether the signing secret is `AUTH_SECRET` or a dedicated `VAULT_SIGNING_SECRET`.
-- Purge retention window default (30 days assumed).
+- Purge retention window default (30 days assumed) and `VAULT_UPLOAD_TTL` default (24h assumed).
 - Caddy `forward_auth` header-passing specifics for `Content-Type`/`Content-Disposition`.
