@@ -15,7 +15,8 @@
     "@cnet/db": "workspace:*",
     "axios": "1.13.6",
     "react": "19.2.3",
-    "resend": "4.8.0"
+    "resend": "4.8.0",
+    "sharp": "0.34.2"
   },
   "devDependencies": {
     "@types/react": "19.2.8",
