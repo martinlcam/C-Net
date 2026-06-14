@@ -1,5 +1,5 @@
-const ALLOWED_EMAIL = "martinlucam@gmail.com"
+import { isEmailAuthorized as check } from "./access/allowlist"
 
 export function isEmailAuthorized(email: string): boolean {
-  return email === ALLOWED_EMAIL
+  return check(email)
 }

@@ -9,6 +9,8 @@ export const QUEUE_NAMES = {
   CLEANUP: "cleanup",
   NOTIFICATIONS: "notifications",
   SERVICE_INTEGRATIONS: "service-integrations",
+  VAULT_THUMBNAILS: "vault-thumbnails",
+  VAULT_MAINTENANCE: "vault-maintenance",
 } as const
 
 // Queue instances (singletons)
@@ -113,6 +115,20 @@ export function getNotificationsQueue(): Queue {
  */
 export function getServiceIntegrationsQueue(): Queue {
   return getQueue(QUEUE_NAMES.SERVICE_INTEGRATIONS)
+}
+
+/*
+ * Get the vault thumbnails queue.
+ */
+export function getVaultThumbnailsQueue(): Queue {
+  return getQueue(QUEUE_NAMES.VAULT_THUMBNAILS)
+}
+
+/*
+ * Get the vault maintenance queue (trash purge + abandoned-upload reaper).
+ */
+export function getVaultMaintenanceQueue(): Queue {
+  return getQueue(QUEUE_NAMES.VAULT_MAINTENANCE)
 }
 
 /*

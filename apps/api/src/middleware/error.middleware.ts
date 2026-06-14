@@ -15,6 +15,11 @@ export function errorHandler(
     return
   }
 
+  if (err instanceof Error && err.name === "ForbiddenError") {
+    res.status(403).json({ message: err.message })
+    return
+  }
+
   if (err instanceof Error) {
     const status = err.message.includes("token") || err.message.includes("Unauthorized") ? 401 : 500
     res.status(status).json({

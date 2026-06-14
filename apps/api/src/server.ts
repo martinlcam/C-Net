@@ -3,6 +3,7 @@ import cors, { type CorsOptions } from "cors"
 import express from "express"
 import { RegisterRoutes } from "./generated/routes"
 import { errorHandler } from "./middleware/error.middleware"
+import { registerVaultDownload } from "./vault/download"
 
 const defaultDevOrigins = ["http://localhost:3001", "http://127.0.0.1:3001"]
 
@@ -73,6 +74,10 @@ export function createApp(): express.Express {
   app.use(express.json())
   // Parse cookies so the JWT auth middleware can read the NextAuth session cookie.
   app.use(cookieParser())
+
+  // Signed binary download/stream routes (auth is the URL signature, not a session).
+  // Registered before tsoa so the raw streaming handlers own these paths.
+  registerVaultDownload(app)
 
   RegisterRoutes(app)
 
