@@ -57,7 +57,7 @@ const techLogos = [
 
 export function TechStripSection() {
   return (
-    <div className="h-[10vh] border-b border-black flex items-center overflow-hidden">
+    <div className="h-[7vh] border-b border-black flex items-center overflow-hidden">
       <LogoLoop
         logos={techLogos}
         speed={80}
