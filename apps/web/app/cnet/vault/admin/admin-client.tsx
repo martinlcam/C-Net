@@ -1,24 +1,10 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
 import { useState } from "react"
 import { adminListDir, adminUsers } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
-
-function formatBytes(n: number | null): string {
-  if (n === null) return "∞"
-  if (n < 1024) return `${n} B`
-  const units = ["KB", "MB", "GB", "TB"]
-  let v = n / 1024
-  let i = 0
-  while (v >= 1024 && i < units.length - 1) {
-    v /= 1024
-    i++
-  }
-  return `${v.toFixed(1)} ${units[i]}`
-}
+import { formatBytes } from "../_components/format"
 
 export function AdminVault() {
   const [selected, setSelected] = useState<{ userId: string; email: string } | null>(null)
@@ -30,25 +16,18 @@ export function AdminVault() {
   })
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6 flex items-center gap-3">
-        <Link href="/vault">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <h1 className="font-bold text-3xl text-neutral-100">Vault Admin</h1>
-      </div>
+    <div className="mx-auto max-w-6xl">
+      <h1 className="mb-6 font-bold text-3xl text-neutral-100">Vault Admin</h1>
 
       {usersQuery.error ? (
         <div className="rounded-lg border border-accent-red-30 bg-accent-red-10 p-4 text-accent-red-70">
           {usersQuery.error instanceof Error ? usersQuery.error.message : "Failed to load users"}
         </div>
       ) : usersQuery.isLoading ? (
-        <div className="py-12 text-center text-neutral-70">Loading…</div>
+        <div className="py-12 text-center text-neutral-60">Loading…</div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-neutral-30 bg-white">
-          <div className="flex border-neutral-20 border-b bg-neutral-10 px-4 py-2 font-semibold text-neutral-70 text-xs uppercase tracking-wide">
+        <div className="overflow-hidden rounded-xl border border-neutral-30 bg-white">
+          <div className="flex border-neutral-20 border-b bg-neutral-10 px-4 py-2 font-semibold text-neutral-60 text-xs uppercase tracking-wide">
             <span className="flex-1">User</span>
             <span className="w-24">Role</span>
             <span className="w-28 text-right">Usage</span>
@@ -90,9 +69,9 @@ export function AdminVault() {
         <div className="mt-8">
           <h2 className="mb-3 font-semibold text-neutral-100 text-xl">{selected.email} — root</h2>
           {browseQuery.isLoading ? (
-            <div className="py-8 text-center text-neutral-70">Loading…</div>
+            <div className="py-8 text-center text-neutral-60">Loading…</div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-neutral-30 bg-white">
+            <div className="overflow-hidden rounded-xl border border-neutral-30 bg-white">
               {browseQuery.data?.directories.map((d) => (
                 <div
                   key={d.id}
@@ -112,7 +91,7 @@ export function AdminVault() {
               ))}
               {(browseQuery.data?.directories.length ?? 0) === 0 &&
               (browseQuery.data?.files.length ?? 0) === 0 ? (
-                <div className="py-8 text-center text-neutral-70">Empty</div>
+                <div className="py-8 text-center text-neutral-60">Empty</div>
               ) : null}
             </div>
           )}

@@ -4,32 +4,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { File as FileIcon, RotateCcw, Trash2 } from "lucide-react"
 import { getTrash, purgeFile, restoreFile } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  const units = ["KB", "MB", "GB", "TB"]
-  let v = n / 1024
-  let i = 0
-  while (v >= 1024 && i < units.length - 1) {
-    v /= 1024
-    i++
-  }
-  return `${v.toFixed(1)} ${units[i]}`
-}
+import { formatBytes } from "../_components/format"
 
 export default function TrashPage() {
   const qc = useQueryClient()
   const { data, isLoading, error } = useQuery({ queryKey: ["vault", "trash"], queryFn: getTrash })
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["vault", "trash"] })
-  const restore = useMutation({ mutationFn: restoreFile, onSuccess: invalidate })
-  const purge = useMutation({ mutationFn: purgeFile, onSuccess: invalidate })
+  const onSuccess = () => qc.invalidateQueries({ queryKey: ["vault"] })
+  const restore = useMutation({ mutationFn: restoreFile, onSuccess })
+  const purge = useMutation({ mutationFn: purgeFile, onSuccess })
 
   const files = data?.files ?? []
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="mb-6 font-bold text-3xl text-neutral-100">Trash</h1>
-      <p className="mb-4 text-neutral-70 text-sm">
+    <div className="mx-auto max-w-6xl">
+      <h1 className="mb-2 font-bold text-3xl text-neutral-100">Trash</h1>
+      <p className="mb-6 text-neutral-60 text-sm">
         Deleted files are kept here until purged. Restoring returns them to their original folder.
       </p>
 
@@ -38,17 +27,23 @@ export default function TrashPage() {
           {error instanceof Error ? error.message : "Something went wrong"}
         </div>
       ) : isLoading ? (
-        <div className="py-12 text-center text-neutral-70">Loading…</div>
+        <div className="py-16 text-center text-neutral-60">Loading…</div>
+      ) : files.length === 0 ? (
+        <div className="py-16 text-center text-neutral-60">Trash is empty</div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-neutral-30 bg-white">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
           {files.map((f) => (
             <div
               key={f.id}
-              className="flex items-center gap-3 border-neutral-20 border-b px-4 py-3 last:border-b-0 hover:bg-neutral-10"
+              className="flex items-center gap-3 rounded-xl border border-neutral-30 bg-white px-4 py-3"
             >
-              <FileIcon className="h-5 w-5 text-neutral-70" />
-              <span className="flex-1 truncate text-neutral-100">{f.filename}</span>
-              <span className="w-20 text-right text-neutral-70 text-sm">{formatBytes(f.size)}</span>
+              <FileIcon className="h-5 w-5 shrink-0 text-neutral-60" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-neutral-100 text-sm" title={f.filename}>
+                  {f.filename}
+                </div>
+                <div className="text-neutral-50 text-xs">{formatBytes(f.size)}</div>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
@@ -67,9 +62,6 @@ export default function TrashPage() {
               </Button>
             </div>
           ))}
-          {files.length === 0 ? (
-            <div className="py-12 text-center text-neutral-70">Trash is empty</div>
-          ) : null}
         </div>
       )}
     </div>

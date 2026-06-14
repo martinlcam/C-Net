@@ -7,8 +7,11 @@ export type VaultFile = {
   contentType: string
   directoryId: string | null
   thumbKey: string | null
+  starred: boolean
+  color: string | null
   previewUrl: string
   downloadUrl: string
+  thumbUrl: string
 }
 
 export type VaultDir = {
@@ -90,6 +93,9 @@ export function starFile(id: string): Promise<{ ok: true }> {
 export function unstarFile(id: string): Promise<{ ok: true }> {
   return req(`/vault/files/${id}/star`, { method: "DELETE" })
 }
+export function setFileColor(id: string, color: string | null): Promise<{ ok: true }> {
+  return req(`/vault/files/${id}/color`, { method: "POST", body: JSON.stringify({ color }) })
+}
 
 // --- views ---
 export function search(q: string): Promise<{ files: VaultFile[] }> {
@@ -100,6 +106,9 @@ export function getTrash(): Promise<{ files: VaultFile[]; directories: VaultDir[
 }
 export function getStarred(): Promise<{ files: VaultFile[] }> {
   return req("/vault/starred")
+}
+export function getColored(): Promise<{ files: VaultFile[] }> {
+  return req("/vault/colored")
 }
 
 // --- admin ---
