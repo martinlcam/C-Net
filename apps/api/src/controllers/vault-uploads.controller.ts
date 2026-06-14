@@ -38,7 +38,7 @@ async function readBody(req: ExpressRequest): Promise<Buffer> {
 export class VaultUploadsController extends Controller {
   /** POST /vault/uploads — open an upload session (quota pre-flight at start). */
   @Post()
-  public async create(
+  public async createUpload(
     @Request() req: ExpressRequest,
     @Body() body: CreateUploadBody
   ): Promise<CreateUploadResult> {

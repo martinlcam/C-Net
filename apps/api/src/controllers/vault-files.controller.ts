@@ -30,7 +30,7 @@ export class VaultFilesController extends Controller {
 
   /** POST /vault/files/:id/rename */
   @Post("{id}/rename")
-  public async rename(
+  public async renameFile(
     @Request() req: ExpressRequest,
     @Path() id: string,
     @Body() body: RenameBody
@@ -55,7 +55,7 @@ export class VaultFilesController extends Controller {
 
   /** POST /vault/files/:id/move */
   @Post("{id}/move")
-  public async move(
+  public async moveFile(
     @Request() req: ExpressRequest,
     @Path() id: string,
     @Body() body: MoveBody
@@ -84,7 +84,7 @@ export class VaultFilesController extends Controller {
 
   /** DELETE /vault/files/:id — soft delete (to trash). */
   @Delete("{id}")
-  public async remove(
+  public async removeFile(
     @Request() req: ExpressRequest,
     @Path() id: string
   ): Promise<{ deleted: true }> {

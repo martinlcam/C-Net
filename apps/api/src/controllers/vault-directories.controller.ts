@@ -28,7 +28,7 @@ export class VaultDirectoriesController extends Controller {
 
   /** POST /vault/directories — create a folder under parentId (null = root). */
   @Post()
-  public async create(
+  public async createDirectory(
     @Request() req: ExpressRequest,
     @Body() body: CreateDirBody
   ): Promise<DirResult> {
@@ -52,7 +52,7 @@ export class VaultDirectoriesController extends Controller {
 
   /** POST /vault/directories/:id/rename */
   @Post("{id}/rename")
-  public async rename(
+  public async renameDirectory(
     @Request() req: ExpressRequest,
     @Path() id: string,
     @Body() body: RenameDirBody
@@ -76,7 +76,7 @@ export class VaultDirectoriesController extends Controller {
 
   /** POST /vault/directories/:id/move — reparent (parentId null = root). */
   @Post("{id}/move")
-  public async move(
+  public async moveDirectory(
     @Request() req: ExpressRequest,
     @Path() id: string,
     @Body() body: MoveDirBody
@@ -117,7 +117,7 @@ export class VaultDirectoriesController extends Controller {
 
   /** DELETE /vault/directories/:id — soft-delete the folder, its subtree, and their files. */
   @Delete("{id}")
-  public async remove(
+  public async removeDirectory(
     @Request() req: ExpressRequest,
     @Path() id: string
   ): Promise<{ deleted: true }> {
