@@ -6,6 +6,7 @@ import type { VaultDir, VaultFile } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
 import type { FileActions, FolderActions, RenameTarget } from "./file-actions"
 import { FileItemMenu, FolderItemMenu } from "./file-item-menu"
+import { FilePreviewModal } from "./file-preview-modal"
 import { FileThumb } from "./file-thumb"
 import { colorHex, formatBytes } from "./format"
 import { InlineNameEdit } from "./inline-name-edit"
@@ -115,12 +116,14 @@ function FileGridCard({
   renaming,
   onStartRename,
   onCancelRename,
+  onOpen,
 }: {
   file: VaultFile
   actions: FileActions
   renaming: boolean
   onStartRename: () => void
   onCancelRename: () => void
+  onOpen: () => void
 }) {
   const stripe = colorHex(file.color)
 
@@ -138,20 +141,27 @@ function FileGridCard({
             onCancel={onCancelRename}
           />
         ) : (
-          <span
-            className="min-w-0 flex-1 truncate font-medium text-neutral-100 text-sm"
+          <button
+            type="button"
+            onClick={onOpen}
+            className="min-w-0 flex-1 truncate text-left font-medium text-neutral-100 text-sm hover:underline"
             title={file.filename}
           >
             {file.filename}
-          </span>
+          </button>
         )}
         <StarButton file={file} onStar={actions.onStar} />
         <FileItemMenu file={file} actions={actions} onStartRename={onStartRename} />
       </div>
 
-      <div className="aspect-[4/3] w-full border-neutral-20 border-t bg-neutral-10">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block aspect-[4/3] w-full cursor-pointer border-neutral-20 border-t bg-neutral-10"
+        title={`Preview ${file.filename}`}
+      >
         <FileThumb file={file} />
-      </div>
+      </button>
       <div className="px-3 py-1.5 text-neutral-60 text-xs">{formatBytes(file.size)}</div>
     </div>
   )
@@ -163,12 +173,14 @@ function FileListRow({
   renaming,
   onStartRename,
   onCancelRename,
+  onOpen,
 }: {
   file: VaultFile
   actions: FileActions
   renaming: boolean
   onStartRename: () => void
   onCancelRename: () => void
+  onOpen: () => void
 }) {
   const stripe = colorHex(file.color)
 
@@ -177,9 +189,14 @@ function FileListRow({
       className="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-10"
       style={stripe ? { boxShadow: `inset 3px 0 0 0 ${stripe}` } : undefined}
     >
-      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-neutral-20 bg-neutral-10">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-md border border-neutral-20 bg-neutral-10"
+        title={`Preview ${file.filename}`}
+      >
         <FileThumb file={file} />
-      </div>
+      </button>
       <div className="min-w-0 flex-1">
         {renaming ? (
           <InlineNameEdit
@@ -193,9 +210,14 @@ function FileListRow({
           />
         ) : (
           <>
-            <div className="truncate font-medium text-neutral-100 text-sm" title={file.filename}>
+            <button
+              type="button"
+              onClick={onOpen}
+              className="block max-w-full truncate text-left font-medium text-neutral-100 text-sm hover:underline"
+              title={file.filename}
+            >
               {file.filename}
-            </div>
+            </button>
             <div className="text-neutral-60 text-xs">{formatBytes(file.size)}</div>
           </>
         )}
@@ -222,6 +244,7 @@ export function FileGrid({
   viewMode?: FileViewMode
 }) {
   const [renameTarget, setRenameTarget] = useState<RenameTarget>(null)
+  const [previewFile, setPreviewFile] = useState<VaultFile | null>(null)
 
   if (directories.length === 0 && files.length === 0) {
     return <div className="py-16 text-center text-neutral-60">{empty ?? "Nothing here yet"}</div>
@@ -232,6 +255,7 @@ export function FileGrid({
 
   return (
     <div className="space-y-6">
+      <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       {directories.length > 0 && folderActions ? (
         <div>
           <p className="mb-2 font-semibold text-neutral-60 text-xs uppercase tracking-wide">
@@ -289,6 +313,7 @@ export function FileGrid({
                     requestAnimationFrame(() => setRenameTarget({ kind: "file", id: f.id }))
                   }}
                   onCancelRename={cancelRename}
+                  onOpen={() => setPreviewFile(f)}
                 />
               ))}
             </div>
@@ -304,6 +329,7 @@ export function FileGrid({
                     requestAnimationFrame(() => setRenameTarget({ kind: "file", id: f.id }))
                   }}
                   onCancelRename={cancelRename}
+                  onOpen={() => setPreviewFile(f)}
                 />
               ))}
             </div>
