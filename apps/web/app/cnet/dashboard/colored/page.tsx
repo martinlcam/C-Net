@@ -10,6 +10,7 @@ export default function ColoredPage() {
       queryKey="colored"
       fetcher={getColored}
       empty="No color-tagged files yet"
+      colorFilter
     />
   )
 }
