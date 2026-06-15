@@ -35,30 +35,22 @@ export function CnetNav({ role }: { role?: string }) {
 
   return (
     <nav className="space-y-2">
-      {isSuper ? (
-        <>
-          <NavLink
-            href="/cnet/dashboard"
-            label="Overview"
-            active={pathname === "/cnet/dashboard"}
-          />
-          <NavLink
-            href="/cnet/dashboard/infrastructure/proxmox"
-            label="Proxmox"
-            active={pathname.includes("/proxmox")}
-          />
-          <NavLink
-            href="/cnet/dashboard/monitoring"
-            label="Monitoring"
-            active={pathname.includes("/monitoring")}
-          />
-          <div className="my-4 border-neutral-30 border-t pt-4">
-            <p className="mb-2 px-3 font-semibold text-neutral-70 text-xs uppercase tracking-wider">
-              Storage
-            </p>
-          </div>
-        </>
-      ) : null}
+      <NavLink href="/cnet/dashboard" label="Overview" active={pathname === "/cnet/dashboard"} />
+      <NavLink
+        href="/cnet/dashboard/infrastructure/proxmox"
+        label="Proxmox"
+        active={pathname.includes("/proxmox")}
+      />
+      <NavLink
+        href="/cnet/dashboard/monitoring"
+        label="Monitoring"
+        active={pathname.includes("/monitoring")}
+      />
+      <div className="my-4 border-neutral-30 border-t pt-4">
+        <p className="mb-2 px-3 font-semibold text-neutral-70 text-xs uppercase tracking-wider">
+          Storage
+        </p>
+      </div>
       {fileItems.map((it) => (
         <NavLink key={it.href} {...it} active={pathname === it.href} />
       ))}
