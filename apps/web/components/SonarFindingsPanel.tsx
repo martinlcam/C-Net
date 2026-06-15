@@ -197,7 +197,13 @@ export function SonarFindingsPanel() {
             Security hotspots first, then issues. Sync pulls the full set into the local store.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => sync.mutate()} disabled={sync.isPending}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          onClick={() => sync.mutate()}
+          disabled={sync.isPending}
+        >
           {sync.isPending ? "Syncing…" : "Sync from SonarCloud"}
         </Button>
       </CardHeader>

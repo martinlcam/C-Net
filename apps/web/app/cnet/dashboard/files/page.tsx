@@ -19,11 +19,14 @@ import {
   type VaultFile,
 } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
-import { FileGrid } from "./_components/file-grid"
-import { TextDialog, type TextPrompt } from "./_components/text-dialog"
+import { FileGrid } from "../_components/file-grid"
+import { TextDialog, type TextPrompt } from "../_components/text-dialog"
+import { useFileViewMode } from "../_components/use-file-view-mode"
+import { ViewModeToggle } from "../_components/view-mode-toggle"
 
-export default function VaultBrowserPage() {
+export default function FilesPage() {
   const qc = useQueryClient()
+  const [viewMode, setViewMode] = useFileViewMode()
   const [dirId, setDirId] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [prompt, setPrompt] = useState<TextPrompt | null>(null)
@@ -97,30 +100,20 @@ export default function VaultBrowserPage() {
 
   const fileActions = {
     onStar: (f: VaultFile) => (f.starred ? unstar.mutate(f.id) : star.mutate(f.id)),
-    onRename: (f: VaultFile) =>
-      setPrompt({
-        title: "Rename file",
-        initial: f.filename,
-        onSubmit: (name) => name.trim() && renameF.mutate({ id: f.id, name: name.trim() }),
-      }),
+    onRename: (f: VaultFile, name: string) => renameF.mutate({ id: f.id, name }),
     onDelete: (f: VaultFile) => removeF.mutate(f.id),
     onColor: (f: VaultFile, c: string | null) => color.mutate({ id: f.id, c }),
   }
   const folderActions = {
     onOpen: (d: VaultDir) => setDirId(d.id),
-    onRename: (d: VaultDir) =>
-      setPrompt({
-        title: "Rename folder",
-        initial: d.name,
-        onSubmit: (name) => name.trim() && renameFolder.mutate({ id: d.id, name: name.trim() }),
-      }),
+    onRename: (d: VaultDir, name: string) => renameFolder.mutate({ id: d.id, name }),
     onDelete: (d: VaultDir) => removeFolder.mutate(d.id),
   }
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-bold text-3xl text-neutral-100">My Vault</h1>
+        <h1 className="font-bold text-3xl text-neutral-100">Files</h1>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -149,15 +142,18 @@ export default function VaultBrowserPage() {
         </div>
       </div>
 
-      <div className="relative mb-4">
-        <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-neutral-70" />
-        <input
-          id={searchId}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search files..."
-          className="w-full rounded-md border border-neutral-30 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-neutral-80"
-        />
+      <div className="relative mb-4 flex items-center gap-3">
+        <div className="relative min-w-0 flex-1">
+          <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-neutral-70" />
+          <input
+            id={searchId}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search files..."
+            className="w-full rounded-md border border-neutral-30 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-neutral-80"
+          />
+        </div>
+        <ViewModeToggle value={viewMode} onChange={setViewMode} />
       </div>
 
       {!searching && data ? (
@@ -200,6 +196,7 @@ export default function VaultBrowserPage() {
           fileActions={fileActions}
           folderActions={folderActions}
           empty={searching ? "No matching files" : "This folder is empty"}
+          viewMode={viewMode}
         />
       )}
 

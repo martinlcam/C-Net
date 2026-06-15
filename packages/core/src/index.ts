@@ -11,6 +11,7 @@ export type { AuthenticatedUser, JWTPayload } from "./auth/types"
 export { decrypt, encrypt, getEncryptionPassword } from "./encryption"
 export { requireEnv } from "./env"
 export { Logger, logger } from "./logger"
+export { findRepoRoot, isLocalDataTankPath, resolveTankMountPath } from "./paths"
 export {
   closeAllQueues,
   getBackupsQueue,

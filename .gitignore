@@ -51,6 +51,7 @@ bun.lockb
 # Misc
 .cache
 .turbo
+.data/
 
 *storybook.log
 storybook-static
