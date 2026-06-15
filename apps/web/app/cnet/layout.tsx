@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { SignOutButton } from "@/components/SignOutButton"
 import { requireAuthorizedEmail } from "@/lib/authorization"
 import { CnetNav } from "./nav"
+import { QuotaBar } from "./quota-bar"
 
 export default async function CNetLayout({ children }: { children: React.ReactNode }) {
   let role: string | undefined
@@ -16,11 +17,14 @@ export default async function CNetLayout({ children }: { children: React.ReactNo
   return (
     <div className="min-h-screen bg-[#faf6f1] font-satoshi">
       <div className="flex">
-        {/* Sidebar — unified nav; super-only items hidden for storage role */}
+        {/* Sidebar — admin/settings super-only; storage users see overview + vault */}
         <aside className="flex min-h-screen w-64 flex-col border-neutral-30 border-r bg-white p-4">
           <h2 className="mb-6 font-bold text-2xl text-neutral-100">C-Net</h2>
           <CnetNav role={role} />
-          <div className="mt-auto border-neutral-30 border-t pt-4">
+          <div className="mt-auto">
+            <QuotaBar />
+          </div>
+          <div className="border-neutral-30 border-t pt-4">
             <SignOutButton />
           </div>
         </aside>

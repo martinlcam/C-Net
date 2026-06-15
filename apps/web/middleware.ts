@@ -4,8 +4,8 @@ import { type NextRequest, NextResponse } from "next/server"
 //
 // The Vault is enforced server-side: the API returns 401 for unauthenticated
 // requests and server components/layouts enforce authorization. This middleware
-// only provides the UX redirect that keeps "storage"-role users off super-only
-// dashboard routes.
+// only provides the UX redirect that keeps "storage"-role users off admin/settings
+// routes (overview, proxmox, monitoring, and vault remain accessible).
 //
 // It deliberately does NOT import the auth config: that config overrides the JWT
 // codec with `jsonwebtoken`, which depends on Node's `crypto` — unavailable in
@@ -19,12 +19,7 @@ import { type NextRequest, NextResponse } from "next/server"
 const SESSION_COOKIE_FRAGMENT = "authjs.session-token"
 const STORAGE_LANDING = "/cnet/dashboard/files"
 
-const SUPER_ONLY_PREFIXES = [
-  "/cnet/dashboard/infrastructure",
-  "/cnet/dashboard/monitoring",
-  "/cnet/dashboard/settings",
-  "/cnet/dashboard/admin",
-]
+const SUPER_ONLY_PREFIXES = ["/cnet/dashboard/settings", "/cnet/dashboard/admin"]
 
 function b64urlDecode(segment: string): string {
   const b64 = segment.replace(/-/g, "+").replace(/_/g, "/")
@@ -54,7 +49,6 @@ function readRole(req: NextRequest): string | undefined {
 }
 
 function isSuperOnlyRoute(pathname: string): boolean {
-  if (pathname === "/cnet/dashboard") return true
   return SUPER_ONLY_PREFIXES.some((p) => pathname.startsWith(p))
 }
 
