@@ -14,9 +14,9 @@ export default async function CNetLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="min-h-screen bg-[#faf6f1]">
+    <div className="min-h-screen bg-[#faf6f1] font-satoshi">
       <div className="flex">
-        {/* Sidebar — contextual: dashboard menu, or the Vault menu inside /cnet/vault */}
+        {/* Sidebar — unified nav; super-only items hidden for storage role */}
         <aside className="flex min-h-screen w-64 flex-col border-neutral-30 border-r bg-white p-4">
           <h2 className="mb-6 font-bold text-2xl text-neutral-100">C-Net</h2>
           <CnetNav role={role} />

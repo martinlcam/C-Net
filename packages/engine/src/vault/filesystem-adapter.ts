@@ -1,6 +1,7 @@
 import { createReadStream, type ReadStream } from "node:fs"
 import { appendFile, mkdir, rename, rm, stat, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
+import { resolveTankMountPath } from "@cnet/core/paths"
 import type { StorageAdapter } from "./adapter"
 
 export class FilesystemAdapter implements StorageAdapter {
@@ -62,9 +63,7 @@ export class FilesystemAdapter implements StorageAdapter {
 let singleton: FilesystemAdapter | null = null
 export function getStorageAdapter(): FilesystemAdapter {
   if (!singleton) {
-    const root = process.env.TANK_MOUNT_PATH
-    if (!root) throw new Error("TANK_MOUNT_PATH is not set")
-    singleton = new FilesystemAdapter(root)
+    singleton = new FilesystemAdapter(resolveTankMountPath())
   }
   return singleton
 }
