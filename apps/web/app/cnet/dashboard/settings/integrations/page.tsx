@@ -262,14 +262,16 @@ export default function IntegrationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-100">Service Integrations</h1>
+          <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Service Integrations</h1>
           <p className="mt-2 text-neutral-70">
             Manage credentials for Pi-hole, Plex, Minecraft, and NAS services
           </p>
         </div>
-        <Button onClick={openAddDialog}>Add Service</Button>
+        <Button onClick={openAddDialog} className="w-full sm:w-auto">
+          Add Service
+        </Button>
       </div>
 
       {loading ? (
@@ -304,9 +306,9 @@ export default function IntegrationsPage() {
                     {serviceCreds.map((cred) => (
                       <div
                         key={cred.id}
-                        className="flex items-center justify-between p-4 border border-neutral-30 rounded-lg"
+                        className="flex flex-col gap-4 rounded-lg border border-neutral-30 p-4 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-neutral-100">{cred.hostname}</span>
                             <Badge variant="outline">Port {cred.port}</Badge>
@@ -321,7 +323,7 @@ export default function IntegrationsPage() {
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"

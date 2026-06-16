@@ -112,9 +112,9 @@ export default function FilesPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-bold text-3xl text-neutral-100">Files</h1>
-        <div className="flex gap-2">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Files</h1>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={() =>
@@ -142,7 +142,7 @@ export default function FilesPage() {
         </div>
       </div>
 
-      <div className="relative mb-4 flex items-center gap-3">
+      <div className="relative mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-neutral-70" />
           <input

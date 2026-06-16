@@ -7,9 +7,15 @@ import { Button } from "@/stories/button/button"
 
 type Item = { href: string; label: string; icon?: typeof FolderOpen }
 
-function NavLink({ href, label, icon: Icon, active }: Item & { active: boolean }) {
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+  active,
+  onNavigate,
+}: Item & { active: boolean; onNavigate?: () => void }) {
   return (
-    <Link href={href}>
+    <Link href={href} onClick={onNavigate}>
       <Button
         variant="ghost"
         className={`w-full justify-start gap-2 ${active ? "bg-neutral-10" : ""}`}
@@ -21,7 +27,7 @@ function NavLink({ href, label, icon: Icon, active }: Item & { active: boolean }
   )
 }
 
-export function CnetNav({ role }: { role?: string }) {
+export function CnetNav({ role, onNavigate }: { role?: string; onNavigate?: () => void }) {
   const pathname = usePathname()
   const isSuper = role === "super"
 
@@ -35,16 +41,23 @@ export function CnetNav({ role }: { role?: string }) {
 
   return (
     <nav className="space-y-2">
-      <NavLink href="/cnet/dashboard" label="Overview" active={pathname === "/cnet/dashboard"} />
+      <NavLink
+        href="/cnet/dashboard"
+        label="Overview"
+        active={pathname === "/cnet/dashboard"}
+        onNavigate={onNavigate}
+      />
       <NavLink
         href="/cnet/dashboard/infrastructure/proxmox"
         label="Proxmox"
         active={pathname.includes("/proxmox")}
+        onNavigate={onNavigate}
       />
       <NavLink
         href="/cnet/dashboard/monitoring"
         label="Monitoring"
         active={pathname.includes("/monitoring")}
+        onNavigate={onNavigate}
       />
       <div className="my-4 border-neutral-30 border-t pt-4">
         <p className="mb-2 px-3 font-semibold text-neutral-70 text-xs uppercase tracking-wider">
@@ -52,7 +65,7 @@ export function CnetNav({ role }: { role?: string }) {
         </p>
       </div>
       {fileItems.map((it) => (
-        <NavLink key={it.href} {...it} active={pathname === it.href} />
+        <NavLink key={it.href} {...it} active={pathname === it.href} onNavigate={onNavigate} />
       ))}
       {isSuper ? (
         <div className="mt-4 border-neutral-30 border-t pt-4">
@@ -63,6 +76,7 @@ export function CnetNav({ role }: { role?: string }) {
             href="/cnet/dashboard/settings/integrations"
             label="Integrations"
             active={pathname.includes("/integrations")}
+            onNavigate={onNavigate}
           />
         </div>
       ) : null}
