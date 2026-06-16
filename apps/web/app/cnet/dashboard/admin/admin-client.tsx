@@ -17,7 +17,7 @@ export function AdminVault() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="mb-6 font-bold text-3xl text-neutral-100">Vault Admin</h1>
+      <h1 className="mb-6 font-bold text-2xl text-neutral-100 md:text-3xl">Vault Admin</h1>
 
       {usersQuery.error ? (
         <div className="rounded-lg border border-accent-red-30 bg-accent-red-10 p-4 text-accent-red-70">
@@ -27,7 +27,7 @@ export function AdminVault() {
         <div className="py-12 text-center text-neutral-60">Loading…</div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-neutral-30 bg-white">
-          <div className="flex border-neutral-20 border-b bg-neutral-10 px-4 py-2 font-semibold text-neutral-60 text-xs uppercase tracking-wide">
+          <div className="hidden border-neutral-20 border-b bg-neutral-10 px-4 py-2 font-semibold text-neutral-60 text-xs uppercase tracking-wide md:flex">
             <span className="flex-1">User</span>
             <span className="w-24">Role</span>
             <span className="w-28 text-right">Usage</span>
@@ -37,29 +37,41 @@ export function AdminVault() {
           {usersQuery.data?.users.map((u) => (
             <div
               key={u.email}
-              className="flex items-center border-neutral-20 border-b px-4 py-3 last:border-b-0"
+              className="border-neutral-20 border-b px-4 py-3 last:border-b-0 md:flex md:items-center"
             >
-              <span className="flex-1 truncate text-neutral-100">{u.email}</span>
-              <span className="w-24 text-neutral-70 text-sm">{u.role}</span>
-              <span className="w-28 text-right text-neutral-70 text-sm">
-                {formatBytes(u.usageBytes)}
-              </span>
-              <span className="w-28 text-right text-neutral-70 text-sm">
-                {formatBytes(u.quotaBytes)}
-              </span>
-              <span className="w-24 text-right">
-                {u.userId ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelected({ userId: u.userId as string, email: u.email })}
-                  >
-                    Browse
-                  </Button>
-                ) : (
-                  <span className="text-neutral-50 text-xs">never signed in</span>
-                )}
-              </span>
+              <div className="mb-3 flex items-start justify-between gap-3 md:mb-0 md:flex-1 md:items-center">
+                <span className="min-w-0 flex-1 truncate text-neutral-100">{u.email}</span>
+                <span className="shrink-0 text-neutral-70 text-sm md:hidden">{u.role}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm md:contents">
+                <span className="hidden w-24 text-neutral-70 md:inline">{u.role}</span>
+                <span className="text-neutral-70 md:w-28 md:text-right">
+                  <span className="text-neutral-50 text-xs uppercase tracking-wide md:hidden">
+                    Usage
+                  </span>
+                  <span className="block md:inline">{formatBytes(u.usageBytes)}</span>
+                </span>
+                <span className="text-neutral-70 md:w-28 md:text-right">
+                  <span className="text-neutral-50 text-xs uppercase tracking-wide md:hidden">
+                    Quota
+                  </span>
+                  <span className="block md:inline">{formatBytes(u.quotaBytes)}</span>
+                </span>
+                <span className="col-span-2 md:col-auto md:w-24 md:text-right">
+                  {u.userId ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      onClick={() => setSelected({ userId: u.userId as string, email: u.email })}
+                    >
+                      Browse
+                    </Button>
+                  ) : (
+                    <span className="text-neutral-50 text-xs">never signed in</span>
+                  )}
+                </span>
+              </div>
             </div>
           ))}
         </div>
