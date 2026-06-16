@@ -187,7 +187,7 @@ export function SonarFindingsPanel() {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-neutral-100">
             SonarCloud Findings
