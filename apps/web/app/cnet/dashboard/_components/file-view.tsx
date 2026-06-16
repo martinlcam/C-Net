@@ -68,8 +68,8 @@ export function FileView({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="font-bold text-3xl text-neutral-100">{title}</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">{title}</h1>
         <ViewModeToggle value={viewMode} onChange={setViewMode} />
       </div>
       {error ? (

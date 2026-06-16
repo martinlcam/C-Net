@@ -76,8 +76,8 @@ function VMsTab() {
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
-        <Button onClick={() => refetch()} disabled={isLoading}>
+      <div className="mb-4 flex justify-end sm:mb-6">
+        <Button onClick={() => refetch()} disabled={isLoading} className="w-full sm:w-auto">
           Refresh
         </Button>
       </div>
