@@ -38,15 +38,20 @@ export function readDiskstats(): Map<string, number> {
 }
 
 /**
- * Spin state via `hdparm -C`. Uses `-C` which does NOT spin a standby drive up,
- * so it's safe to poll. Returns "unknown" if hdparm is unavailable/errors.
+ * Spin state via `smartctl -n standby`. `hdparm -C` reports "unknown" through the
+ * mpt3sas HBA on this box, but smartctl prints the ATA power mode reliably. The
+ * `-n standby` guard makes smartctl exit WITHOUT waking a drive that's spun down,
+ * so it's safe to poll. Modes: ACTIVE/IDLE_* = spinning; STANDBY/SLEEP = spun down.
  */
 export function spinState(devPath: string): SpinState {
   try {
-    const r = spawnSync("hdparm", ["-C", devPath], { encoding: "utf8", timeout: 5000 })
+    const r = spawnSync("smartctl", ["-n", "standby", "-i", devPath], {
+      encoding: "utf8",
+      timeout: 6000,
+    })
     const text = `${r.stdout ?? ""}`.toLowerCase()
-    if (text.includes("standby")) return "standby"
-    if (text.includes("active") || text.includes("idle")) return "active"
+    if (/standby|sleep/.test(text)) return "standby"
+    if (/active|idle/.test(text)) return "active"
     return "unknown"
   } catch {
     return "unknown"
