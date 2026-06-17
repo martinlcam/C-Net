@@ -53,9 +53,12 @@ export function expressAuthentication(
   }
 
   // `superuser` scope gates host-global admin features (e.g. the ZFS bay GUI) to
-  // the allowlisted owner. Reuses the same email allowlist as the Vault.
+  // the allowlisted owner. Reuses the same email allowlist as the Vault. Named
+  // ForbiddenError so the error handler maps it to 403 (not 500).
   if (scopes?.includes("superuser") && !isSuperuser(user.email)) {
-    return Promise.reject(new Error("Forbidden: superuser access required"))
+    const forbidden = new Error("Forbidden: superuser access required")
+    forbidden.name = "ForbiddenError"
+    return Promise.reject(forbidden)
   }
 
   return Promise.resolve(user)
