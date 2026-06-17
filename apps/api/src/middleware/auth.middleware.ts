@@ -1,4 +1,4 @@
-import { isEmailAuthorized, verifyToken } from "@cnet/core"
+import { isSuperuser, verifyToken } from "@cnet/core"
 import type { Request } from "express"
 
 /**
@@ -54,7 +54,7 @@ export function expressAuthentication(
 
   // `superuser` scope gates host-global admin features (e.g. the ZFS bay GUI) to
   // the allowlisted owner. Reuses the same email allowlist as the Vault.
-  if (scopes?.includes("superuser") && !isEmailAuthorized(user.email)) {
+  if (scopes?.includes("superuser") && !isSuperuser(user.email)) {
     return Promise.reject(new Error("Forbidden: superuser access required"))
   }
 
