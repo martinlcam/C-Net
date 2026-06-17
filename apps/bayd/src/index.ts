@@ -12,12 +12,22 @@
  * a unix socket.
  */
 
-import { type BayLiveFrame, type BayLiveState, PROXBOX_BAY_MAP } from "@cnet/engine"
+import {
+  BAY_CMD_CHANNEL,
+  BAY_CMD_REPLY_CHANNEL,
+  type BayCommand,
+  type BayLiveFrame,
+  type BayLiveState,
+  PROXBOX_BAY_MAP,
+  verifyCommand,
+} from "@cnet/engine"
 import { Redis } from "ioredis"
+import { executeCommand, locating } from "./commands"
 import { devForSerial, readDiskstats, resilverStatus, spinState } from "./probes"
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379"
 const CHANNEL = process.env.BAY_REDIS_CHANNEL || "bay:status"
+const CMD_SECRET = process.env.CNET_BAYD_CMD_SECRET || ""
 const IO_TICK_MS = Number(process.env.BAYD_IO_TICK_MS || 1000)
 const SLOW_TICK_MS = Number(process.env.BAYD_SLOW_TICK_MS || 10000)
 
@@ -27,6 +37,34 @@ const SERIALS = PROXBOX_BAY_MAP.map((b) => b.expectedSerial).filter((s): s is st
 const publisher = new Redis(REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: false })
 publisher.on("error", (e) => console.error("[bayd] redis error:", e.message))
 publisher.on("ready", () => console.log("[bayd] redis ready"))
+
+// Dedicated subscriber for the command channel (ioredis: a subscribed connection
+// can't issue normal commands, so replies go out on `publisher`).
+const subscriber = new Redis(REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: false })
+subscriber.on("error", (e) => console.error("[bayd] cmd sub error:", e.message))
+subscriber.subscribe(BAY_CMD_CHANNEL, (err) => {
+  if (err) console.error("[bayd] cmd subscribe failed:", err.message)
+  else console.log(`[bayd] listening for commands on ${BAY_CMD_CHANNEL}`)
+})
+subscriber.on("message", (_ch, raw) => {
+  let cmd: BayCommand
+  try {
+    cmd = JSON.parse(raw)
+  } catch {
+    return
+  }
+  if (!CMD_SECRET) {
+    console.error("[bayd] command received but CNET_BAYD_CMD_SECRET unset — ignoring")
+    return
+  }
+  if (!verifyCommand(CMD_SECRET, cmd)) {
+    console.error(`[bayd] rejected command ${cmd?.id} (bad signature/stale)`)
+    return
+  }
+  const reply = executeCommand(cmd)
+  console.log(`[bayd] cmd ${cmd.verb} ${reply.ok ? "ok" : `ERR: ${reply.error}`}`)
+  publisher.publish(BAY_CMD_REPLY_CHANNEL, JSON.stringify(reply)).catch(() => {})
+})
 
 // serial -> devName ("sda"); refreshed on the slow tick (drives can re-letter).
 let devBySerial = new Map<string, string>()
@@ -69,7 +107,7 @@ function ioTick(): void {
       serial,
       spin: spinBySerial.get(serial) ?? "unknown",
       ioActive: dev ? (active.get(dev) ?? false) : false,
-      locate: false, // Phase 3
+      locate: locating.has(serial),
     }
   })
 
@@ -89,7 +127,7 @@ async function shutdown(sig: string): Promise<void> {
   console.log(`[bayd] ${sig} — shutting down`)
   clearInterval(ioTimer)
   clearInterval(slowTimer)
-  await publisher.quit().catch(() => {})
+  await Promise.allSettled([publisher.quit(), subscriber.quit()])
   process.exit(0)
 }
 process.on("SIGINT", () => void shutdown("SIGINT"))

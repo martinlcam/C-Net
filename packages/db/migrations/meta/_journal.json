@@ -50,6 +50,13 @@
       "when": 1781422825359,
       "tag": "0006_red_mysterio",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781721173232,
+      "tag": "0007_nervous_mandroid",
+      "breakpoints": true
     }
   ]
 }

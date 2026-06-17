@@ -1,6 +1,17 @@
 export { logAuditAction } from "./audit/logger"
 export { getResendClient, type SendEmailOptions, sendEmail } from "./email/resend"
 export { ContactEmailTemplate } from "./email/templates/contact"
+export {
+  BAY_CMD_CHANNEL,
+  BAY_CMD_MAX_AGE_MS,
+  BAY_CMD_REPLY_CHANNEL,
+  type BayCommand,
+  type BayCommandReply,
+  type BayVerb,
+  signCommand,
+  verifyCommand,
+  type ZpoolAction,
+} from "./proxmox/bay-commands"
 export { BAY_BY_SERIAL, type BaySlot, PROXBOX_BAY_MAP, PROXBOX_NODE } from "./proxmox/bay-map"
 export type { BayLiveFrame, BayLiveState, SpinState } from "./proxmox/live-types"
 export { ProxmoxService } from "./proxmox/service"
