@@ -7,6 +7,7 @@ import { LoadingSpinner } from "@/stories/loading-spinner/loading-spinner"
 import { Backplane } from "./Backplane"
 import { DriveDetail } from "./DriveDetail"
 import { PoolCard } from "./PoolCard"
+import { useBayLive } from "./use-bay-live"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
@@ -40,6 +41,7 @@ function faultMessages(bays: BayInfo[], pools: PoolStatus[]): string[] {
 
 export function StorageView() {
   const [selected, setSelected] = useState<BayInfo | null>(null)
+  const live = useBayLive()
 
   const baysQuery = useQuery({
     queryKey: ["storage", "bays"],
@@ -93,6 +95,7 @@ export function StorageView() {
       <Backplane
         bays={bays}
         pools={pools}
+        live={live}
         selectedBay={selected?.bayIndex}
         onSelect={(b) => setSelected(b)}
       />

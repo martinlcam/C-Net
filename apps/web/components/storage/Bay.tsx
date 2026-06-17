@@ -1,6 +1,6 @@
 "use client"
 
-import type { BayInfo, PoolStatus } from "@cnet/engine"
+import type { BayInfo, BayLiveState, PoolStatus } from "@cnet/engine"
 import { type BayStatus, TONE_STYLES } from "./bay-status"
 
 const POOL_LABEL: Record<string, string> = {
@@ -11,7 +11,6 @@ const POOL_LABEL: Record<string, string> = {
 
 function shortSerial(serial?: string): string {
   if (!serial) return "—"
-  // Seagate serials share the ZA13 prefix; the tail is what differs per drive.
   return serial.length > 4 ? serial.slice(-4) : serial
 }
 
@@ -26,14 +25,16 @@ interface BayProps {
   bay: BayInfo
   status: BayStatus
   pool?: PoolStatus
+  live?: BayLiveState
   selected?: boolean
   onSelect?: (bay: BayInfo) => void
 }
 
 /** One hot-swap drive caddie in the backplane grid. */
-export function Bay({ bay, status, selected, onSelect }: BayProps) {
+export function Bay({ bay, status, live, selected, onSelect }: BayProps) {
   const tone = TONE_STYLES[status.tone]
   const interactive = Boolean(onSelect)
+  const standby = live?.spin === "standby"
 
   return (
     <button
@@ -44,14 +45,23 @@ export function Bay({ bay, status, selected, onSelect }: BayProps) {
       className={[
         "group relative flex h-24 flex-col justify-between rounded-md border p-2 text-left transition",
         tone.caddie,
+        standby ? "opacity-60" : "",
         interactive ? "cursor-pointer hover:brightness-125" : "cursor-default",
         selected ? "outline outline-2 outline-primary-purple-40" : "",
       ].join(" ")}
     >
-      {/* top row: bay number + activity/status LED */}
+      {/* top row: bay number + activity (blink) + status LED */}
       <div className="flex items-center justify-between">
         <span className="font-bd-mono text-[10px] text-neutral-50">#{bay.bayIndex}</span>
-        <span className={`h-2 w-2 rounded-full ${tone.led}`} aria-hidden />
+        <span className="flex items-center gap-1">
+          {live?.ioActive ? (
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-accent-green-50 animate-ping"
+              aria-hidden
+            />
+          ) : null}
+          <span className={`h-2 w-2 rounded-full ${tone.led}`} aria-hidden />
+        </span>
       </div>
 
       {/* drive label */}
@@ -59,7 +69,7 @@ export function Bay({ bay, status, selected, onSelect }: BayProps) {
         {bay.occupied ? (
           <>
             <div className="font-bd-mono text-xs text-neutral-20">{shortSerial(bay.serial)}</div>
-            <div className={`text-[10px] ${tone.text}`}>{status.label}</div>
+            <div className={`text-[10px] ${tone.text}`}>{standby ? "standby" : status.label}</div>
           </>
         ) : (
           <div className="text-[10px] text-neutral-60">empty</div>
