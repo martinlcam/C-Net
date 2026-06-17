@@ -100,7 +100,13 @@ export function StorageView() {
         onSelect={(b) => setSelected(b)}
       />
 
-      {selected ? <DriveDetail bay={selected} onClose={() => setSelected(null)} /> : null}
+      {selected ? (
+        <DriveDetail
+          bay={selected}
+          live={selected.serial ? live.bySerial.get(selected.serial) : undefined}
+          onClose={() => setSelected(null)}
+        />
+      ) : null}
     </div>
   )
 }

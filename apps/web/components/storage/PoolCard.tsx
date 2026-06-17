@@ -1,6 +1,9 @@
 "use client"
 
 import type { PoolStatus } from "@cnet/engine"
+import { useMutation } from "@tanstack/react-query"
+import { useState } from "react"
+import { storageAction } from "./storage-actions"
 
 function tb(bytes: number): string {
   return `${(bytes / 1e12).toFixed(2)} TB`
@@ -17,6 +20,13 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
   const stateClass = STATE_STYLES[pool.state] ?? "text-neutral-30 border-neutral-70 bg-neutral-100"
   const scan = pool.scan
 
+  const [msg, setMsg] = useState<string | null>(null)
+  const scrubMut = useMutation({
+    mutationFn: () => storageAction("zpool", { action: "scrub", pool: pool.name }),
+    onSuccess: (r) => setMsg(r.output ?? "scrub started"),
+    onError: (e) => setMsg(e instanceof Error ? e.message : "failed"),
+  })
+
   return (
     <div className="rounded-lg border border-neutral-80 bg-neutral-100 p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -31,7 +41,6 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
         </span>
       </div>
 
-      {/* capacity */}
       <div className="mb-1 flex justify-between text-xs text-neutral-40">
         <span>
           {tb(pool.allocBytes)} / {tb(pool.sizeBytes)}
@@ -47,7 +56,6 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
         />
       </div>
 
-      {/* resilver / scrub */}
       {scan.inProgress ? (
         <div className="mt-3">
           <div className="mb-1 flex justify-between text-xs">
@@ -70,6 +78,18 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
       {pool.errors && pool.errors !== "No known data errors" ? (
         <p className="mt-2 text-xs text-accent-red-40">{pool.errors}</p>
       ) : null}
+
+      <div className="mt-3 flex items-center gap-3 border-t border-neutral-80 pt-3">
+        <button
+          type="button"
+          disabled={scan.inProgress || scrubMut.isPending}
+          onClick={() => scrubMut.mutate()}
+          className="rounded border border-neutral-70 px-3 py-1.5 text-xs font-medium text-neutral-30 transition hover:border-primary-purple-40 disabled:opacity-40"
+        >
+          {scrubMut.isPending ? "Starting…" : "Scrub"}
+        </button>
+        {msg ? <span className="text-xs text-neutral-50">{msg}</span> : null}
+      </div>
     </div>
   )
 }
