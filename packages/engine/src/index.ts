@@ -2,6 +2,7 @@ export { logAuditAction } from "./audit/logger"
 export { getResendClient, type SendEmailOptions, sendEmail } from "./email/resend"
 export { ContactEmailTemplate } from "./email/templates/contact"
 export { BAY_BY_SERIAL, type BaySlot, PROXBOX_BAY_MAP, PROXBOX_NODE } from "./proxmox/bay-map"
+export type { BayLiveFrame, BayLiveState, SpinState } from "./proxmox/live-types"
 export { ProxmoxService } from "./proxmox/service"
 export {
   assembleBays,

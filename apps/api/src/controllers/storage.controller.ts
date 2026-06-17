@@ -7,14 +7,14 @@ interface StorageErrorResponse {
 }
 
 /*
- * Host-global ZFS / 12-bay storage view for the proxbox node. Read-only (Phase 1):
- * everything here comes from the Proxmox REST API. Action verbs (locate, spindown,
- * zpool ops) land later via the host-side `cnet-bayd` agent. See
- * docs/ZFS_BAY_GUI_PLAN.md.
+ * Host-global ZFS / 12-bay storage view for the proxbox node. Read-only over the
+ * Proxmox REST API; live telemetry (blink/spin/resilver) arrives separately via
+ * the cnet-bayd host agent → Redis → realtime /bay/live WS. Action verbs land in
+ * Phase 3. See docs/ZFS_BAY_GUI_PLAN.md.
  *
- * Storage is host-global, not per-user, so it uses a single service token from the
- * environment (CNET_STORAGE_PVE_*) rather than the per-user `infrastructureConfigs`.
- * Gated to the allowlisted superuser via the `superuser` JWT scope.
+ * Storage is host-global, so it uses a single service token from the environment
+ * (CNET_STORAGE_PVE_*), not the per-user infrastructureConfigs. Gated to the
+ * allowlisted superuser via the `superuser` JWT scope.
  */
 @Route("proxmox/storage")
 @Tags("Storage")
@@ -96,5 +96,21 @@ export class StorageController extends Controller {
         message: error instanceof Error ? error.message : "Unknown error",
       }
     }
+  }
+
+  /*
+   * GET /proxmox/storage/live-token — hand the superuser the key for the realtime
+   * /bay/live WS. Only superusers reach this (class-level scope), so only they can
+   * open the bay telemetry stream.
+   */
+  @Get("live-token")
+  @Response<StorageErrorResponse>(503, "Not configured")
+  public async getLiveToken(): Promise<{ data: { token: string } } | StorageErrorResponse> {
+    const token = process.env.BAY_VIEW_KEY
+    if (!token) {
+      this.setStatus(503)
+      return { error: "Live bay stream not configured", message: "Set BAY_VIEW_KEY." }
+    }
+    return { data: { token } }
   }
 }

@@ -15,3 +15,11 @@ export function tokensMatch(a: string, b: string): boolean {
 export function ingestKey(): string {
   return process.env.BD_INGEST_KEY || "dev-insecure-key"
 }
+
+/**
+ * Key for the /bay/live storage stream. The API only hands this to a superuser
+ * session, so a browser without superuser access can't open the bay WS.
+ */
+export function bayViewKey(): string {
+  return process.env.BAY_VIEW_KEY || "dev-insecure-bay-key"
+}

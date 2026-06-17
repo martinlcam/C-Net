@@ -1,0 +1,20 @@
+{
+  "name": "@cnet/bayd",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Host-side storage agent for proxbox: publishes live bay telemetry to Redis.",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cnet/engine": "workspace:*",
+    "ioredis": "^5.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.9.2"
+  }
+}
