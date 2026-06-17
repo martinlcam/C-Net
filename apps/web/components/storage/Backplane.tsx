@@ -3,12 +3,12 @@
 import type { BayInfo, PoolStatus } from "@cnet/engine"
 import { Bay } from "./Bay"
 import { deriveBayStatus } from "./bay-status"
+import type { BayLive } from "./use-bay-live"
 
 interface BackplaneProps {
   bays: BayInfo[]
   pools: PoolStatus[]
-  /** Serials currently being located (LED blinking) — Phase 3. */
-  locating?: Set<string>
+  live?: BayLive
   selectedBay?: number
   onSelect?: (bay: BayInfo) => void
 }
@@ -18,30 +18,27 @@ interface BackplaneProps {
  * match the physical Supermicro JMCD-12S4. Bays are ordered by physical slot
  * (1–4 top, 5–8 mid, 9–12 bottom); top 8 are HBA/tank_main, bottom 4 AHCI.
  */
-export function Backplane({ bays, pools, locating, selectedBay, onSelect }: BackplaneProps) {
+export function Backplane({ bays, pools, live, selectedBay, onSelect }: BackplaneProps) {
   const poolByName = new Map(pools.map((p) => [p.name, p]))
   const ordered = [...bays].sort((a, b) => a.bayIndex - b.bayIndex)
 
   return (
     <div className="flex items-stretch gap-2 rounded-xl border border-neutral-80 bg-neutral-100 p-3 shadow-inner">
-      {/* left rack ear (red, like the chassis handles) */}
       <RackEar />
 
       <div className="flex-1">
         <div className="grid grid-cols-4 gap-2">
           {ordered.map((bay) => {
             const pool = bay.pool ? poolByName.get(bay.pool) : undefined
-            const status = deriveBayStatus(
-              bay,
-              pool,
-              bay.serial ? locating?.has(bay.serial) : false
-            )
+            const liveState = bay.serial ? live?.bySerial.get(bay.serial) : undefined
+            const status = deriveBayStatus(bay, pool, liveState?.locate)
             return (
               <Bay
                 key={bay.bayIndex}
                 bay={bay}
                 status={status}
                 pool={pool}
+                live={liveState}
                 selected={selectedBay === bay.bayIndex}
                 onSelect={onSelect}
               />
@@ -49,13 +46,18 @@ export function Backplane({ bays, pools, locating, selectedBay, onSelect }: Back
           })}
         </div>
 
-        <div className="mt-2 flex justify-between px-1 text-[9px] uppercase tracking-wider text-neutral-60">
+        <div className="mt-2 flex items-center justify-between px-1 text-[9px] uppercase tracking-wider text-neutral-60">
           <span>bays 1–8 · LSI HBA · tank_main (raidz3)</span>
+          <span className="flex items-center gap-1">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${live?.connected ? "bg-accent-green-50" : "bg-neutral-60"}`}
+            />
+            {live?.connected ? "live" : "polling"}
+          </span>
           <span>bays 9–12 · AHCI · cold_tank</span>
         </div>
       </div>
 
-      {/* right rack ear */}
       <RackEar />
     </div>
   )
