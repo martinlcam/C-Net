@@ -2,6 +2,7 @@ export {
   type AllowlistEntry,
   getAllowlistEntry,
   isEmailAuthorized,
+  isSuperuser,
   parseAllowlist,
   parseSize,
   type VaultRole,

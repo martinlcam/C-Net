@@ -53,3 +53,8 @@ export function getAllowlistEntry(email: string, list?: AllowlistEntry[]): Allow
 export function isEmailAuthorized(email: string, list?: AllowlistEntry[]): boolean {
   return getAllowlistEntry(email, list) !== null
 }
+
+/** True only for `super`-role allowlist entries (admin), not `storage` users. */
+export function isSuperuser(email: string, list?: AllowlistEntry[]): boolean {
+  return getAllowlistEntry(email, list)?.role === "super"
+}
