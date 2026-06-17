@@ -36,6 +36,18 @@
         "typescript": "5.9.3",
       },
     },
+    "apps/bayd": {
+      "name": "@cnet/bayd",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cnet/engine": "workspace:*",
+        "ioredis": "^5.4.2",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "typescript": "^5.9.2",
+      },
+    },
     "apps/realtime": {
       "name": "@cnet/realtime",
       "version": "0.0.0",
@@ -258,6 +270,8 @@
     "@cnet/api": ["@cnet/api@workspace:apps/api"],
 
     "@cnet/api-client": ["@cnet/api-client@workspace:packages/api-client"],
+
+    "@cnet/bayd": ["@cnet/bayd@workspace:apps/bayd"],
 
     "@cnet/core": ["@cnet/core@workspace:packages/core"],
 
