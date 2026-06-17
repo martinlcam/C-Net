@@ -1,8 +1,10 @@
 "use client"
 
-import type { BayInfo, DiskSmart } from "@cnet/engine"
-import { useQuery } from "@tanstack/react-query"
+import type { BayInfo, BayLiveState, DiskSmart } from "@cnet/engine"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { useState } from "react"
 import { LoadingSpinner } from "@/stories/loading-spinner/loading-spinner"
+import { type ActionResult, storageAction } from "./storage-actions"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
@@ -11,8 +13,7 @@ async function fetchSmart(serial: string): Promise<DiskSmart> {
     credentials: "include",
   })
   if (!res.ok) throw new Error("Failed to fetch SMART")
-  const data = await res.json()
-  return data.data
+  return (await res.json()).data
 }
 
 function Stat({
@@ -34,8 +35,17 @@ function Stat({
   )
 }
 
-/** Drive detail with on-demand SMART (only this drive is spun up, never the whole list). */
-export function DriveDetail({ bay, onClose }: { bay: BayInfo; onClose: () => void }) {
+const BTN = "rounded border px-3 py-1.5 text-xs font-medium transition disabled:opacity-40"
+
+export function DriveDetail({
+  bay,
+  live,
+  onClose,
+}: {
+  bay: BayInfo
+  live?: BayLiveState
+  onClose: () => void
+}) {
   const enabled = bay.occupied && !bay.offline && Boolean(bay.serial)
   const {
     data: smart,
@@ -46,6 +56,44 @@ export function DriveDetail({ bay, onClose }: { bay: BayInfo; onClose: () => voi
     queryFn: () => fetchSmart(bay.serial as string),
     enabled,
   })
+
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const onDone = (r: ActionResult) => setMsg({ ok: true, text: r.output ?? "done" })
+  const onErr = (e: unknown) =>
+    setMsg({ ok: false, text: e instanceof Error ? e.message : "failed" })
+
+  const locating = live?.locate ?? false
+  const locateMut = useMutation({
+    mutationFn: () => storageAction("locate", { serial: bay.serial, on: !locating }),
+    onSuccess: onDone,
+    onError: onErr,
+  })
+  const spindownMut = useMutation({
+    mutationFn: () => storageAction("spindown", { serial: bay.serial }),
+    onSuccess: onDone,
+    onError: onErr,
+  })
+
+  // Destructive (offline) — typed serial + op password.
+  const [showDanger, setShowDanger] = useState(false)
+  const [typed, setTyped] = useState("")
+  const [pw, setPw] = useState("")
+  const offlineMut = useMutation({
+    mutationFn: () =>
+      storageAction("zpool", {
+        action: "offline",
+        pool: bay.pool,
+        target: bay.serial,
+        password: pw,
+      }),
+    onSuccess: (r) => {
+      onDone(r)
+      setTyped("")
+      setPw("")
+    },
+    onError: onErr,
+  })
+  const canOffline = typed === bay.serial && pw.length > 0
 
   return (
     <div className="rounded-lg border border-primary-purple-60 bg-neutral-100 p-4">
@@ -64,7 +112,7 @@ export function DriveDetail({ bay, onClose }: { bay: BayInfo; onClose: () => voi
           type="button"
           onClick={onClose}
           className="text-neutral-50 hover:text-neutral-20"
-          aria-label="Close drive detail"
+          aria-label="Close"
         >
           ✕
         </button>
@@ -113,11 +161,77 @@ export function DriveDetail({ bay, onClose }: { bay: BayInfo; onClose: () => voi
         </div>
       ) : null}
 
-      {bay.zfsErrors && bay.zfsErrors.read + bay.zfsErrors.write + bay.zfsErrors.cksum > 0 ? (
-        <p className="mt-3 text-xs text-amber-300">
-          ZFS errors — read {bay.zfsErrors.read}, write {bay.zfsErrors.write}, cksum{" "}
-          {bay.zfsErrors.cksum}
-        </p>
+      {/* Actions */}
+      {bay.occupied && !bay.offline ? (
+        <div className="mt-4 space-y-2 border-t border-neutral-80 pt-3">
+          <div className="flex flex-wrap gap-2">
+            {bay.ledCapable ? (
+              <button
+                type="button"
+                disabled={locateMut.isPending}
+                onClick={() => locateMut.mutate()}
+                className={`${BTN} ${locating ? "border-accent-red-50 text-accent-red-40" : "border-neutral-70 text-neutral-30 hover:border-primary-purple-40"}`}
+              >
+                {locating ? "Stop locate" : "Locate (blink LED)"}
+              </button>
+            ) : null}
+            {bay.pool !== "tank_main" ? (
+              <button
+                type="button"
+                disabled={spindownMut.isPending}
+                onClick={() => spindownMut.mutate()}
+                className={`${BTN} border-neutral-70 text-neutral-30 hover:border-primary-purple-40`}
+              >
+                Spin down
+              </button>
+            ) : null}
+            {bay.pool ? (
+              <button
+                type="button"
+                onClick={() => setShowDanger((s) => !s)}
+                className={`${BTN} border-accent-red-70 text-accent-red-40`}
+              >
+                {showDanger ? "Cancel" : "Offline drive…"}
+              </button>
+            ) : null}
+          </div>
+
+          {showDanger && bay.pool ? (
+            <div className="space-y-2 rounded border border-accent-red-70 bg-accent-red-100/20 p-3">
+              <p className="text-xs text-accent-red-30">
+                Offlining degrades <span className="font-bd-mono">{bay.pool}</span> redundancy. Type
+                the serial <span className="font-bd-mono">{bay.serial}</span> and the op password.
+              </p>
+              <input
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                placeholder="type serial to confirm"
+                className="w-full rounded border border-neutral-70 bg-neutral-100 px-2 py-1 font-bd-mono text-xs text-neutral-20"
+              />
+              <input
+                type="password"
+                value={pw}
+                onChange={(e) => setPw(e.target.value)}
+                placeholder="op password"
+                className="w-full rounded border border-neutral-70 bg-neutral-100 px-2 py-1 text-xs text-neutral-20"
+              />
+              <button
+                type="button"
+                disabled={!canOffline || offlineMut.isPending}
+                onClick={() => offlineMut.mutate()}
+                className={`${BTN} w-full border-accent-red-60 bg-accent-red-90/40 text-accent-red-30`}
+              >
+                {offlineMut.isPending ? "Offlining…" : `Offline ${bay.serial}`}
+              </button>
+            </div>
+          ) : null}
+
+          {msg ? (
+            <p className={`text-xs ${msg.ok ? "text-accent-green-40" : "text-accent-red-40"}`}>
+              {msg.text}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )
