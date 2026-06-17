@@ -1,3 +1,4 @@
+import https from "node:https"
 import axios, { type AxiosInstance } from "axios"
 import { assembleBays, mapPool, mapSmart } from "./storage"
 import type {
@@ -24,9 +25,8 @@ export class ProxmoxService {
         Authorization: `PVEAPIToken=${user}!${token}`,
         "Content-Type": "application/json",
       },
-      httpsAgent: {
-        rejectUnauthorized: false, // Use with caution; consider proper SSL
-      },
+      // PVE uses a self-signed cert by default; skip verification (LAN, token-auth).
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     })
   }
 
