@@ -1,0 +1,29 @@
+# C-Net storage bay agent (cnet-bayd).
+#
+# IMPORTANT: this runs on the PROXMOX HOST, not inside LXC 110 — it needs /dev,
+# zpool, smartctl (and later ledctl/hdparm), which the container does not have.
+# Install on the host:
+#   cp deploy/systemd/cnet-bayd.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now cnet-bayd
+#
+# Runs from the host's monorepo copy at /root/C-Net (the same one used for
+# `bun run bridge`). Reads REDIS_URL from /root/C-Net/.env and publishes bay
+# telemetry to the same Redis that apps/realtime (in LXC 110) subscribes to.
+[Unit]
+Description=C-Net storage bay agent (cnet-bayd)
+After=network-online.target zfs.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/C-Net
+# PATH must include /root/.bun/bin (the nested `bun run`) and /usr/sbin
+# (smartctl, zpool, and later ledctl/hdparm the probes shell out to).
+Environment=PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=/root/C-Net/.env
+ExecStart=/root/.bun/bin/bun run cnet-bayd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

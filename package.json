@@ -22,6 +22,7 @@
     "db:migrate": "turbo db:migrate --filter=@cnet/db",
     "db:studio": "turbo db:studio --filter=@cnet/db",
     "tank:clear": "bun scripts/tank.ts clear",
+    "cnet-bayd": "bun run apps/bayd/src/index.ts",
     "bridge": "cd apps/neural-bridge && .venv/bin/python -m neural_bridge run"
   },
   "devDependencies": {
