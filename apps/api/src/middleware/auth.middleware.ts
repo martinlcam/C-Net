@@ -1,4 +1,4 @@
-import { verifyToken } from "@cnet/core"
+import { isEmailAuthorized, verifyToken } from "@cnet/core"
 import type { Request } from "express"
 
 /**
@@ -34,7 +34,7 @@ function extractToken(request: Request): string | null {
 export function expressAuthentication(
   request: Request,
   securityName: string,
-  _scopes?: string[]
+  scopes?: string[]
 ): Promise<unknown> {
   if (securityName !== "jwt") {
     return Promise.reject(new Error(`Unknown security scheme: ${securityName}`))
@@ -45,10 +45,18 @@ export function expressAuthentication(
     return Promise.reject(new Error("No authentication token provided"))
   }
 
+  let user: ReturnType<typeof verifyToken>
   try {
-    const user = verifyToken(token)
-    return Promise.resolve(user)
+    user = verifyToken(token)
   } catch {
     return Promise.reject(new Error("Invalid or expired token"))
   }
+
+  // `superuser` scope gates host-global admin features (e.g. the ZFS bay GUI) to
+  // the allowlisted owner. Reuses the same email allowlist as the Vault.
+  if (scopes?.includes("superuser") && !isEmailAuthorized(user.email)) {
+    return Promise.reject(new Error("Forbidden: superuser access required"))
+  }
+
+  return Promise.resolve(user)
 }
