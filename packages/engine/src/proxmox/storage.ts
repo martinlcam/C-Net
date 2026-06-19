@@ -1,10 +1,10 @@
 /*
  * Assembles the read-only storage view (bays + pools + SMART) from raw Proxmox
- * REST responses and the calibrated bay map. Pure functions — no IO — so they're
- * trivially unit-testable. See docs/ZFS_BAY_GUI_PLAN.md.
+ * REST responses, the calibrated bay map, and the agent's live port→drive
+ * inventory. Pure functions — no IO. See docs/ZFS_BAY_GUI_PLAN.md.
  */
 
-import { PROXBOX_BAY_MAP } from "./bay-map"
+import { type BayInventoryEntry, PROXBOX_BAY_MAP } from "./bay-map"
 import type {
   BayInfo,
   BayPool,
@@ -37,20 +37,15 @@ function normalizeHealth(health?: string): SmartHealth {
   return "UNKNOWN"
 }
 
-/** Walk the ZFS tree and collect leaf (real disk) nodes. */
 function collectLeaves(node: PveZfsNode, out: PveZfsNode[] = []): PveZfsNode[] {
-  if (node.leaf === 1) {
-    out.push(node)
-  } else {
-    for (const child of node.children ?? []) collectLeaves(child, out)
-  }
+  if (node.leaf === 1) out.push(node)
+  else for (const child of node.children ?? []) collectLeaves(child, out)
   return out
 }
 
 /**
  * The vdev type, e.g. "raidz3" or "mirror". PVE nests the tree as
- * root → <poolname> → <vdev> → leaves, so the vdev node isn't a direct child —
- * search for the first node whose name looks like a vdev type.
+ * root → <poolname> → <vdev> → leaves, so search for the first vdev-type node.
  */
 const VDEV_NAME = /^(raidz\d|mirror|draid\d?|spare|log|cache)/i
 function deriveRaid(tree: PveZfsTree): string {
@@ -102,14 +97,18 @@ export function mapPool(tree: PveZfsTree, list?: PveZfsListEntry): PoolStatus {
 }
 
 /**
- * Build the 12-bay view. `poolBySerial` maps a drive serial to the pool it
- * belongs to (+ its vdev state/errors), derived from the pool trees.
+ * Build the 12-bay view. Bay→serial comes from the agent's port inventory (stable
+ * across drive swaps); identity comes from `disks/list` and pool membership from
+ * the pool trees, both keyed by serial.
  */
-export function assembleBays(disks: PveDisk[], poolTrees: PoolStatus[]): BayInfo[] {
+export function assembleBays(
+  disks: PveDisk[],
+  poolTrees: PoolStatus[],
+  inventory: BayInventoryEntry[]
+): BayInfo[] {
   const diskBySerial = new Map<string, PveDisk>()
   for (const d of disks) if (d.serial) diskBySerial.set(d.serial, d)
 
-  // serial -> pool membership + vdev state
   const poolBySerial = new Map<string, { pool: BayPool; leaf: PoolVdevLeaf }>()
   for (const pool of poolTrees) {
     for (const leaf of pool.vdevs) {
@@ -117,21 +116,22 @@ export function assembleBays(disks: PveDisk[], poolTrees: PoolStatus[]): BayInfo
     }
   }
 
+  const invByBay = new Map(inventory.map((e) => [e.bayIndex, e]))
+
   return PROXBOX_BAY_MAP.map((slot) => {
-    const serial = slot.expectedSerial
+    const inv = invByBay.get(slot.bayIndex)
+    const present = inv?.present ?? false
+    const serial = inv?.serial
     const disk = serial ? diskBySerial.get(serial) : undefined
     const membership = serial ? poolBySerial.get(serial) : undefined
-
-    // Occupied if the OS sees the drive, OR we know a (loose/offline) drive is seated.
-    const occupied = Boolean(disk) || Boolean(slot.offlineKnown)
-    const offline = Boolean(slot.offlineKnown) && !disk
 
     return {
       bayIndex: slot.bayIndex,
       controller: slot.controller,
       ledCapable: slot.ledCapable,
-      occupied,
-      offline,
+      occupied: present,
+      // Drive seated at the port but the OS/PVE can't enumerate it (link issue).
+      offline: present && !disk,
       serial,
       model: disk?.model,
       sizeBytes: disk?.size,
@@ -140,11 +140,7 @@ export function assembleBays(disks: PveDisk[], poolTrees: PoolStatus[]): BayInfo
       smartHealth: normalizeHealth(disk?.health),
       zfsState: membership?.leaf.state,
       zfsErrors: membership
-        ? {
-            read: membership.leaf.read,
-            write: membership.leaf.write,
-            cksum: membership.leaf.cksum,
-          }
+        ? { read: membership.leaf.read, write: membership.leaf.write, cksum: membership.leaf.cksum }
         : undefined,
     }
   })
@@ -155,11 +151,6 @@ export function assembleBays(disks: PveDisk[], poolTrees: PoolStatus[]): BayInfo
 function rawFirstInt(raw: string): number | undefined {
   const m = raw.match(/-?\d+/)
   return m ? Number.parseInt(m[0], 10) : undefined
-}
-
-/** Find an attribute by SMART id and return its parsed first integer. */
-function attrInt(byId: Map<number, number>, id: number): number | undefined {
-  return byId.get(id)
 }
 
 export function mapSmart(serial: string, raw: PveSmart): DiskSmart {
@@ -179,18 +170,18 @@ export function mapSmart(serial: string, raw: PveSmart): DiskSmart {
 
   const byId = new Map<number, number>()
   for (const a of attributes) if (a.rawInt !== undefined) byId.set(a.id, a.rawInt)
+  const attr = (id: number) => byId.get(id)
 
   return {
     serial,
     health: normalizeHealth(raw.health),
-    // 194 Temperature_Celsius on most drives; 190 Airflow_Temperature_Cel on these Seagates.
-    temperatureC: attrInt(byId, 194) ?? attrInt(byId, 190),
-    powerOnHours: attrInt(byId, 9),
-    startStopCount: attrInt(byId, 4),
-    powerCycleCount: attrInt(byId, 12),
-    reallocatedSectors: attrInt(byId, 5),
-    pendingSectors: attrInt(byId, 197),
-    offlineUncorrectable: attrInt(byId, 198),
+    temperatureC: attr(194) ?? attr(190),
+    powerOnHours: attr(9),
+    startStopCount: attr(4),
+    powerCycleCount: attr(12),
+    reallocatedSectors: attr(5),
+    pendingSectors: attr(197),
+    offlineUncorrectable: attr(198),
     attributes,
   }
 }

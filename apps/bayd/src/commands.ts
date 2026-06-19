@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process"
-import { BAY_BY_SERIAL, type BayCommand, type BayCommandReply } from "@cnet/engine"
-import { devForSerial } from "./probes"
+import { type BayCommand, type BayCommandReply, PROXBOX_BAY_MAP } from "@cnet/engine"
+import { byPathForDev, devForSerial } from "./probes"
 
 /** Serials whose locate LED is currently being driven (reflected in live frames). */
 export const locating = new Set<string>()
@@ -32,10 +32,12 @@ function bySerialDev(serial: string): string | undefined {
 }
 
 function locate(serial: string, on: boolean): string | { output: string } {
-  const slot = BAY_BY_SERIAL.get(serial)
-  if (!slot?.ledCapable) return "Locate LED not available on this bay (AHCI/unknown)"
   const dev = bySerialDev(serial)
   if (!dev) return `No device for serial ${serial}`
+  // ledCapable is a property of the physical port (HBA), resolved via by-path.
+  const byPath = byPathForDev(dev.replace("/dev/", ""))
+  const slot = byPath ? PROXBOX_BAY_MAP.find((s) => s.byPath === byPath) : undefined
+  if (!slot?.ledCapable) return "Locate LED not available on this bay (AHCI/unknown)"
   const r = run("ledctl", [on ? `locate=${dev}` : `locate_off=${dev}`])
   if (!r.ok) return r.out || "ledctl failed"
   if (on) locating.add(serial)
