@@ -27,15 +27,15 @@ function Stat({
 }) {
   return (
     <div className="rounded border border-neutral-80 bg-neutral-100 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wide text-neutral-50">{label}</div>
-      <div className={`font-bd-mono text-sm ${warn ? "text-amber-300" : "text-neutral-20"}`}>
+      <div className="text-xs uppercase tracking-wide text-neutral-50">{label}</div>
+      <div className={`font-bd-mono text-base ${warn ? "text-amber-300" : "text-neutral-20"}`}>
         {value ?? "—"}
       </div>
     </div>
   )
 }
 
-const BTN = "rounded border px-3 py-1.5 text-xs font-medium transition disabled:opacity-40"
+const BTN = "rounded border px-3 py-1.5 text-sm font-medium transition disabled:opacity-40"
 
 export function DriveDetail({
   bay,
@@ -99,10 +99,10 @@ export function DriveDetail({
     <div className="rounded-lg border border-primary-purple-60 bg-neutral-100 p-4">
       <div className="mb-3 flex items-start justify-between">
         <div>
-          <h3 className="font-bd-mono text-lg text-neutral-10">
+          <h3 className="font-bd-mono text-xl text-neutral-10">
             Bay {bay.bayIndex} · {bay.serial ?? "empty"}
           </h3>
-          <span className="text-xs text-neutral-50">
+          <span className="text-sm text-neutral-50">
             {bay.model ?? "—"} · {bay.controller.toUpperCase()}
             {bay.pool ? ` · ${bay.pool}` : ""}
             {bay.ledCapable ? "" : " · no locate LED"}
@@ -119,17 +119,17 @@ export function DriveDetail({
       </div>
 
       {bay.offline ? (
-        <p className="text-sm text-amber-300">
+        <p className="text-base text-amber-300">
           Drive seated but not linking (no SATA connection) — SMART unavailable. Reseat the drive.
         </p>
       ) : !bay.occupied ? (
-        <p className="text-sm text-neutral-50">Empty bay.</p>
+        <p className="text-base text-neutral-50">Empty bay.</p>
       ) : isLoading ? (
         <div className="py-6">
           <LoadingSpinner size="md" />
         </div>
       ) : error ? (
-        <p className="text-sm text-accent-red-40">
+        <p className="text-base text-accent-red-40">
           {error instanceof Error ? error.message : "Failed to load SMART"}
         </p>
       ) : smart ? (
@@ -198,7 +198,7 @@ export function DriveDetail({
 
           {showDanger && bay.pool ? (
             <div className="space-y-2 rounded border border-accent-red-70 bg-accent-red-100/20 p-3">
-              <p className="text-xs text-accent-red-30">
+              <p className="text-sm text-accent-red-30">
                 Offlining degrades <span className="font-bd-mono">{bay.pool}</span> redundancy. Type
                 the serial <span className="font-bd-mono">{bay.serial}</span> and the op password.
               </p>
@@ -206,14 +206,14 @@ export function DriveDetail({
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 placeholder="type serial to confirm"
-                className="w-full rounded border border-neutral-70 bg-neutral-100 px-2 py-1 font-bd-mono text-xs text-neutral-20"
+                className="w-full rounded border border-neutral-70 bg-neutral-100 px-2 py-1 font-bd-mono text-sm text-neutral-20"
               />
               <input
                 type="password"
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
                 placeholder="op password"
-                className="w-full rounded border border-neutral-70 bg-neutral-100 px-2 py-1 text-xs text-neutral-20"
+                className="w-full rounded border border-neutral-70 bg-neutral-100 px-2 py-1 text-sm text-neutral-20"
               />
               <button
                 type="button"
@@ -227,7 +227,7 @@ export function DriveDetail({
           ) : null}
 
           {msg ? (
-            <p className={`text-xs ${msg.ok ? "text-accent-green-40" : "text-accent-red-40"}`}>
+            <p className={`text-sm ${msg.ok ? "text-accent-green-40" : "text-accent-red-40"}`}>
               {msg.text}
             </p>
           ) : null}

@@ -78,7 +78,7 @@ export function StorageView() {
   return (
     <div className="space-y-6">
       {faults.length > 0 ? (
-        <div className="rounded-lg border border-amber-500/60 bg-amber-950/30 p-3 text-sm text-amber-200">
+        <div className="rounded-lg border border-amber-500/60 bg-amber-950/30 p-3 text-base text-amber-200">
           <span className="font-semibold">Attention: </span>
           {faults.join(" · ")}
         </div>

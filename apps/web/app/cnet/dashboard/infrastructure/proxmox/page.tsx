@@ -104,7 +104,7 @@ export default function ProxmoxPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-neutral-100">Proxmox · proxbox</h1>
+        <h1 className="text-5xl font-bold text-neutral-100">Proxmox · proxbox</h1>
       </div>
 
       <div className="mb-6 flex gap-1 border-b border-neutral-30">
@@ -135,7 +135,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={[
-        "-mb-px border-b-2 px-4 py-2 text-sm font-medium transition",
+        "-mb-px border-b-2 px-4 py-2 text-base font-medium transition",
         active
           ? "border-primary-purple-40 text-primary-purple-40"
           : "border-transparent text-neutral-50 hover:text-neutral-70",
