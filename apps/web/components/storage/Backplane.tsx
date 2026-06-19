@@ -31,7 +31,7 @@ export function Backplane({ bays, pools, live, selectedBay, onSelect }: Backplan
           {ordered.map((bay) => {
             const pool = bay.pool ? poolByName.get(bay.pool) : undefined
             const liveState = bay.serial ? live?.bySerial.get(bay.serial) : undefined
-            const status = deriveBayStatus(bay, pool, liveState?.locate)
+            const status = deriveBayStatus(bay, pool, liveState)
             return (
               <Bay
                 key={bay.bayIndex}
@@ -46,7 +46,7 @@ export function Backplane({ bays, pools, live, selectedBay, onSelect }: Backplan
           })}
         </div>
 
-        <div className="mt-2 flex items-center justify-between px-1 text-xs uppercase tracking-wider text-neutral-60">
+        <div className="mt-2 flex items-center justify-between px-1 text-[9px] uppercase tracking-wider text-neutral-60">
           <span>bays 1–8 · LSI HBA · tank_main (raidz3)</span>
           <span className="flex items-center gap-1">
             <span
