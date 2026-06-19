@@ -1,6 +1,14 @@
-import type { BayInfo, PoolStatus } from "@cnet/engine"
+import type { BayInfo, BayLiveState, PoolStatus } from "@cnet/engine"
 
-export type BayTone = "empty" | "offline" | "ok" | "warn" | "fault" | "resilver" | "locate"
+export type BayTone =
+  | "empty"
+  | "offline"
+  | "ok"
+  | "warn"
+  | "fault"
+  | "resilver"
+  | "locate"
+  | "standby"
 
 export interface BayStatus {
   tone: BayTone
@@ -9,12 +17,11 @@ export interface BayStatus {
 
 /**
  * Derive a single display status for a bay from its identity, ZFS vdev state,
- * and the owning pool's scan state. Pending-sector / temperature warnings come
- * from per-drive SMART (shown in the drive detail), not here — the bay list
- * deliberately avoids spinning drives up for SMART.
+ * the owning pool's scan state, and live spin/locate. Pending-sector / temperature
+ * warnings come from per-drive SMART (shown in the drive detail), not here.
  */
-export function deriveBayStatus(bay: BayInfo, pool?: PoolStatus, locating?: boolean): BayStatus {
-  if (locating) return { tone: "locate", label: "Locating" }
+export function deriveBayStatus(bay: BayInfo, pool?: PoolStatus, live?: BayLiveState): BayStatus {
+  if (live?.locate) return { tone: "locate", label: "Locating" }
   if (!bay.occupied) return { tone: "empty", label: "Empty" }
   if (bay.offline) return { tone: "offline", label: "Offline · no link" }
 
@@ -25,6 +32,9 @@ export function deriveBayStatus(bay: BayInfo, pool?: PoolStatus, locating?: bool
   if (pool?.scan.inProgress && pool.scan.kind === "resilver") {
     return { tone: "resilver", label: "Resilvering" }
   }
+  // Spun down (parked) — healthy but idle. Shown yellow.
+  if (live?.spin === "standby") return { tone: "standby", label: "Standby (spun down)" }
+
   const errs =
     (bay.zfsErrors?.read ?? 0) + (bay.zfsErrors?.write ?? 0) + (bay.zfsErrors?.cksum ?? 0)
   if (errs > 0) return { tone: "warn", label: "ZFS errors" }
@@ -62,6 +72,12 @@ export const TONE_STYLES: Record<BayTone, { caddie: string; led: string; text: s
     caddie: "border-secondary-blue-60 bg-secondary-blue-100/30",
     led: "bg-secondary-blue-50 animate-pulse",
     text: "text-secondary-blue-40",
+  },
+  // Spun down — yellow, calm (no pulse): it's healthy, just parked.
+  standby: {
+    caddie: "border-yellow-500/70 bg-yellow-950/30",
+    led: "bg-yellow-400",
+    text: "text-yellow-300",
   },
   // Hardware renders ledctl locate as a fast RED blink on this SGPIO backplane.
   locate: {
