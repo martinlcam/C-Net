@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto"
 import { logAuditAction, ProxmoxService } from "@cnet/engine"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Request, Response, Route, Security, Tags } from "tsoa"
-import { BayCommandError, sendBayCommand } from "../lib/bay-command-client"
+import { BayCommandError, getBayInventory, sendBayCommand } from "../lib/bay-command-client"
 
 interface StorageErrorResponse {
   error: string
@@ -88,8 +88,16 @@ export class StorageController extends Controller {
   public async getBays(): Promise<{ data: unknown } | StorageErrorResponse> {
     const proxmox = StorageController.getService()
     if (!proxmox) return this.notConfigured()
+    const inv = await getBayInventory()
+    if (!inv) {
+      this.setStatus(503)
+      return {
+        error: "Bay agent not reporting",
+        message: "cnet-bayd inventory is missing or stale — is the host agent running?",
+      }
+    }
     try {
-      return { data: await proxmox.getBays(StorageController.node) }
+      return { data: await proxmox.getBays(StorageController.node, inv.bays) }
     } catch (error) {
       console.error("Failed to fetch bays:", error)
       this.setStatus(500)

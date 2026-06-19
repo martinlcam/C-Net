@@ -12,7 +12,16 @@ export {
   verifyCommand,
   type ZpoolAction,
 } from "./proxmox/bay-commands"
-export { BAY_BY_SERIAL, type BaySlot, PROXBOX_BAY_MAP, PROXBOX_NODE } from "./proxmox/bay-map"
+export {
+  BAY_INVENTORY_KEY,
+  BAY_INVENTORY_MAX_AGE_MS,
+  type BayInventory,
+  type BayInventoryEntry,
+  type BaySlot,
+  PROXBOX_BAY_MAP,
+  PROXBOX_NODE,
+  SLOT_BY_BAY,
+} from "./proxmox/bay-map"
 export type { BayLiveFrame, BayLiveState, SpinState } from "./proxmox/live-types"
 export { ProxmoxService } from "./proxmox/service"
 export {

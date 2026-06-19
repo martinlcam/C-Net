@@ -2,8 +2,11 @@ import { randomUUID } from "node:crypto"
 import {
   BAY_CMD_CHANNEL,
   BAY_CMD_REPLY_CHANNEL,
+  BAY_INVENTORY_KEY,
+  BAY_INVENTORY_MAX_AGE_MS,
   type BayCommand,
   type BayCommandReply,
+  type BayInventory,
   type BayVerb,
   signCommand,
 } from "@cnet/engine"
@@ -39,6 +42,21 @@ function ensure(): void {
       /* ignore malformed reply */
     }
   })
+}
+
+/** Latest port→drive inventory published by cnet-bayd, or null if missing/stale. */
+export async function getBayInventory(): Promise<BayInventory | null> {
+  ensure()
+  // biome-ignore lint/style/noNonNullAssertion: ensure() set pub
+  const raw = await pub!.get(BAY_INVENTORY_KEY)
+  if (!raw) return null
+  try {
+    const inv = JSON.parse(raw) as BayInventory
+    if (Date.now() - inv.ts > BAY_INVENTORY_MAX_AGE_MS) return null // agent likely down
+    return inv
+  } catch {
+    return null
+  }
 }
 
 export class BayCommandError extends Error {}

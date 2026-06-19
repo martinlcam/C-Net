@@ -16,6 +16,56 @@ export function devForSerial(serial: string): string | undefined {
   }
 }
 
+/** Resolve a stable port (by-path) to the drive currently in it. */
+export function resolveByPath(byPath: string): { devPath: string; dev: string } | undefined {
+  try {
+    const devPath = realpathSync(`/dev/disk/by-path/${byPath}`) // -> /dev/sdX
+    return { devPath, dev: devPath.replace("/dev/", "") }
+  } catch {
+    return undefined
+  }
+}
+
+/** Map of devName ("sda") -> serial, reverse-resolved from /dev/disk/by-id. */
+export function devToSerialMap(): Map<string, string> {
+  const m = new Map<string, string>()
+  try {
+    const dir = "/dev/disk/by-id"
+    for (const n of readdirSync(dir)) {
+      if (!n.startsWith("ata-") || n.includes("-part")) continue
+      const i = n.lastIndexOf("_")
+      if (i < 0) continue
+      try {
+        const dev = realpathSync(`${dir}/${n}`).replace("/dev/", "")
+        m.set(dev, n.slice(i + 1))
+      } catch {
+        /* dangling link */
+      }
+    }
+  } catch {
+    /* by-id unreadable */
+  }
+  return m
+}
+
+/** The by-path a /dev/sdX is reachable through (for ledCapable checks). */
+export function byPathForDev(dev: string): string | undefined {
+  try {
+    const dir = "/dev/disk/by-path"
+    for (const n of readdirSync(dir)) {
+      if (n.includes("-part")) continue
+      try {
+        if (realpathSync(`${dir}/${n}`).endsWith(`/${dev}`)) return n
+      } catch {
+        /* dangling */
+      }
+    }
+  } catch {
+    /* unreadable */
+  }
+  return undefined
+}
+
 /** Map of devName ("sda") -> cumulative completed IOs (reads+writes). */
 export function readDiskstats(): Map<string, number> {
   const out = new Map<string, number>()

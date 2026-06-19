@@ -1,29 +1,32 @@
 /*
  * cnet-bayd — host-side storage agent for proxbox.
  *
- * Runs on the HOST (not LXC 110): it needs /dev, zpool, hdparm (and later ledctl).
- * It publishes live per-bay telemetry (spin / IO "blink" / resilver) to Redis;
- * apps/realtime fans it out to the browser backplane over WS. Identity + SMART
- * stay on the REST path. See docs/ZFS_BAY_GUI_PLAN.md (Phase 2).
+ * Runs on the HOST (not LXC 110): it needs /dev, zpool, smartctl (and ledctl/
+ * hdparm for actions). It resolves each physical bay (by-path port) to whatever
+ * drive is currently in it, publishes the inventory (port→drive) plus live
+ * telemetry (spin / IO "blink" / resilver) to Redis, and executes signed action
+ * commands. See docs/ZFS_BAY_GUI_PLAN.md.
  *
- *   cnet-bayd --PUBLISH bay:status--> Redis --SUB--> apps/realtime --WS--> /bay/live
- *
- * Read-only in Phase 2. Action verbs (locate/spindown/zpool) come in Phase 3 over
- * a unix socket.
+ *   cnet-bayd --SET bay:inventory / PUBLISH bay:status--> Redis --> API + /bay/live
+ *   API --PUBLISH bay:cmd (HMAC)--> cnet-bayd --PUBLISH bay:cmd:reply-->
  */
 
 import {
   BAY_CMD_CHANNEL,
   BAY_CMD_REPLY_CHANNEL,
+  BAY_INVENTORY_KEY,
   type BayCommand,
+  type BayInventory,
+  type BayInventoryEntry,
   type BayLiveFrame,
   type BayLiveState,
   PROXBOX_BAY_MAP,
+  type SpinState,
   verifyCommand,
 } from "@cnet/engine"
 import { Redis } from "ioredis"
 import { executeCommand, locating } from "./commands"
-import { devForSerial, readDiskstats, resilverStatus, spinState } from "./probes"
+import { devToSerialMap, readDiskstats, resilverStatus, resolveByPath, spinState } from "./probes"
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379"
 const CHANNEL = process.env.BAY_REDIS_CHANNEL || "bay:status"
@@ -31,15 +34,10 @@ const CMD_SECRET = process.env.CNET_BAYD_CMD_SECRET || ""
 const IO_TICK_MS = Number(process.env.BAYD_IO_TICK_MS || 1000)
 const SLOW_TICK_MS = Number(process.env.BAYD_SLOW_TICK_MS || 10000)
 
-// Occupied bays we can probe (have an expected serial).
-const SERIALS = PROXBOX_BAY_MAP.map((b) => b.expectedSerial).filter((s): s is string => Boolean(s))
-
 const publisher = new Redis(REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: false })
 publisher.on("error", (e) => console.error("[bayd] redis error:", e.message))
 publisher.on("ready", () => console.log("[bayd] redis ready"))
 
-// Dedicated subscriber for the command channel (ioredis: a subscribed connection
-// can't issue normal commands, so replies go out on `publisher`).
 const subscriber = new Redis(REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: false })
 subscriber.on("error", (e) => console.error("[bayd] cmd sub error:", e.message))
 subscriber.subscribe(BAY_CMD_CHANNEL, (err) => {
@@ -66,30 +64,36 @@ subscriber.on("message", (_ch, raw) => {
   publisher.publish(BAY_CMD_REPLY_CHANNEL, JSON.stringify(reply)).catch(() => {})
 })
 
-// serial -> devName ("sda"); refreshed on the slow tick (drives can re-letter).
-let devBySerial = new Map<string, string>()
-// devName -> last cumulative IO count, for delta detection.
+// Current port→drive inventory (rebuilt each slow tick).
+let inventory: BayInventoryEntry[] = []
+let spinByDev = new Map<string, SpinState>()
 let lastIo = new Map<string, number>()
-// serial -> latest slow-tick state.
-const spinBySerial = new Map<string, BayLiveState["spin"]>()
 let resilver: BayLiveFrame["resilver"]
 
-function refreshDevMap(): void {
-  const next = new Map<string, string>()
-  for (const serial of SERIALS) {
-    const dev = devForSerial(serial)
-    if (dev) next.set(serial, dev.replace("/dev/", ""))
-  }
-  devBySerial = next
-}
-
 function slowTick(): void {
-  refreshDevMap()
-  for (const serial of SERIALS) {
-    const dev = devBySerial.get(serial)
-    spinBySerial.set(serial, dev ? spinState(`/dev/${dev}`) : "unknown")
+  const dts = devToSerialMap()
+  inventory = PROXBOX_BAY_MAP.map((slot) => {
+    const r = resolveByPath(slot.byPath)
+    return {
+      bayIndex: slot.bayIndex,
+      byPath: slot.byPath,
+      present: Boolean(r),
+      serial: r ? dts.get(r.dev) : undefined,
+      devPath: r?.devPath,
+    }
+  })
+
+  const spin = new Map<string, SpinState>()
+  for (const e of inventory) {
+    if (e.devPath) spin.set(e.devPath.replace("/dev/", ""), spinState(e.devPath))
   }
+  spinByDev = spin
   resilver = resilverStatus()
+
+  const payload: BayInventory = { ts: Date.now(), bays: inventory }
+  publisher.set(BAY_INVENTORY_KEY, JSON.stringify(payload)).catch((e) => {
+    console.error("[bayd] inventory publish failed:", (e as Error).message)
+  })
 }
 
 function ioTick(): void {
@@ -101,15 +105,17 @@ function ioTick(): void {
   }
   lastIo = now
 
-  const bays: BayLiveState[] = SERIALS.map((serial) => {
-    const dev = devBySerial.get(serial)
-    return {
-      serial,
-      spin: spinBySerial.get(serial) ?? "unknown",
+  const bays: BayLiveState[] = []
+  for (const e of inventory) {
+    if (!e.present || !e.serial) continue
+    const dev = e.devPath ? e.devPath.replace("/dev/", "") : ""
+    bays.push({
+      serial: e.serial,
+      spin: spinByDev.get(dev) ?? "unknown",
       ioActive: dev ? (active.get(dev) ?? false) : false,
-      locate: locating.has(serial),
-    }
-  })
+      locate: locating.has(e.serial),
+    })
+  }
 
   const frame: BayLiveFrame = { t: "bay", ts: Date.now(), bays, resilver }
   publisher.publish(CHANNEL, JSON.stringify(frame)).catch((e) => {
@@ -117,7 +123,7 @@ function ioTick(): void {
   })
 }
 
-console.log(`[bayd] starting — channel=${CHANNEL} bays=${SERIALS.length}`)
+console.log(`[bayd] starting — bays=${PROXBOX_BAY_MAP.length} channel=${CHANNEL}`)
 slowTick()
 ioTick()
 const ioTimer = setInterval(ioTick, IO_TICK_MS)
