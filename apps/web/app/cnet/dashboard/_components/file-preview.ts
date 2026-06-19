@@ -10,8 +10,27 @@ function ext(filename: string): string {
   return lower.includes(".") ? lower.slice(lower.lastIndexOf(".")) : ""
 }
 
-export function isImageFile(contentType: string | null): boolean {
+export function isImageFile(contentType: string | null, filename?: string): boolean {
+  if (isHeicFile(contentType, filename ?? "")) return false
   return normalize(contentType).startsWith("image/")
+}
+
+const HEIC_MIME = new Set(["image/heic", "image/heif"])
+const HEIC_EXT = new Set([".heic", ".heif"])
+
+export function isHeicFile(contentType: string | null, filename: string): boolean {
+  if (HEIC_MIME.has(normalize(contentType))) return true
+  return HEIC_EXT.has(ext(filename))
+}
+
+const PPTX_MIME = new Set([
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-powerpoint.presentation.macroenabled.12",
+])
+
+export function isPptxFile(contentType: string | null, filename: string): boolean {
+  if (PPTX_MIME.has(normalize(contentType))) return true
+  return ext(filename) === ".pptx"
 }
 
 export function isVideoFile(contentType: string | null, filename: string): boolean {
@@ -108,6 +127,67 @@ const PLAINTEXT_EXT = new Set([
   ".gradle",
 ])
 
+/** Prism language id for syntax-highlighted code previews, or null for plain text. */
+const CODE_LANG: Record<string, string> = {
+  ".py": "python",
+  ".js": "javascript",
+  ".jsx": "jsx",
+  ".mjs": "javascript",
+  ".cjs": "javascript",
+  ".ts": "typescript",
+  ".tsx": "tsx",
+  ".rb": "ruby",
+  ".rs": "rust",
+  ".go": "go",
+  ".java": "java",
+  ".c": "c",
+  ".cpp": "cpp",
+  ".cc": "cpp",
+  ".h": "c",
+  ".hpp": "cpp",
+  ".cs": "csharp",
+  ".swift": "swift",
+  ".kt": "kotlin",
+  ".lua": "lua",
+  ".sh": "bash",
+  ".bash": "bash",
+  ".zsh": "bash",
+  ".fish": "bash",
+  ".ps1": "powershell",
+  ".sql": "sql",
+  ".graphql": "graphql",
+  ".gql": "graphql",
+  ".yml": "yaml",
+  ".yaml": "yaml",
+  ".toml": "toml",
+  ".css": "css",
+  ".scss": "scss",
+  ".sass": "sass",
+  ".less": "less",
+  ".php": "php",
+  ".json": "json",
+  ".xml": "markup",
+  ".tf": "hcl",
+  ".hcl": "hcl",
+  ".proto": "protobuf",
+  ".md": "markdown",
+  ".markdown": "markdown",
+}
+
+export function codeLanguage(filename: string): string | null {
+  return CODE_LANG[ext(filename)] ?? null
+}
+
+export function isCodeFile(contentType: string | null, filename: string): boolean {
+  if (codeLanguage(filename)) return true
+  const mime = normalize(contentType)
+  return (
+    mime === "application/json" ||
+    mime === "application/javascript" ||
+    mime === "application/x-javascript"
+  )
+}
+
 export function isPlaintextFile(contentType: string | null, filename: string): boolean {
   const mime = normalize(contentType)
   if (mime.startsWith("text/")) return true
@@ -115,14 +195,27 @@ export function isPlaintextFile(contentType: string | null, filename: string): b
   return PLAINTEXT_EXT.has(ext(filename))
 }
 
-export type PreviewKind = "image" | "pdf" | "video" | "audio" | "html" | "text" | "none"
+export type PreviewKind =
+  | "image"
+  | "heic"
+  | "pdf"
+  | "pptx"
+  | "video"
+  | "audio"
+  | "html"
+  | "code"
+  | "text"
+  | "none"
 
 export function previewKind(contentType: string | null, filename: string): PreviewKind {
-  if (isImageFile(contentType)) return "image"
+  if (isHeicFile(contentType, filename)) return "heic"
+  if (isImageFile(contentType, filename)) return "image"
   if (isPdfFile(contentType, filename)) return "pdf"
+  if (isPptxFile(contentType, filename)) return "pptx"
   if (isVideoFile(contentType, filename)) return "video"
   if (isAudioFile(contentType, filename)) return "audio"
   if (isHtmlFile(contentType, filename)) return "html"
+  if (isCodeFile(contentType, filename)) return "code"
   if (isPlaintextFile(contentType, filename)) return "text"
   return "none"
 }
