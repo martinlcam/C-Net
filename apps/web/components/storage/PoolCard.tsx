@@ -1,9 +1,11 @@
 "use client"
 
-import type { PoolStatus } from "@cnet/engine"
-import { useMutation } from "@tanstack/react-query"
+import type { DiskSmart, PoolStatus } from "@cnet/engine"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { storageAction } from "./storage-actions"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 function tb(bytes: number): string {
   return `${(bytes / 1e12).toFixed(2)} TB`
@@ -15,16 +17,40 @@ const STATE_STYLES: Record<string, string> = {
   FAULTED: "text-accent-red-40 border-accent-red-60 bg-accent-red-100/30",
 }
 
+const BTN =
+  "rounded border border-neutral-70 px-3 py-1.5 text-xs font-medium text-neutral-30 transition hover:border-primary-purple-40 disabled:opacity-40"
+
+type PoolSmartRow = DiskSmart | { serial: string; error: string }
+
 export function PoolCard({ pool }: { pool: PoolStatus }) {
   const usedPct = pool.sizeBytes > 0 ? (pool.allocBytes / pool.sizeBytes) * 100 : 0
   const stateClass = STATE_STYLES[pool.state] ?? "text-neutral-30 border-neutral-70 bg-neutral-100"
   const scan = pool.scan
 
   const [msg, setMsg] = useState<string | null>(null)
+  const [confirmSpin, setConfirmSpin] = useState(false)
+  const [smartOpen, setSmartOpen] = useState(false)
+
   const scrubMut = useMutation({
     mutationFn: () => storageAction("zpool", { action: "scrub", pool: pool.name }),
     onSuccess: (r) => setMsg(r.output ?? "scrub started"),
     onError: (e) => setMsg(e instanceof Error ? e.message : "failed"),
+  })
+  const spindownMut = useMutation({
+    mutationFn: () => storageAction("spindown", { pool: pool.name }),
+    onSuccess: (r) => {
+      setMsg(r.output ?? "spun down")
+      setConfirmSpin(false)
+    },
+    onError: (e) => setMsg(e instanceof Error ? e.message : "failed"),
+  })
+  const smartQuery = useQuery({
+    queryKey: ["storage", "poolsmart", pool.name],
+    queryFn: (): Promise<PoolSmartRow[]> =>
+      fetch(`${API_BASE}/proxmox/storage/pools/${pool.name}/smart`, { credentials: "include" })
+        .then((r) => r.json())
+        .then((d) => d.data),
+    enabled: smartOpen,
   })
 
   return (
@@ -79,17 +105,100 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
         <p className="mt-2 text-xs text-accent-red-40">{pool.errors}</p>
       ) : null}
 
-      <div className="mt-3 flex items-center gap-3 border-t border-neutral-80 pt-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-neutral-80 pt-3">
         <button
           type="button"
           disabled={scan.inProgress || scrubMut.isPending}
           onClick={() => scrubMut.mutate()}
-          className="rounded border border-neutral-70 px-3 py-1.5 text-xs font-medium text-neutral-30 transition hover:border-primary-purple-40 disabled:opacity-40"
+          className={BTN}
         >
           {scrubMut.isPending ? "Starting…" : "Scrub"}
         </button>
-        {msg ? <span className="text-xs text-neutral-50">{msg}</span> : null}
+
+        <button type="button" onClick={() => setSmartOpen((s) => !s)} className={BTN}>
+          {smartOpen ? "Hide SMART" : "SMART all"}
+        </button>
+
+        {confirmSpin ? (
+          <button
+            type="button"
+            disabled={spindownMut.isPending}
+            onClick={() => spindownMut.mutate()}
+            className={`${BTN} border-amber-500 text-amber-300`}
+          >
+            {spindownMut.isPending ? "Spinning down…" : `Confirm spin down ${pool.name}`}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setConfirmSpin(true)} className={BTN}>
+            Spin down pool
+          </button>
+        )}
+        {confirmSpin ? (
+          <button
+            type="button"
+            onClick={() => setConfirmSpin(false)}
+            className="text-xs text-neutral-50"
+          >
+            cancel
+          </button>
+        ) : null}
       </div>
+
+      {msg ? <p className="mt-2 text-xs text-neutral-50">{msg}</p> : null}
+
+      {smartOpen ? (
+        <div className="mt-3 overflow-x-auto">
+          {smartQuery.isLoading ? (
+            <p className="text-xs text-neutral-50">Reading SMART…</p>
+          ) : smartQuery.error ? (
+            <p className="text-xs text-accent-red-40">Failed to load SMART</p>
+          ) : (
+            <table className="w-full text-left text-[11px]">
+              <thead className="text-neutral-50">
+                <tr>
+                  <th className="py-1 pr-2 font-medium">Serial</th>
+                  <th className="pr-2 font-medium">Health</th>
+                  <th className="pr-2 font-medium">Temp</th>
+                  <th className="pr-2 font-medium">Pwr-on</th>
+                  <th className="pr-2 font-medium">Pending</th>
+                  <th className="font-medium">Realloc</th>
+                </tr>
+              </thead>
+              <tbody className="font-bd-mono text-neutral-20">
+                {(smartQuery.data ?? []).map((row) =>
+                  "error" in row ? (
+                    <tr key={row.serial}>
+                      <td className="py-0.5 pr-2">{row.serial}</td>
+                      <td className="text-accent-red-40" colSpan={5}>
+                        {row.error}
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={row.serial}>
+                      <td className="py-0.5 pr-2">{row.serial}</td>
+                      <td
+                        className={
+                          row.health === "PASSED" ? "text-accent-green-40" : "text-accent-red-40"
+                        }
+                      >
+                        {row.health}
+                      </td>
+                      <td className="pr-2">{row.temperatureC ? `${row.temperatureC}°C` : "—"}</td>
+                      <td className="pr-2">{row.powerOnHours ? `${row.powerOnHours}h` : "—"}</td>
+                      <td className={(row.pendingSectors ?? 0) > 0 ? "text-amber-300" : "pr-2"}>
+                        {row.pendingSectors ?? 0}
+                      </td>
+                      <td className={(row.reallocatedSectors ?? 0) > 0 ? "text-amber-300" : ""}>
+                        {row.reallocatedSectors ?? 0}
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ) : null}
     </div>
   )
 }

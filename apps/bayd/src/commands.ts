@@ -45,10 +45,39 @@ function locate(serial: string, on: boolean): string | { output: string } {
   return { output: `locate ${on ? "on" : "off"} ${serial} (${dev})` }
 }
 
-function spindown(serial: string): string | { output: string } {
-  // Safety: never spin down an active raidz member (tank_main); cold_tank/idle only.
-  const pool = poolForSerial(serial)
-  if (pool === "tank_main") return "Refusing: drive is an active tank_main (raidz3) member"
+/** Serials of every leaf vdev in a pool, parsed from `zpool status <pool>`. */
+function poolMembers(pool: string): string[] {
+  const r = spawnSync("zpool", ["status", pool], { encoding: "utf8", timeout: 8000 })
+  const serials: string[] = []
+  for (const raw of (r.stdout ?? "").split("\n")) {
+    const m = raw.trim().match(/^ata-\S+_([A-Za-z0-9]+)\s/)
+    if (m) serials.push(m[1])
+  }
+  return serials
+}
+
+function spinOne(serial: string): string {
+  const dev = bySerialDev(serial)
+  if (!dev) return `${serial}: no device`
+  const r = run("hdparm", ["-y", dev])
+  return `${serial}: ${r.ok ? "spun down" : r.out || "hdparm failed"}`
+}
+
+function spindown(args: Record<string, unknown>): string | { output: string } {
+  // Whole-pool spindown is an explicit, deliberate action — it bypasses the
+  // single-drive raidz guard (the user is choosing to park the entire pool).
+  if (args.pool) {
+    const pool = String(args.pool)
+    const members = poolMembers(pool)
+    if (members.length === 0) return `No drives found in pool ${pool}`
+    return { output: `pool ${pool}: ${members.map(spinOne).join("; ")}` }
+  }
+
+  // Single-drive spindown: never park an active raidz member by accident.
+  const serial = String(args.serial)
+  if (poolForSerial(serial) === "tank_main") {
+    return "Refusing: drive is an active tank_main (raidz3) member — use whole-pool spindown to override"
+  }
   const dev = bySerialDev(serial)
   if (!dev) return `No device for serial ${serial}`
   const r = run("hdparm", ["-y", dev])
@@ -89,7 +118,7 @@ export function executeCommand(cmd: BayCommand): BayCommandReply {
     if (cmd.verb === "locate") {
       res = locate(String(cmd.args.serial), Boolean(cmd.args.on))
     } else if (cmd.verb === "spindown") {
-      res = spindown(String(cmd.args.serial))
+      res = spindown(cmd.args)
     } else if (cmd.verb === "zpool") {
       res = zpool(cmd.args)
     } else {

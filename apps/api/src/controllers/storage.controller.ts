@@ -14,7 +14,10 @@ interface LocateBody {
   on: boolean
 }
 interface SpindownBody {
-  serial: string
+  /** Spin down one drive (cold_tank/idle only) … */
+  serial?: string
+  /** … or the whole pool (deliberate; bypasses the single-drive raidz guard). */
+  pool?: string
 }
 interface ZpoolBody {
   action: "replace" | "offline" | "online" | "scrub"
@@ -127,6 +130,42 @@ export class StorageController extends Controller {
     }
   }
 
+  /* GET /proxmox/storage/pools/{name}/smart — SMART for every drive in a pool. */
+  @Get("pools/{name}/smart")
+  @Response<StorageErrorResponse>(503, "Not configured")
+  @Response<StorageErrorResponse>(404, "Pool not found")
+  @Response<StorageErrorResponse>(500, "Server error")
+  public async getPoolSmart(
+    @Path() name: string
+  ): Promise<{ data: unknown } | StorageErrorResponse> {
+    const proxmox = StorageController.getService()
+    if (!proxmox) return this.notConfigured()
+    try {
+      const node = StorageController.node
+      const pools = await proxmox.getPoolStatuses(node)
+      const pool = pools.find((p) => p.name === name)
+      if (!pool) {
+        this.setStatus(404)
+        return { error: "Pool not found", message: name }
+      }
+      const results = await Promise.all(
+        pool.vdevs.map((v) =>
+          proxmox
+            .getSmartBySerial(node, v.serial)
+            .catch((e) => ({ serial: v.serial, error: e instanceof Error ? e.message : "failed" }))
+        )
+      )
+      return { data: results }
+    } catch (error) {
+      console.error(`Failed to fetch pool SMART for ${name}:`, error)
+      this.setStatus(500)
+      return {
+        error: "Failed to fetch pool SMART",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }
+    }
+  }
+
   /* GET /proxmox/storage/disks/{serial}/smart */
   @Get("disks/{serial}/smart")
   @Response<StorageErrorResponse>(503, "Not configured")
@@ -230,8 +269,8 @@ export class StorageController extends Controller {
     return this.runCommand(
       req,
       "STORAGE_SPINDOWN",
-      body.serial,
-      { serial: body.serial },
+      body.pool ?? body.serial ?? "unknown",
+      { serial: body.serial, pool: body.pool },
       "spindown"
     )
   }
