@@ -2,11 +2,12 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { CloudAlert, Download, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { type VaultFile, vaultUrl } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
 import { previewKind } from "./file-preview"
 import { formatBytes } from "./format"
+import { SyntaxCodePreview } from "./syntax-code-preview"
 
 /** Fetches a text/code file's contents for inline display. */
 function TextPreview({ url }: { url: string }) {
@@ -115,6 +116,111 @@ function PreviewMessage({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** HEIC/HEIF — convert client-side since most browsers cannot render them in <img>. */
+function HeicPreview({ url, alt }: { url: string; alt: string }) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let objectUrl: string | null = null
+    let cancelled = false
+    setSrc(null)
+    setError(null)
+
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load file (${res.status})`)
+        return res.blob()
+      })
+      .then(async (blob) => {
+        const { default: heic2any } = await import("heic2any")
+        const converted = await heic2any({ blob, toType: "image/jpeg", quality: 0.92 })
+        const out = Array.isArray(converted) ? converted[0] : converted
+        if (cancelled) return
+        objectUrl = URL.createObjectURL(out)
+        setSrc(objectUrl)
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setError(err.message)
+      })
+
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [url])
+
+  if (error) return <PreviewMessage>{error}</PreviewMessage>
+  if (!src) return <PreviewMessage>Converting HEIC preview…</PreviewMessage>
+
+  return (
+    <div className="flex h-full w-full items-center justify-center overflow-auto p-4">
+      {/* biome-ignore lint/performance/noImgElement: converted blob URL from heic2any */}
+      <img src={src} alt={alt} className="max-h-full max-w-full object-contain" />
+    </div>
+  )
+}
+
+function PptxPreview({ url }: { url: string }) {
+  const hostRef = useRef<HTMLDivElement>(null)
+  const viewerRef = useRef<{ destroy: () => void } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    const host = hostRef.current
+    if (!host) return
+
+    setLoading(true)
+    setError(null)
+    host.innerHTML = ""
+
+    import("pptx-preview")
+      .then(({ init }) => {
+        if (cancelled || !hostRef.current) return
+        const width = Math.min(hostRef.current.clientWidth || 960, 960)
+        const height = Math.round((width * 9) / 16)
+        const viewer = init(hostRef.current, { width, height, mode: "slide" })
+        viewerRef.current = viewer
+        return fetch(url)
+          .then((res) => {
+            if (!res.ok) throw new Error(`Failed to load file (${res.status})`)
+            return res.arrayBuffer()
+          })
+          .then((buffer) => viewer.preview(buffer))
+      })
+      .then(() => {
+        if (!cancelled) setLoading(false)
+      })
+      .catch((err: Error) => {
+        if (!cancelled) {
+          setError(err.message)
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+      viewerRef.current?.destroy()
+      viewerRef.current = null
+    }
+  }, [url])
+
+  if (error) return <PreviewMessage>{error}</PreviewMessage>
+
+  return (
+    <div className="relative h-full w-full overflow-auto bg-neutral-20 p-4">
+      {loading ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center text-neutral-60 text-sm">
+          Loading presentation…
+        </div>
+      ) : null}
+      <div ref={hostRef} className="mx-auto h-full" />
+    </div>
+  )
+}
+
 function PreviewBody({ file }: { file: VaultFile }) {
   const url = vaultUrl(file.previewUrl)
   const kind = previewKind(file.contentType, file.filename)
@@ -127,6 +233,8 @@ function PreviewBody({ file }: { file: VaultFile }) {
           <img src={url} alt={file.filename} className="max-h-full max-w-full object-contain" />
         </div>
       )
+    case "heic":
+      return <HeicPreview url={url} alt={file.filename} />
     case "pdf":
       return (
         <object
@@ -142,6 +250,8 @@ function PreviewBody({ file }: { file: VaultFile }) {
           />
         </object>
       )
+    case "pptx":
+      return <PptxPreview url={url} />
     case "video":
       return (
         <div className="flex h-full w-full items-center justify-center bg-black p-2">
@@ -158,6 +268,8 @@ function PreviewBody({ file }: { file: VaultFile }) {
       )
     case "html":
       return <HtmlPreview url={url} filename={file.filename} />
+    case "code":
+      return <SyntaxCodePreview url={url} filename={file.filename} contentType={file.contentType} />
     case "text":
       return <TextPreview url={url} />
     default:
