@@ -18,7 +18,7 @@ const STATE_STYLES: Record<string, string> = {
 }
 
 const BTN =
-  "rounded border border-neutral-70 px-3 py-1.5 text-xs font-medium text-neutral-30 transition hover:border-primary-purple-40 disabled:opacity-40"
+  "rounded border border-neutral-70 px-3 py-1.5 text-sm font-medium text-neutral-30 transition hover:border-primary-purple-40 disabled:opacity-40"
 
 type PoolSmartRow = DiskSmart | { serial: string; error: string }
 
@@ -57,17 +57,17 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
     <div className="rounded-lg border border-neutral-80 bg-neutral-100 p-4">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-bd-mono text-lg text-neutral-10">{pool.name}</h3>
-          <span className="text-xs uppercase tracking-wide text-neutral-50">
+          <h3 className="font-bd-mono text-xl text-neutral-10">{pool.name}</h3>
+          <span className="text-sm uppercase tracking-wide text-neutral-50">
             {pool.raid} · {pool.vdevs.length} drives
           </span>
         </div>
-        <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${stateClass}`}>
+        <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${stateClass}`}>
           {pool.state}
         </span>
       </div>
 
-      <div className="mb-1 flex justify-between text-xs text-neutral-40">
+      <div className="mb-1 flex justify-between text-sm text-neutral-40">
         <span>
           {tb(pool.allocBytes)} / {tb(pool.sizeBytes)}
         </span>
@@ -84,7 +84,7 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
 
       {scan.inProgress ? (
         <div className="mt-3">
-          <div className="mb-1 flex justify-between text-xs">
+          <div className="mb-1 flex justify-between text-sm">
             <span className="capitalize text-secondary-blue-40">{scan.kind} in progress</span>
             {scan.percent !== undefined ? (
               <span className="text-secondary-blue-40">{scan.percent.toFixed(1)}%</span>
@@ -98,11 +98,11 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
           </div>
         </div>
       ) : (
-        <p className="mt-3 text-[11px] text-neutral-50">{scan.raw || "No recent scrub/resilver"}</p>
+        <p className="mt-3 text-sm text-neutral-50">{scan.raw || "No recent scrub/resilver"}</p>
       )}
 
       {pool.errors && pool.errors !== "No known data errors" ? (
-        <p className="mt-2 text-xs text-accent-red-40">{pool.errors}</p>
+        <p className="mt-2 text-sm text-accent-red-40">{pool.errors}</p>
       ) : null}
 
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-neutral-80 pt-3">
@@ -137,23 +137,23 @@ export function PoolCard({ pool }: { pool: PoolStatus }) {
           <button
             type="button"
             onClick={() => setConfirmSpin(false)}
-            className="text-xs text-neutral-50"
+            className="text-sm text-neutral-50"
           >
             cancel
           </button>
         ) : null}
       </div>
 
-      {msg ? <p className="mt-2 text-xs text-neutral-50">{msg}</p> : null}
+      {msg ? <p className="mt-2 text-sm text-neutral-50">{msg}</p> : null}
 
       {smartOpen ? (
         <div className="mt-3 overflow-x-auto">
           {smartQuery.isLoading ? (
-            <p className="text-xs text-neutral-50">Reading SMART…</p>
+            <p className="text-sm text-neutral-50">Reading SMART…</p>
           ) : smartQuery.error ? (
-            <p className="text-xs text-accent-red-40">Failed to load SMART</p>
+            <p className="text-sm text-accent-red-40">Failed to load SMART</p>
           ) : (
-            <table className="w-full text-left text-[11px]">
+            <table className="w-full text-left text-sm">
               <thead className="text-neutral-50">
                 <tr>
                   <th className="py-1 pr-2 font-medium">Serial</th>

@@ -29,12 +29,12 @@ export function VMCard({ vm, onStart, onStop, onRestart, isLoading = false }: VM
           <CardTitle className="text-primary-purple-70">{vm.name || `VM ${vm.vmid}`}</CardTitle>
           <Badge variant={statusColor}>{vm.status}</Badge>
         </div>
-        <CardDescription>
+        <CardDescription className="text-base">
           VM ID: {vm.vmid} • Node: {vm.node} • Type: {vm.type || "qemu"}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 text-sm text-neutral-70">
+        <div className="space-y-2 text-base text-neutral-70">
           <div className="flex justify-between">
             <span>CPU:</span>
             <span className="font-medium">{vm.cpu || 0} cores</span>

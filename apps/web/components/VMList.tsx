@@ -22,7 +22,7 @@ export function VMList({ vms, onStart, onStop, onRestart, isLoading = false }: V
   if (vms.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-neutral-70 text-lg">No VMs or containers found</p>
+        <p className="text-neutral-70 text-xl">No VMs or containers found</p>
       </div>
     )
   }
