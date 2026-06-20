@@ -1,4 +1,4 @@
-import { resolveCollision } from "@cnet/core"
+import { getVaultThumbnailsQueue, resolveCollision } from "@cnet/core"
 import { db } from "@cnet/db"
 import { vaultDirectories, vaultFiles, vaultItemMetadata } from "@cnet/db/schema"
 import { getStorageAdapter } from "@cnet/engine"
@@ -152,6 +152,28 @@ export class VaultFilesController extends Controller {
     await getStorageAdapter().remove(actor.id, file.id)
     await db.delete(vaultFiles).where(eq(vaultFiles.id, file.id))
     return { purged: true }
+  }
+
+  /** POST /vault/files/:id/reprocess — re-enqueue thumbnail + render-PDF generation.
+   * Used by fullscreen preview when an Office doc has no cached render yet. */
+  @Post("{id}/reprocess")
+  public async reprocess(
+    @Request() req: ExpressRequest,
+    @Path() id: string
+  ): Promise<{ queued: true }> {
+    const actor = actorFrom(req)
+    const file = await this.loadFile(actor.id, id)
+    if (!file) {
+      this.setStatus(404)
+      throw new Error("File not found")
+    }
+    await getVaultThumbnailsQueue().add("thumbnail", {
+      userId: actor.id,
+      fileId: file.id,
+      contentType: file.contentType,
+    })
+    this.setStatus(202)
+    return { queued: true }
   }
 
   /** POST /vault/files/:id/star */
