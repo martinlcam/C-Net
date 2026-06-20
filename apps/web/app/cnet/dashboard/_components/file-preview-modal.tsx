@@ -1,9 +1,9 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { CloudAlert, Download, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, CloudAlert, Download, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import { type VaultFile, vaultUrl } from "@/lib/vault-api"
+import { reprocessFile, type VaultFile, vaultUrl } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
 import { previewKind } from "./file-preview"
 import { formatBytes } from "./format"
@@ -161,9 +161,140 @@ function HeicPreview({ url, alt }: { url: string; alt: string }) {
   )
 }
 
-function PptxPreview({ url }: { url: string }) {
+function PdfObject({ url, filename }: { url: string; filename: string }) {
+  return (
+    <object
+      data={`${url}#navpanes=0&view=FitH`}
+      type="application/pdf"
+      className="h-full w-full"
+      title={`Preview of ${filename}`}
+    >
+      <iframe src={url} className="h-full w-full border-0" title={`Preview of ${filename}`} />
+    </object>
+  )
+}
+
+/**
+ * Office/ODF/RTF — the worker converts the document to a cached PDF server-side. Probe
+ * with HEAD; if it isn't ready, ask the API to (re)generate it and poll until it lands.
+ */
+function OfficePreview({ file }: { file: VaultFile }) {
+  const pdfUrl = vaultUrl(file.renderedPdfUrl)
+  const [state, setState] = useState<"checking" | "preparing" | "ready" | "error">("checking")
+
+  useEffect(() => {
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let triggered = false
+    let attempts = 0
+
+    const probe = async () => {
+      try {
+        const res = await fetch(pdfUrl, { method: "HEAD" })
+        if (cancelled) return
+        if (res.ok) {
+          setState("ready")
+          return
+        }
+        if (!triggered) {
+          triggered = true
+          await reprocessFile(file.id).catch(() => {})
+          if (cancelled) return
+        }
+        setState("preparing")
+        if (attempts++ < 40) timer = setTimeout(probe, 3000)
+        else setState("error")
+      } catch {
+        if (!cancelled) setState("error")
+      }
+    }
+    probe()
+
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
+  }, [pdfUrl, file.id])
+
+  if (state === "error") {
+    return (
+      <PreviewMessage>Couldn't prepare a preview. Download the file to open it.</PreviewMessage>
+    )
+  }
+  if (state !== "ready") return <PreviewMessage>Preparing preview…</PreviewMessage>
+  return <PdfObject url={pdfUrl} filename={file.filename} />
+}
+
+function CsvPreview({ url }: { url: string }) {
+  const [rows, setRows] = useState<string[][] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setRows(null)
+    setError(null)
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load file (${res.status})`)
+        return res.text()
+      })
+      .then(async (text) => {
+        const { default: Papa } = await import("papaparse")
+        const parsed = Papa.parse<string[]>(text.trim(), { skipEmptyLines: true })
+        if (!cancelled) setRows((parsed.data as string[][]).slice(0, 1000))
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setError(err.message)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [url])
+
+  if (error) return <PreviewMessage>{error}</PreviewMessage>
+  if (rows === null) return <PreviewMessage>Loading preview…</PreviewMessage>
+  if (rows.length === 0) return <PreviewMessage>Empty file.</PreviewMessage>
+
+  const [header, ...body] = rows
+  return (
+    <div className="h-full w-full overflow-auto bg-white">
+      <table className="w-full border-collapse text-left text-neutral-100 text-xs">
+        <thead className="sticky top-0 bg-neutral-10">
+          <tr>
+            {header.map((cell, i) => (
+              <th
+                // biome-ignore lint/suspicious/noArrayIndexKey: CSV columns are positional
+                key={i}
+                className="border border-neutral-20 px-2 py-1 font-semibold whitespace-nowrap"
+              >
+                {cell}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {body.map((row, r) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: CSV rows are positional
+            <tr key={r} className="even:bg-neutral-10/40">
+              {row.map((cell, c) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: CSV cells are positional
+                <td key={c} className="border border-neutral-20 px-2 py-1 align-top">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+type EpubRendition = { prev: () => void; next: () => void; destroy: () => void }
+
+function EpubPreview({ url, filename }: { url: string; filename: string }) {
   const hostRef = useRef<HTMLDivElement>(null)
-  const viewerRef = useRef<{ destroy: () => void } | null>(null)
+  const renditionRef = useRef<EpubRendition | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -171,26 +302,26 @@ function PptxPreview({ url }: { url: string }) {
     let cancelled = false
     const host = hostRef.current
     if (!host) return
-
     setLoading(true)
     setError(null)
     host.innerHTML = ""
 
-    import("pptx-preview")
-      .then(({ init }) => {
-        if (cancelled || !hostRef.current) return
-        const width = Math.min(hostRef.current.clientWidth || 960, 960)
-        const height = Math.round((width * 9) / 16)
-        const viewer = init(hostRef.current, { width, height, mode: "slide" })
-        viewerRef.current = viewer
-        return fetch(url)
-          .then((res) => {
-            if (!res.ok) throw new Error(`Failed to load file (${res.status})`)
-            return res.arrayBuffer()
-          })
-          .then((buffer) => viewer.preview(buffer))
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load file (${res.status})`)
+        return res.arrayBuffer()
       })
-      .then(() => {
+      .then(async (buffer) => {
+        if (cancelled || !hostRef.current) return
+        const { default: ePub } = await import("epubjs")
+        const book = ePub(buffer)
+        const rendition = book.renderTo(hostRef.current, {
+          width: "100%",
+          height: "100%",
+          spread: "auto",
+        })
+        renditionRef.current = rendition as unknown as EpubRendition
+        await rendition.display()
         if (!cancelled) setLoading(false)
       })
       .catch((err: Error) => {
@@ -202,21 +333,43 @@ function PptxPreview({ url }: { url: string }) {
 
     return () => {
       cancelled = true
-      viewerRef.current?.destroy()
-      viewerRef.current = null
+      renditionRef.current?.destroy()
+      renditionRef.current = null
     }
   }, [url])
 
   if (error) return <PreviewMessage>{error}</PreviewMessage>
 
   return (
-    <div className="relative h-full w-full overflow-auto bg-neutral-20 p-4">
-      {loading ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center text-neutral-60 text-sm">
-          Loading presentation…
-        </div>
-      ) : null}
-      <div ref={hostRef} className="mx-auto h-full" />
+    <div className="flex h-full flex-col bg-white">
+      <div className="relative min-h-0 flex-1">
+        <div ref={hostRef} className="h-full w-full" title={`Preview of ${filename}`} />
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center text-neutral-60 text-sm">
+            Loading book…
+          </div>
+        ) : null}
+      </div>
+      <div className="flex shrink-0 items-center justify-center gap-2 border-neutral-20 border-t p-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          title="Previous page"
+          onClick={() => renditionRef.current?.prev()}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          title="Next page"
+          onClick={() => renditionRef.current?.next()}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   )
 }
@@ -236,22 +389,13 @@ function PreviewBody({ file }: { file: VaultFile }) {
     case "heic":
       return <HeicPreview url={url} alt={file.filename} />
     case "pdf":
-      return (
-        <object
-          data={`${url}#navpanes=0&view=FitH`}
-          type="application/pdf"
-          className="h-full w-full"
-          title={`Preview of ${file.filename}`}
-        >
-          <iframe
-            src={url}
-            className="h-full w-full border-0"
-            title={`Preview of ${file.filename}`}
-          />
-        </object>
-      )
-    case "pptx":
-      return <PptxPreview url={url} />
+      return <PdfObject url={url} filename={file.filename} />
+    case "office":
+      return <OfficePreview file={file} />
+    case "csv":
+      return <CsvPreview url={url} />
+    case "epub":
+      return <EpubPreview url={url} filename={file.filename} />
     case "video":
       return (
         <div className="flex h-full w-full items-center justify-center bg-black p-2">
