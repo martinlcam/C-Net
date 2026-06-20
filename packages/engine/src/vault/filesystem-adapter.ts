@@ -19,6 +19,9 @@ export class FilesystemAdapter implements StorageAdapter {
   private thumbPath(userId: string, id: string): string {
     return join(this.userDir(userId), ".thumbs", `${id}.webp`)
   }
+  private renderedPdfPath(userId: string, id: string): string {
+    return join(this.userDir(userId), ".renders", `${id}.pdf`)
+  }
 
   async appendChunk(userId: string, id: string, _index: number, body: Buffer): Promise<void> {
     const p = this.partPath(userId, id)
@@ -32,9 +35,15 @@ export class FilesystemAdapter implements StorageAdapter {
     await rm(this.filePath(userId, id), { force: true })
     await rm(this.partPath(userId, id), { force: true })
     await rm(this.thumbPath(userId, id), { force: true })
+    await rm(this.renderedPdfPath(userId, id), { force: true })
   }
   async writeThumb(userId: string, id: string, body: Buffer): Promise<void> {
     const p = this.thumbPath(userId, id)
+    await mkdir(dirname(p), { recursive: true })
+    await writeFile(p, body)
+  }
+  async writePdf(userId: string, id: string, body: Buffer): Promise<void> {
+    const p = this.renderedPdfPath(userId, id)
     await mkdir(dirname(p), { recursive: true })
     await writeFile(p, body)
   }
@@ -54,6 +63,16 @@ export class FilesystemAdapter implements StorageAdapter {
   async thumbSize(userId: string, id: string): Promise<number | null> {
     try {
       return (await stat(this.thumbPath(userId, id))).size
+    } catch {
+      return null
+    }
+  }
+  renderedPdfStream(userId: string, id: string): ReadStream {
+    return createReadStream(this.renderedPdfPath(userId, id))
+  }
+  async renderedPdfSize(userId: string, id: string): Promise<number | null> {
+    try {
+      return (await stat(this.renderedPdfPath(userId, id))).size
     } catch {
       return null
     }

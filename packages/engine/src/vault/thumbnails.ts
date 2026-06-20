@@ -1,15 +1,20 @@
 import { spawn } from "node:child_process"
+import { writeFile } from "node:fs/promises"
+import { extname, join } from "node:path"
+import { classifyFile, isServerThumbClass } from "@cnet/core"
 import sharp from "sharp"
+import { heicToPng, officeToPdf, withTempDir } from "./convert"
 
-export type ThumbnailKind = "image" | "pdf" | "video"
+export type ThumbnailKind = "image" | "heic" | "pdf" | "video" | "office"
 
-/** Decide which generator handles a content type, or null to skip. */
-export function pickGenerator(contentType: string): ThumbnailKind | null {
-  const ct = contentType.toLowerCase()
-  if (ct.startsWith("image/")) return "image"
-  if (ct === "application/pdf") return "pdf"
-  if (ct.startsWith("video/")) return "video"
-  return null
+/** A produced thumbnail, plus the cached render PDF for Office docs (so the worker can
+ * persist it for fullscreen preview). */
+export type ThumbnailResult = { thumb: Buffer; pdf?: Buffer }
+
+/** Decide which generator handles a file, or null to skip. */
+export function pickGenerator(contentType: string, filename: string): ThumbnailKind | null {
+  const c = classifyFile(contentType, filename)
+  return isServerThumbClass(c) ? (c as ThumbnailKind) : null
 }
 
 const THUMB_SIZE = 256
@@ -38,24 +43,49 @@ function runCapture(cmd: string, args: string[]): Promise<Buffer | null> {
   })
 }
 
+/** Render the first page of a PDF (on disk) to a 256px webp, or null on failure. */
+async function pdfFileToWebp(pdfPath: string): Promise<Buffer | null> {
+  const png = await runCapture("pdftoppm", ["-png", "-singlefile", "-r", "72", pdfPath])
+  return png ? await toWebp(png) : null
+}
+
 /**
- * Produce a 256px webp thumbnail for the source file, or null if the format is
- * unsupported or the required tooling (pdftoppm/ffmpeg) is unavailable.
+ * Produce a 256px webp thumbnail (and, for Office docs, the intermediate render PDF) for
+ * the source file, or null if the format is unsupported or required tooling
+ * (pdftoppm/ffmpeg/soffice/heif-convert) is unavailable. `filename` carries the original
+ * extension, which Office conversion needs since on-disk files are extension-less.
  */
 export async function generateThumbnail(
   sourcePath: string,
-  kind: ThumbnailKind
-): Promise<Buffer | null> {
+  kind: ThumbnailKind,
+  filename: string
+): Promise<ThumbnailResult | null> {
   try {
     if (kind === "image") {
-      return await sharp(sourcePath)
+      const thumb = await sharp(sourcePath)
         .resize(THUMB_SIZE, THUMB_SIZE, { fit: "inside" })
         .webp()
         .toBuffer()
+      return { thumb }
+    }
+    if (kind === "heic") {
+      const png = await heicToPng(sourcePath)
+      return png ? { thumb: await toWebp(png) } : null
     }
     if (kind === "pdf") {
-      const png = await runCapture("pdftoppm", ["-png", "-singlefile", "-r", "72", sourcePath])
-      return png ? await toWebp(png) : null
+      const thumb = await pdfFileToWebp(sourcePath)
+      return thumb ? { thumb } : null
+    }
+    if (kind === "office") {
+      const ext = extname(filename).toLowerCase() || ".bin"
+      const pdf = await officeToPdf(sourcePath, ext)
+      if (!pdf) return null
+      const thumb = await withTempDir(async (dir) => {
+        const pdfPath = join(dir, "render.pdf")
+        await writeFile(pdfPath, pdf)
+        return pdfFileToWebp(pdfPath)
+      })
+      return thumb ? { thumb, pdf } : null
     }
     // video: grab the first frame as PNG on stdout
     const png = await runCapture("ffmpeg", [
@@ -69,7 +99,7 @@ export async function generateThumbnail(
       "png",
       "-",
     ])
-    return png ? await toWebp(png) : null
+    return png ? { thumb: await toWebp(png) } : null
   } catch {
     return null
   }

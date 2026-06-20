@@ -6,6 +6,7 @@ export interface StorageAdapter {
   finalize(userId: string, id: string): Promise<void> // <id>.part -> <id>
   remove(userId: string, id: string): Promise<void> // file or orphaned .part
   writeThumb(userId: string, id: string, body: Buffer): Promise<void>
+  writePdf(userId: string, id: string, body: Buffer): Promise<void> // cached render
   // delivery
   resolvePath(userId: string, id: string): string
   createReadStream(userId: string, id: string, range?: { start: number; end: number }): ReadStream
@@ -13,4 +14,7 @@ export interface StorageAdapter {
   // thumbnail delivery (thumbSize returns null when no thumbnail exists yet)
   thumbStream(userId: string, id: string): ReadStream
   thumbSize(userId: string, id: string): Promise<number | null>
+  // rendered-PDF delivery for Office docs (renderedPdfSize is null when absent)
+  renderedPdfStream(userId: string, id: string): ReadStream
+  renderedPdfSize(userId: string, id: string): Promise<number | null>
 }

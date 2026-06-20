@@ -18,10 +18,7 @@ export function createVaultThumbnailsWorker(): Worker {
   const worker = new Worker<ThumbnailJobData>(
     QUEUE_NAMES.VAULT_THUMBNAILS,
     async (job: Job<ThumbnailJobData>) => {
-      const { userId, fileId, contentType } = job.data
-
-      const kind = pickGenerator(contentType)
-      if (!kind) return { skipped: "unsupported" }
+      const { userId, fileId } = job.data
 
       const file = await db.query.vaultFiles.findFirst({
         where: and(
@@ -32,16 +29,22 @@ export function createVaultThumbnailsWorker(): Worker {
       })
       if (!file) return { skipped: "missing" }
 
-      const adapter = getStorageAdapter()
-      const buf = await generateThumbnail(adapter.resolvePath(userId, fileId), kind)
-      if (!buf) return { skipped: "no-thumbnail" }
+      const kind = pickGenerator(file.contentType, file.filename)
+      if (!kind) return { skipped: "unsupported" }
 
-      await adapter.writeThumb(userId, fileId, buf)
+      const adapter = getStorageAdapter()
+      const result = await generateThumbnail(adapter.resolvePath(userId, fileId), kind, file.filename)
+      if (!result) return { skipped: "no-thumbnail" }
+
+      // Office docs also yield a cached render PDF for fullscreen preview; persist it
+      // alongside the thumbnail so thumbKey != null implies the PDF exists too.
+      if (result.pdf) await adapter.writePdf(userId, fileId, result.pdf)
+      await adapter.writeThumb(userId, fileId, result.thumb)
       await db
         .update(vaultFiles)
         .set({ thumbKey: `${fileId}.webp`, updatedAt: new Date() })
         .where(eq(vaultFiles.id, fileId))
-      return { thumb: `${fileId}.webp` }
+      return { thumb: `${fileId}.webp`, pdf: result.pdf ? `${fileId}.pdf` : undefined }
     },
     {
       connection: getRedisConnectionOptions(),
