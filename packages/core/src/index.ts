@@ -30,6 +30,12 @@ export {
 export { closeRedisConnection, getRedisClient } from "./redis"
 export type { ApiError, ApiResponse, PaginatedResponse } from "./types/api"
 export { formatBytes, formatPercent, getClientIp } from "./utils"
+export {
+  classifyFile,
+  codeLanguage,
+  type FileClass,
+  isServerThumbClass,
+} from "./vault/file-types"
 export { resolveCollision } from "./vault/naming"
 export {
   type Disposition,
