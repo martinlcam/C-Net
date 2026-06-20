@@ -15,6 +15,13 @@ COPY --from=builder /app/out/full/ .
 RUN bunx turbo build --filter=@cnet/workers
 
 FROM base AS runner
+# Thumbnail/preview tooling: LibreOffice (Office/ODF/RTF -> PDF), libheif's heif-convert
+# (HEIC decode), poppler's pdftoppm (PDF -> raster), ffmpeg (video first-frame), plus
+# common fonts for faithful Office rendering.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress \
+    libheif-examples poppler-utils ffmpeg fonts-liberation \
+  && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system --gid 1001 cnet \
   && useradd --system --uid 1001 --gid cnet --home /app cnet
 WORKDIR /app
