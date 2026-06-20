@@ -91,13 +91,16 @@ Generation responsibility per class:
 
 ### Worker — `apps/workers/src/workers/vault-thumbnails.ts`
 
-For `office`, persist the cached PDF (`adapter.writePdf`) and set `pdfKey`, in addition
-to writing the webp and setting `thumbKey`. All other kinds unchanged.
+For `office`, persist the cached PDF (`adapter.writePdf`) **and** the page-1 webp, then
+set the existing `thumbKey` flag. The PDF and webp are written together, so
+`thumbKey != null` implies the rendered PDF also exists — no separate tracking. All
+other kinds unchanged.
 
 ### Storage adapter — `packages/engine/src/vault/{adapter,filesystem-adapter}.ts`
 
 Add `writePdf`, `renderedPdfStream`, `renderedPdfSize(): Promise<number | null>`, and a
-`.renders/<id>.pdf` path beside `.thumbs/`. `remove()` also deletes the rendered PDF.
+`.renders/<id>.pdf` path beside `.thumbs/` — derived purely from the file id, like
+thumbnails. `remove()` also deletes the rendered PDF.
 
 ### Docker — `apps/workers/Dockerfile`
 
@@ -105,17 +108,18 @@ Add `writePdf`, `renderedPdfStream`, `renderedPdfSize(): Promise<number | null>`
 as needed), `libheif-examples` (for `heif-convert`) or `imagemagick`, and ensures
 `poppler-utils` (pdftoppm). Base is `oven/bun:1` (Debian) so `apt-get` is available.
 
-## Database
+## No database change
 
-Add nullable `pdf_key text` to `vault_files`. Generate + **commit** the Drizzle
-migration alongside the schema change (per repo rule). `toFileDto` exposes
-`renderedPdfUrl: string | null` (null when `pdfKey` is null) via a new signed
-`/vault/rendered` route.
+The rendered PDF is keyed by the file id on disk (`.renders/<id>.pdf`), exactly like
+thumbnails (`.thumbs/<id>.webp`). Presence is determined by the filesystem
+(`renderedPdfSize()` → null when absent), the same way `/vault/thumb` already works —
+so **no new column** is added. (The existing `thumbKey` stays as the grid presence-flag.)
 
 ## API
 
 - `urls.ts`: add `renderedPdfUrl` to `SignedUrls` (signed inline, served by
-  `/vault/rendered/:userId/:fileId`), returned as null when no `pdfKey`.
+  `/vault/rendered/:userId/:fileId`). It is always a valid signed URL string; existence
+  is resolved by the route, not the payload.
 - `download.ts`: add the `/vault/rendered` route — same signature check as `/vault/thumb`,
   streams the cached PDF (`application/pdf`), 404 when absent.
 - New `POST /vault/files/:id/reprocess` (controller) — enqueues a thumbnail job for a
@@ -128,9 +132,8 @@ migration alongside the schema change (per repo rule). `toFileDto` exposes
 ### Fullscreen — `file-preview.ts` + `file-preview-modal.tsx`
 
 - `previewKind` gains `office | epub | csv`; remove the `pptx` client path.
-- `office`: if `renderedPdfUrl` present → existing PDF `<object>` using that URL.
-  If null → "Preparing preview…", call `reprocess`, poll the listing until
-  `renderedPdfUrl` appears.
+- `office`: `HEAD renderedPdfUrl`; 200 → existing PDF `<object>` using that URL.
+  404 → "Preparing preview…", call `reprocess`, poll the HEAD until it is 200.
 - `epub`: lazy `epub.js` reader.
 - `csv`: parse with `papaparse`, render an HTML table (fallback to `<pre>` on parse error).
 
@@ -149,9 +152,9 @@ Add `epubjs`, `papaparse`; **remove** `pptx-preview` (only consumer is the modal
 ## Backfill
 
 `scripts/vault-backfill-thumbs.ts` — scan `vault_files` where `classifyFile` is a
-server-generated kind AND (`thumb_key` is null OR (office AND `pdf_key` is null)),
-enqueue a thumbnail job per file. Run once after deploy. The `reprocess` route is the
-runtime safety net.
+server-generated kind AND `thumb_key` is null, enqueue a thumbnail job per file (office
+files regenerate both the webp and the cached PDF in that one job). Run once after
+deploy. The `reprocess` route is the runtime safety net.
 
 ## Testing
 
@@ -169,7 +172,7 @@ runtime safety net.
 ## Rollout order
 
 1. Shared classifier (`@cnet/core`) + tests.
-2. DB migration (`pdf_key`) + DTO/urls/download route.
+2. Adapter rendered-PDF helpers + DTO/urls/`/vault/rendered` route (no DB change).
 3. Engine `convert.ts` + `thumbnails.ts` + adapter + tests.
 4. Worker office/heic branches.
 5. Workers Dockerfile tooling.
