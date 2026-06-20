@@ -117,4 +117,34 @@ export function registerVaultDownload(app: Express): void {
     res.setHeader("Cache-Control", "private, max-age=3600")
     adapter.thumbStream(file.ownerUserId, file.id).pipe(res)
   })
+
+  // Rendered-PDF server for Office docs: serves the cached .renders/<id>.pdf derivative.
+  // Authorized by the same inline signature; 404 until the worker has converted it.
+  // Supports HEAD so the viewer can probe readiness without downloading the PDF.
+  app.all("/vault/rendered/:userId/:fileId", async (req: Request, res: Response) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.status(405).end()
+      return
+    }
+    const resolved = await resolve(req)
+    if (!resolved) {
+      res.status(403).end()
+      return
+    }
+    const { file } = resolved
+    const adapter = getStorageAdapter()
+    const size = await adapter.renderedPdfSize(file.ownerUserId, file.id)
+    if (size === null) {
+      res.status(404).end() // not converted yet
+      return
+    }
+    res.setHeader("Content-Type", "application/pdf")
+    res.setHeader("Content-Length", String(size))
+    res.setHeader("Cache-Control", "private, max-age=3600")
+    if (req.method === "HEAD") {
+      res.status(200).end()
+      return
+    }
+    adapter.renderedPdfStream(file.ownerUserId, file.id).pipe(res)
+  })
 }

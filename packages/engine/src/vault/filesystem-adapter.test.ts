@@ -35,8 +35,18 @@ describe("FilesystemAdapter", () => {
     const bytes = await readFile(join(root, "cnet", "users", "u1", ".thumbs", "f1.webp"))
     expect(bytes.toString()).toBe("thumb")
   })
-  it("removes a file", async () => {
+  it("writes and serves a rendered PDF", async () => {
+    expect(await adapter.renderedPdfSize("u1", "f1")).toBeNull()
+    await adapter.writePdf("u1", "f1", Buffer.from("%PDF-1.7"))
+    expect(await adapter.renderedPdfSize("u1", "f1")).toBe(8)
+    const chunks: Buffer[] = []
+    for await (const c of adapter.renderedPdfStream("u1", "f1")) chunks.push(c as Buffer)
+    expect(Buffer.concat(chunks).toString()).toBe("%PDF-1.7")
+  })
+  it("removes a file and its derivatives", async () => {
     await adapter.remove("u1", "f1")
     await expect(adapter.size("u1", "f1")).rejects.toThrow()
+    expect(await adapter.renderedPdfSize("u1", "f1")).toBeNull()
+    expect(await adapter.thumbSize("u1", "f1")).toBeNull()
   })
 })
