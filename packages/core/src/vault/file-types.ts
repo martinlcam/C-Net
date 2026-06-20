@@ -77,16 +77,7 @@ const ARCHIVE_MIME = new Set([
   "application/x-gzip",
   "application/x-bzip2",
 ])
-const ARCHIVE_EXT = new Set([
-  ".zip",
-  ".rar",
-  ".7z",
-  ".tar",
-  ".gz",
-  ".tgz",
-  ".bz2",
-  ".xz",
-])
+const ARCHIVE_EXT = new Set([".zip", ".rar", ".7z", ".tar", ".gz", ".tgz", ".bz2", ".xz"])
 
 // Code extensions → Prism language id. The keys double as the code-class membership
 // test; consumers that don't syntax-highlight just use `codeLanguage(...) !== null`.

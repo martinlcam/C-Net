@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./access/allowlist": "./src/access/allowlist.ts",
     "./env": "./src/env.ts",
-    "./paths": "./src/paths.ts"
+    "./paths": "./src/paths.ts",
+    "./vault/file-types": "./src/vault/file-types.ts"
   },
   "scripts": {
     "build": "tsc",
