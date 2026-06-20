@@ -33,7 +33,11 @@ export function createVaultThumbnailsWorker(): Worker {
       if (!kind) return { skipped: "unsupported" }
 
       const adapter = getStorageAdapter()
-      const result = await generateThumbnail(adapter.resolvePath(userId, fileId), kind, file.filename)
+      const result = await generateThumbnail(
+        adapter.resolvePath(userId, fileId),
+        kind,
+        file.filename
+      )
       if (!result) return { skipped: "no-thumbnail" }
 
       // Office docs also yield a cached render PDF for fullscreen preview; persist it

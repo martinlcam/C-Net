@@ -12,6 +12,7 @@ export type VaultFile = {
   previewUrl: string
   downloadUrl: string
   thumbUrl: string
+  renderedPdfUrl: string
 }
 
 export type VaultDir = {
@@ -95,6 +96,9 @@ export function unstarFile(id: string): Promise<{ ok: true }> {
 }
 export function setFileColor(id: string, color: string | null): Promise<{ ok: true }> {
   return req(`/vault/files/${id}/color`, { method: "POST", body: JSON.stringify({ color }) })
+}
+export function reprocessFile(id: string): Promise<{ queued: true }> {
+  return req(`/vault/files/${id}/reprocess`, { method: "POST" })
 }
 
 // --- views ---
