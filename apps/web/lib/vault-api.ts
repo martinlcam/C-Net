@@ -126,6 +126,9 @@ export function adminListDir(
   const q = directoryId ? `?directoryId=${encodeURIComponent(directoryId)}` : ""
   return req(`/admin/vault/${userId}/directories${q}`)
 }
+export function adminDeleteFile(userId: string, id: string): Promise<{ deleted: true }> {
+  return req(`/admin/vault/${userId}/files/${id}`, { method: "DELETE" })
+}
 
 // --- chunked upload ---
 const CHUNK_SIZE = 5 * 1024 * 1024 // 5 MiB
