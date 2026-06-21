@@ -1,19 +1,34 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import { adminListDir, adminUsers } from "@/lib/vault-api"
+import { adminDeleteFile, adminListDir, adminUsers, vaultUrl } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
 import { formatBytes } from "../_components/format"
 
 export function AdminVault() {
   const [selected, setSelected] = useState<{ userId: string; email: string } | null>(null)
+  const [directoryId, setDirectoryId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+
   const usersQuery = useQuery({ queryKey: ["vault", "admin", "users"], queryFn: adminUsers })
   const browseQuery = useQuery({
-    queryKey: ["vault", "admin", "dir", selected?.userId],
-    queryFn: () => adminListDir(selected?.userId ?? ""),
+    queryKey: ["vault", "admin", "dir", selected?.userId, directoryId],
+    queryFn: () => adminListDir(selected?.userId ?? "", directoryId),
     enabled: selected !== null,
   })
+  const deleteMutation = useMutation({
+    mutationFn: (fileId: string) => adminDeleteFile(selected?.userId ?? "", fileId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["vault", "admin", "dir", selected?.userId, directoryId],
+      }),
+  })
+
+  function openUser(userId: string, email: string) {
+    setSelected({ userId, email })
+    setDirectoryId(null)
+  }
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -63,7 +78,7 @@ export function AdminVault() {
                       variant="outline"
                       size="sm"
                       className="w-full sm:w-auto"
-                      onClick={() => setSelected({ userId: u.userId as string, email: u.email })}
+                      onClick={() => openUser(u.userId as string, u.email)}
                     >
                       Browse
                     </Button>
@@ -79,26 +94,73 @@ export function AdminVault() {
 
       {selected ? (
         <div className="mt-8">
-          <h2 className="mb-3 font-semibold text-neutral-100 text-xl">{selected.email} — root</h2>
+          <div className="mb-3 flex flex-wrap items-center gap-x-1 gap-y-1 text-sm">
+            <span className="font-semibold text-neutral-100 text-xl">{selected.email}</span>
+            <span className="mx-2 text-neutral-40">—</span>
+            {browseQuery.data?.breadcrumbs.map((b, i, all) => (
+              <span key={b.directoryId ?? "root"} className="flex items-center gap-1">
+                {i > 0 ? <span className="text-neutral-40">/</span> : null}
+                {i === all.length - 1 ? (
+                  <span className="text-neutral-100">{b.label}</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-neutral-70 hover:text-neutral-100 hover:underline"
+                    onClick={() => setDirectoryId(b.directoryId)}
+                  >
+                    {b.label}
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
           {browseQuery.isLoading ? (
             <div className="py-8 text-center text-neutral-60">Loading…</div>
+          ) : browseQuery.error ? (
+            <div className="rounded-lg border border-accent-red-30 bg-accent-red-10 p-4 text-accent-red-70">
+              {browseQuery.error instanceof Error ? browseQuery.error.message : "Failed to load"}
+            </div>
           ) : (
             <div className="overflow-hidden rounded-xl border border-neutral-30 bg-white">
               {browseQuery.data?.directories.map((d) => (
-                <div
+                <button
+                  type="button"
                   key={d.id}
-                  className="border-neutral-20 border-b px-4 py-2 text-neutral-100 last:border-b-0"
+                  className="flex w-full items-center border-neutral-20 border-b px-4 py-2 text-left text-neutral-100 last:border-b-0 hover:bg-neutral-10"
+                  onClick={() => setDirectoryId(d.id)}
                 >
                   📁 {d.name}
-                </div>
+                </button>
               ))}
               {browseQuery.data?.files.map((f) => (
                 <div
                   key={f.id}
-                  className="flex items-center border-neutral-20 border-b px-4 py-2 last:border-b-0"
+                  className="flex items-center gap-3 border-neutral-20 border-b px-4 py-2 last:border-b-0"
                 >
                   <span className="flex-1 truncate text-neutral-100">{f.filename}</span>
-                  <span className="text-neutral-70 text-sm">{formatBytes(f.size)}</span>
+                  <span className="shrink-0 text-neutral-70 text-sm">{formatBytes(f.size)}</span>
+                  <Button asChild variant="outline" size="sm">
+                    <a href={vaultUrl(f.previewUrl)} target="_blank" rel="noreferrer">
+                      Open
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <a href={vaultUrl(f.downloadUrl)} download={f.filename}>
+                      Download
+                    </a>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      if (confirm(`Delete "${f.filename}" from ${selected.email}'s vault?`)) {
+                        deleteMutation.mutate(f.id)
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
                 </div>
               ))}
               {(browseQuery.data?.directories.length ?? 0) === 0 &&
