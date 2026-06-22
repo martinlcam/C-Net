@@ -1,6 +1,15 @@
 export { logAuditAction } from "./audit/logger"
 export { getResendClient, type SendEmailOptions, sendEmail } from "./email/resend"
 export { ContactEmailTemplate } from "./email/templates/contact"
+export { JellyfinService } from "./jellyfin/service"
+export type {
+  JellyfinAuthResult,
+  JellyfinItem,
+  JellyfinItemsResponse,
+  JellyfinLibraryOpts,
+  JellyfinUser,
+  JellyfinUserData,
+} from "./jellyfin/types"
 export {
   BAY_CMD_CHANNEL,
   BAY_CMD_MAX_AGE_MS,
@@ -44,6 +53,13 @@ export type {
 } from "./proxmox/storage-types"
 export { type ProxmoxConnectionTestResult, testProxmoxConnection } from "./proxmox/test"
 export type { NodeMetrics, ProxmoxNode, ProxmoxVM, StoragePool } from "./proxmox/types"
+export { RadarrService } from "./radarr/service"
+export type {
+  RadarrImage,
+  RadarrLookupResult,
+  RadarrMovie,
+  RadarrQueueItem,
+} from "./radarr/types"
 export {
   type ServiceTestResult,
   testMinecraftConnection,
@@ -75,3 +91,12 @@ export {
   type ThumbnailKind,
   type ThumbnailResult,
 } from "./vault/thumbnails"
+export type { JellyfinMediaType } from "./jellyfin/types"
+export { SonarrService } from "./sonarr/service"
+export type {
+  SonarrImage,
+  SonarrLookupResult,
+  SonarrQueueItem,
+  SonarrSeries,
+  SonarrStatistics,
+} from "./sonarr/types"

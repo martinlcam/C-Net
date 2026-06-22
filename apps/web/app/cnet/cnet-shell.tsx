@@ -3,6 +3,8 @@
 import { Menu, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { SignOutButton } from "@/components/SignOutButton"
+import { MediaDownloadsWatcher } from "@/components/transfers/media-downloads-watcher"
+import { TransferStatus } from "@/components/transfers/transfer-status"
 import { CnetNav } from "./nav"
 import { QuotaBar } from "./quota-bar"
 
@@ -72,6 +74,9 @@ export function CnetShell({ role, children }: { role?: string; children: React.R
         </aside>
         <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
       </div>
+
+      <TransferStatus />
+      <MediaDownloadsWatcher />
     </div>
   )
 }

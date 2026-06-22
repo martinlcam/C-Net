@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ChevronRight, FolderPlus, Search, Upload } from "lucide-react"
 import { useId, useRef, useState } from "react"
+import { useTransferStore } from "@/lib/stores/transfers"
 import {
   createDir,
   deleteDir,
@@ -30,7 +31,6 @@ export default function FilesPage() {
   const [dirId, setDirId] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [prompt, setPrompt] = useState<TextPrompt | null>(null)
-  const [uploads, setUploads] = useState<Record<string, number>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const searchId = useId()
 
@@ -73,19 +73,21 @@ export default function FilesPage() {
 
   async function handleFiles(files: FileList | null) {
     if (!files) return
+    const transfers = useTransferStore.getState()
     for (const file of Array.from(files)) {
-      const key = `${file.name}-${file.size}`
-      setUploads((u) => ({ ...u, [key]: 0 }))
+      const id = `upload:${file.name}-${file.size}-${Date.now()}`
+      transfers.upsert({ id, label: file.name, kind: "upload", progress: 0, status: "active" })
       try {
-        await uploadFile(file, dirId, (f) => setUploads((u) => ({ ...u, [key]: f })))
+        await uploadFile(file, dirId, (frac) =>
+          useTransferStore.getState().update(id, { progress: Math.round(frac * 100) })
+        )
+        useTransferStore.getState().update(id, { progress: 100, status: "completed" })
       } catch (err) {
-        console.error("Upload failed", err)
-      } finally {
-        setUploads((u) => {
-          const next = { ...u }
-          delete next[key]
-          return next
+        useTransferStore.getState().update(id, {
+          status: "error",
+          error: err instanceof Error ? err.message : "Upload failed",
         })
+      } finally {
         invalidate()
       }
     }
@@ -172,16 +174,6 @@ export default function FilesPage() {
           ))}
         </div>
       ) : null}
-
-      {Object.keys(uploads).length > 0 && (
-        <div className="mb-4 space-y-1">
-          {Object.entries(uploads).map(([key, frac]) => (
-            <div key={key} className="text-neutral-70 text-xs">
-              Uploading {key.split("-")[0]} — {Math.round(frac * 100)}%
-            </div>
-          ))}
-        </div>
-      )}
 
       {error ? (
         <div className="rounded-lg border border-accent-red-30 bg-accent-red-10 p-4 text-accent-red-70">
