@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser"
 import cors, { type CorsOptions } from "cors"
 import express from "express"
 import { RegisterRoutes } from "./generated/routes"
+import { registerMediaStream } from "./media/stream"
 import { errorHandler } from "./middleware/error.middleware"
 import { registerVaultDownload } from "./vault/download"
 
@@ -78,6 +79,7 @@ export function createApp(): express.Express {
   // Signed binary download/stream routes (auth is the URL signature, not a session).
   // Registered before tsoa so the raw streaming handlers own these paths.
   registerVaultDownload(app)
+  registerMediaStream(app)
 
   RegisterRoutes(app)
 

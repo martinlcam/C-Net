@@ -1,6 +1,6 @@
 "use client"
 
-import { FolderOpen, Palette, Shield, Star, Trash2 } from "lucide-react"
+import { Film, FolderOpen, Palette, Shield, Star, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/stories/button/button"
@@ -57,6 +57,13 @@ export function CnetNav({ role, onNavigate }: { role?: string; onNavigate?: () =
         href="/cnet/dashboard/monitoring"
         label="Monitoring"
         active={pathname.includes("/monitoring")}
+        onNavigate={onNavigate}
+      />
+      <NavLink
+        href="/cnet/dashboard/media"
+        label="Media"
+        icon={Film}
+        active={pathname.includes("/media")}
         onNavigate={onNavigate}
       />
       <div className="my-4 border-neutral-30 border-t pt-4">

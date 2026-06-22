@@ -57,6 +57,13 @@
       "when": 1781721173232,
       "tag": "0007_nervous_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782107364949,
+      "tag": "0008_heavy_steve_rogers",
+      "breakpoints": true
     }
   ]
 }
