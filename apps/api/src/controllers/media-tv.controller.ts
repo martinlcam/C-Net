@@ -38,6 +38,7 @@ export interface EpisodeDTO {
   runtimeMinutes?: number
   posterUrl: string | null
   streamUrl: string
+  hlsUrl: string
   resumePositionTicks: number
   playedPercentage?: number
   played: boolean
@@ -80,6 +81,7 @@ function toEpisodeDTO(userId: string, item: JellyfinItem): EpisodeDTO {
     runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS_PER_MINUTE) : undefined,
     posterUrl: item.ImageTags?.Primary ? urls.posterUrl : null,
     streamUrl: urls.streamUrl,
+    hlsUrl: urls.hlsUrl,
     resumePositionTicks: item.UserData?.PlaybackPositionTicks ?? 0,
     playedPercentage: item.UserData?.PlayedPercentage,
     played: item.UserData?.Played ?? false,

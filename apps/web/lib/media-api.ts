@@ -12,6 +12,7 @@ export type Movie = {
   posterUrl: string | null
   backdropUrl: string | null
   streamUrl: string
+  hlsUrl: string
   resumePositionTicks: number
   playedPercentage?: number
   played: boolean
@@ -47,6 +48,7 @@ export type Episode = {
   runtimeMinutes?: number
   posterUrl: string | null
   streamUrl: string
+  hlsUrl: string
   resumePositionTicks: number
   playedPercentage?: number
   played: boolean
@@ -58,7 +60,12 @@ export type Playable = {
   title: string
   year?: number
   streamUrl: string
+  hlsUrl: string
   resumePositionTicks: number
+  /** TV-only labelling for the player's "Up next" card. */
+  seriesName?: string
+  seasonNumber?: number
+  episodeNumber?: number
 }
 
 export type DiscoverResult = {

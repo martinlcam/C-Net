@@ -27,8 +27,10 @@ export class RadarrService {
   }
 
   private async firstQualityProfileId(): Promise<number> {
-    const { data } = await this.client.get<Array<{ id: number }>>("/qualityprofile")
-    return data[0]?.id ?? 1
+    const { data } = await this.client.get<Array<{ id: number; name: string }>>("/qualityprofile")
+    // Prefer a 1080p-only profile: browser-playable (if x264), ~5x smaller/faster than 4K.
+    const hd1080 = data.find((p) => /1080/.test(p.name) && !/720/.test(p.name))
+    return (hd1080 ?? data[0])?.id ?? 1
   }
 
   private async firstRootFolderPath(): Promise<string> {
