@@ -20,6 +20,7 @@ export interface MovieDTO {
   posterUrl: string | null
   backdropUrl: string | null
   streamUrl: string
+  hlsUrl: string
   resumePositionTicks: number
   playedPercentage?: number
   played: boolean
@@ -58,6 +59,7 @@ export function toMovieDTO(userId: string, item: JellyfinItem): MovieDTO {
     posterUrl: hasPoster ? urls.posterUrl : null,
     backdropUrl: hasBackdrop ? urls.backdropUrl : null,
     streamUrl: urls.streamUrl,
+    hlsUrl: urls.hlsUrl,
     resumePositionTicks: item.UserData?.PlaybackPositionTicks ?? 0,
     playedPercentage: item.UserData?.PlayedPercentage,
     played: item.UserData?.Played ?? false,

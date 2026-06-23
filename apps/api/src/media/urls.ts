@@ -5,6 +5,7 @@ const TTL_MS = 6 * 60 * 60 * 1000
 
 export type MediaUrls = {
   streamUrl: string
+  hlsUrl: string
   posterUrl: string
   backdropUrl: string
 }
@@ -24,6 +25,7 @@ export function signMediaUrls(userId: string, itemId: string, nowMs = Date.now()
   const qs = `exp=${exp}&sig=${sig}`
   return {
     streamUrl: `/media/stream/${userId}/${itemId}?${qs}`,
+    hlsUrl: `/media/hls/${userId}/${itemId}?${qs}`,
     posterUrl: `/media/img/${userId}/${itemId}?${qs}&type=Primary`,
     backdropUrl: `/media/img/${userId}/${itemId}?${qs}&type=Backdrop`,
   }

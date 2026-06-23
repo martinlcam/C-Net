@@ -143,11 +143,26 @@ function TvView({
 
 export default function MediaPage() {
   const [tab, setTab] = useState<Tab>("movies")
-  const [playing, setPlaying] = useState<Playable | null>(null)
+  // The player plays a queue so it can auto-advance to the next episode.
+  const [queue, setQueue] = useState<Playable[] | null>(null)
+  const [startIndex, setStartIndex] = useState(0)
   const [openSeries, setOpenSeries] = useState<Series | null>(null)
   const [requesting, setRequesting] = useState(false)
   const [query, setQuery] = useState("")
   const searchId = useId()
+
+  const playSingle = (p: Playable) => {
+    setStartIndex(0)
+    setQueue([p])
+  }
+  const playEpisode = (ep: Episode, episodes: Episode[]) => {
+    const i = Math.max(
+      0,
+      episodes.findIndex((e) => e.id === ep.id)
+    )
+    setStartIndex(i)
+    setQueue(episodes)
+  }
 
   const tabClass = (t: Tab) =>
     `rounded-md px-3 py-1 font-medium text-sm ${
@@ -186,19 +201,21 @@ export default function MediaPage() {
       </div>
 
       {tab === "movies" ? (
-        <MoviesView onPlay={setPlaying} search={query} />
+        <MoviesView onPlay={playSingle} search={query} />
       ) : (
-        <TvView onPlayEpisode={setPlaying} onOpenSeries={setOpenSeries} search={query} />
+        <TvView onPlayEpisode={playSingle} onOpenSeries={setOpenSeries} search={query} />
       )}
 
       {openSeries ? (
         <SeriesModal
           series={openSeries}
           onClose={() => setOpenSeries(null)}
-          onPlay={(ep) => setPlaying(ep)}
+          onPlay={playEpisode}
         />
       ) : null}
-      {playing ? <PlayerModal item={playing} onClose={() => setPlaying(null)} /> : null}
+      {queue ? (
+        <PlayerModal queue={queue} startIndex={startIndex} onClose={() => setQueue(null)} />
+      ) : null}
       {requesting ? <RequestDialog initialMode={tab} onClose={() => setRequesting(false)} /> : null}
     </div>
   )

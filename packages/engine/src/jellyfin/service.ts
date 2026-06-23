@@ -20,9 +20,11 @@ const ITEM_FIELDS =
 export class JellyfinService {
   private readonly client: AxiosInstance
   readonly baseURL: string
+  private readonly adminKey: string
 
   constructor(host: string, adminApiKey: string) {
     this.baseURL = host.replace(/\/$/, "")
+    this.adminKey = adminApiKey
     this.client = axios.create({
       baseURL: this.baseURL,
       headers: { "X-Emby-Token": adminApiKey, "Content-Type": "application/json" },
@@ -187,13 +189,25 @@ export class JellyfinService {
     return this.client.get(`/Items/${itemId}/Images/${type}`, { responseType: "stream" })
   }
 
-  /** Direct-play byte stream with optional forwarded Range header. */
-  videoStream(itemId: string, range?: string): Promise<AxiosResponse> {
-    return this.client.get(`/Videos/${itemId}/stream`, {
-      params: { static: true },
-      responseType: "stream",
-      headers: range ? { Range: range } : undefined,
-      validateStatus: (s) => s >= 200 && s < 300,
+  /**
+   * Direct-play fetch with optional Range. Returns a web Response so the route
+   * can stream it with real backpressure (and abort on client disconnect) —
+   * critical because library files can be many GB and CT110 has little RAM.
+   */
+  videoFetch(itemId: string, range?: string, signal?: AbortSignal): Promise<Response> {
+    const headers: Record<string, string> = { "X-Emby-Token": this.adminKey }
+    if (range) headers.Range = range
+    return fetch(`${this.baseURL}/Videos/${itemId}/stream?static=true`, { headers, signal })
+  }
+
+  /**
+   * Fetch an arbitrary Jellyfin resource (HLS playlist or segment) with admin
+   * auth via header (so the key never appears in any browser-visible URL).
+   */
+  streamFetch(relpath: string, signal?: AbortSignal): Promise<Response> {
+    return fetch(`${this.baseURL}/${relpath}`, {
+      headers: { "X-Emby-Token": this.adminKey },
+      signal,
     })
   }
 }

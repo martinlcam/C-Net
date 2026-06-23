@@ -37,6 +37,7 @@
     "epubjs": "^0.3.93",
     "framer-motion": "12.40.0",
     "heic2any": "^0.0.4",
+    "hls.js": "^1.6.16",
     "jsonwebtoken": "9.0.3",
     "katex": "0.17.0",
     "lucide-react": "1.17.0",
