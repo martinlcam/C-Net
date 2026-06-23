@@ -166,3 +166,64 @@ export async function uploadFile(
 
   return req<VaultFile>(`/vault/uploads/${open.uploadId}/finalize`, { method: "POST" })
 }
+
+/** Per-file hooks while a folder (and its subtree) uploads. */
+export type FolderUploadHandlers = {
+  onProgress: (file: File, fraction: number) => void
+  onDone?: (file: File, result: VaultFile) => void
+  onError?: (file: File, err: unknown) => void
+}
+
+/**
+ * Upload a whole folder picked with a directory input, recreating its nested
+ * directory tree under `parentId` first, then uploading each file into the
+ * directory that mirrors its `webkitRelativePath`. Directories are created
+ * parents-first so every child resolves to a real, owned directory id; we key
+ * off the returned ids (not names) so collision-renamed folders still nest
+ * their contents correctly.
+ */
+export async function uploadFolder(
+  files: File[],
+  parentId: string | null,
+  handlers: FolderUploadHandlers
+): Promise<void> {
+  // Map a file's relative path to "directory part" + "filename".
+  const relOf = (f: File) => f.webkitRelativePath || f.name
+  const dirPartOf = (rel: string) => {
+    const i = rel.lastIndexOf("/")
+    return i === -1 ? "" : rel.slice(0, i)
+  }
+
+  // 1. Collect every unique directory path in the selection.
+  const dirPaths = new Set<string>()
+  for (const f of files) {
+    const segs = dirPartOf(relOf(f)).split("/").filter(Boolean)
+    let acc = ""
+    for (const seg of segs) {
+      acc = acc ? `${acc}/${seg}` : seg
+      dirPaths.add(acc)
+    }
+  }
+
+  // 2. Create them parents-first; "" maps to the upload target directory.
+  const dirIds = new Map<string, string | null>([["", parentId]])
+  const ordered = [...dirPaths].sort((a, b) => a.split("/").length - b.split("/").length)
+  for (const path of ordered) {
+    const i = path.lastIndexOf("/")
+    const parentPath = i === -1 ? "" : path.slice(0, i)
+    const name = i === -1 ? path : path.slice(i + 1)
+    const created = await createDir(dirIds.get(parentPath) ?? parentId, name)
+    dirIds.set(path, created.id)
+  }
+
+  // 3. Upload each file into its mirrored directory.
+  for (const f of files) {
+    const targetId = dirIds.get(dirPartOf(relOf(f))) ?? parentId
+    try {
+      const result = await uploadFile(f, targetId, (frac) => handlers.onProgress(f, frac))
+      handlers.onDone?.(f, result)
+    } catch (err) {
+      handlers.onError?.(f, err)
+    }
+  }
+}

@@ -1,9 +1,9 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ChevronRight, FolderPlus, Search, Upload } from "lucide-react"
+import { ChevronRight, FolderPlus, FolderUp, Search, Upload } from "lucide-react"
 import { useId, useRef, useState } from "react"
-import { useTransferStore } from "@/lib/stores/transfers"
+import { type TransferItem, useTransferStore } from "@/lib/stores/transfers"
 import {
   createDir,
   deleteDir,
@@ -16,6 +16,7 @@ import {
   starFile,
   unstarFile,
   uploadFile,
+  uploadFolder,
   type VaultDir,
   type VaultFile,
 } from "@/lib/vault-api"
@@ -32,6 +33,7 @@ export default function FilesPage() {
   const [query, setQuery] = useState("")
   const [prompt, setPrompt] = useState<TextPrompt | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const folderInputRef = useRef<HTMLInputElement>(null)
   const searchId = useId()
 
   const searching = query.trim().length > 0
@@ -94,6 +96,38 @@ export default function FilesPage() {
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
+  async function handleFolder(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return
+    const files = Array.from(fileList)
+    const transfers = useTransferStore.getState()
+    const ids = new WeakMap<File, string>()
+    const stamp = Date.now()
+    files.forEach((file, i) => {
+      const id = `upload:${file.webkitRelativePath || file.name}-${file.size}-${stamp}-${i}`
+      ids.set(file, id)
+      const label = file.webkitRelativePath || file.name
+      transfers.upsert({ id, label, kind: "upload", progress: 0, status: "active" })
+    })
+    const patch = (file: File, p: Partial<TransferItem>) => {
+      const id = ids.get(file)
+      if (id) useTransferStore.getState().update(id, p)
+    }
+    try {
+      await uploadFolder(files, dirId, {
+        onProgress: (file, frac) => patch(file, { progress: Math.round(frac * 100) }),
+        onDone: (file) => patch(file, { progress: 100, status: "completed" }),
+        onError: (file, err) =>
+          patch(file, {
+            status: "error",
+            error: err instanceof Error ? err.message : "Upload failed",
+          }),
+      })
+    } finally {
+      invalidate()
+      if (folderInputRef.current) folderInputRef.current.value = ""
+    }
+  }
+
   const data = listing.data
   const error = listing.error ?? searchResults.error
   const loading = searching ? searchResults.isLoading : listing.isLoading
@@ -130,6 +164,10 @@ export default function FilesPage() {
             <FolderPlus className="mr-2 h-4 w-4" />
             New folder
           </Button>
+          <Button variant="outline" onClick={() => folderInputRef.current?.click()}>
+            <FolderUp className="mr-2 h-4 w-4" />
+            Upload folder
+          </Button>
           <Button onClick={() => fileInputRef.current?.click()}>
             <Upload className="mr-2 h-4 w-4" />
             Upload
@@ -140,6 +178,18 @@ export default function FilesPage() {
             multiple
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            // Non-standard directory-picker attributes; let the browser walk the
+            // selected folder recursively and hand us every nested file.
+            // @ts-expect-error webkitdirectory/directory aren't in React's input typings
+            webkitdirectory=""
+            directory=""
+            className="hidden"
+            onChange={(e) => handleFolder(e.target.files)}
           />
         </div>
       </div>
