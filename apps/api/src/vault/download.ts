@@ -1,9 +1,10 @@
-import { type Disposition, vaultSigningSecret, verifyDownload } from "@cnet/core"
+import { type Disposition, vaultSigningSecret, verifyDownload, verifyToken } from "@cnet/core"
 import { db } from "@cnet/db"
 import { vaultFiles } from "@cnet/db/schema"
 import { getStorageAdapter } from "@cnet/engine"
 import { and, eq, isNull } from "drizzle-orm"
 import type { Express, Request, Response } from "express"
+import { extractToken } from "../middleware/auth.middleware"
 
 type Resolved = {
   file: typeof vaultFiles.$inferSelect
@@ -25,6 +26,18 @@ async function resolve(req: Request): Promise<Resolved | null> {
     Date.now()
   )
   if (!ok) return null
+
+  // Bind the signed URL to the requester's live session: a leaked URL is useless
+  // without the owner's NextAuth cookie. Fail closed if the cookie is absent or
+  // belongs to a different user. The browser attaches the cookie automatically on
+  // same-origin <img>/<video>/<a>/fetch requests (web + API share the host).
+  const token = extractToken(req)
+  if (!token) return null
+  try {
+    if (verifyToken(token).id !== userId) return null
+  } catch {
+    return null
+  }
 
   const file = await db.query.vaultFiles.findFirst({
     where: and(

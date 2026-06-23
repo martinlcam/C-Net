@@ -1,6 +1,10 @@
 import { type Disposition, signDownload, vaultSigningSecret } from "@cnet/core"
 
-const TTL_MS = 15 * 60 * 1000
+// URLs are now bound to the requester's session (see vault/download.ts resolve()),
+// so a leaked URL is useless without the owner's cookie regardless of TTL. The TTL
+// is just a backstop now, kept long enough that a download click late in a browsing
+// session doesn't 403 on a stale signature.
+const TTL_MS = 6 * 60 * 60 * 1000
 
 export type SignedUrls = {
   previewUrl: string

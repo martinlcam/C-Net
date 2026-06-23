@@ -1,5 +1,6 @@
-import { vaultSigningSecret, verifyDownload } from "@cnet/core"
+import { vaultSigningSecret, verifyDownload, verifyToken } from "@cnet/core"
 import type { Express, Request, Response } from "express"
+import { extractToken } from "../middleware/auth.middleware"
 import { getJellyfin } from "./clients"
 
 /** Validate a signed media request (itemId stands in for the vault fileId). */
@@ -14,7 +15,20 @@ function verify(req: Request): { userId: string; itemId: string } | null {
     vaultSigningSecret(),
     Date.now()
   )
-  return ok ? { userId, itemId } : null
+  if (!ok) return null
+
+  // Bind the signed URL to the requester's live session: a leaked URL is useless
+  // without the owner's NextAuth cookie. Same-origin (martin.cam + /svc/*) means
+  // the browser attaches the cookie automatically on img/video requests.
+  const token = extractToken(req)
+  if (!token) return null
+  try {
+    if (verifyToken(token).id !== userId) return null
+  } catch {
+    return null
+  }
+
+  return { userId, itemId }
 }
 
 // Bun's fetch/axios drain the whole upstream with no backpressure, so an open-ended
