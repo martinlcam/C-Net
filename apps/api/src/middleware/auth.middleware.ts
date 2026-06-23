@@ -14,7 +14,7 @@ const SESSION_COOKIE_NAMES = [
 ]
 
 /** Pull the JWT from the Authorization header, falling back to the session cookie. */
-function extractToken(request: Request): string | null {
+export function extractToken(request: Request): string | null {
   const authHeader = request.headers.authorization
   if (authHeader?.startsWith("Bearer ")) {
     return authHeader.slice(7)
