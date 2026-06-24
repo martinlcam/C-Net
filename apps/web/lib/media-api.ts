@@ -68,6 +68,9 @@ export type Playable = {
   episodeNumber?: number
 }
 
+export type AudioTrack = { index: number; language: string | null; label: string }
+export type ItemTracks = { audio: AudioTrack[]; preferredAudioIndex: number | null }
+
 export type DiscoverResult = {
   tmdbId: number
   title: string
@@ -130,6 +133,9 @@ export const getLibrary = (params: { genre?: string; search?: string; sort?: str
 export const getContinue = () => req<{ items: Movie[] }>("/media/continue").then((r) => r.items)
 export const getLatest = () => req<{ items: Movie[] }>("/media/latest").then((r) => r.items)
 export const getGenres = () => req<{ genres: string[] }>("/media/genres").then((r) => r.genres)
+/** Audio tracks (+ preferred default) for the player's track menu; works for movies & episodes. */
+export const getItemTracks = (itemId: string) =>
+  req<ItemTracks>(`/media/item/${encodeURIComponent(itemId)}/tracks`)
 
 // --- tv ---
 export const getSeries = (params: { genre?: string; search?: string; sort?: string } = {}) =>

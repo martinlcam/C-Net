@@ -170,7 +170,12 @@ export function registerMediaStream(app: Express): void {
 
     let relpath: string
     if (!pathParam) {
-      relpath = `Videos/${v.itemId}/master.m3u8?mediaSourceId=${v.itemId}&deviceId=cnet-${v.userId}&${HLS_PARAMS}`
+      // Optional audio-track selection: Jellyfin muxes one audio stream into the
+      // HLS, so switching audio means re-requesting the master with a different
+      // AudioStreamIndex (not signed — the signature covers only user+item+exp).
+      const ai = Number(req.query.audioStreamIndex)
+      const audioParam = Number.isInteger(ai) && ai >= 0 ? `&AudioStreamIndex=${ai}` : ""
+      relpath = `Videos/${v.itemId}/master.m3u8?mediaSourceId=${v.itemId}&deviceId=cnet-${v.userId}&${HLS_PARAMS}${audioParam}`
     } else if (pathParam.includes("..") || pathParam.startsWith("/") || /^https?:/i.test(pathParam)) {
       res.status(400).end()
       return
