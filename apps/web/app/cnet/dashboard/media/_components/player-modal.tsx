@@ -2,12 +2,14 @@
 
 import Hls from "hls.js"
 import {
+  Check,
   Maximize,
   Minimize,
   Pause,
   Play,
   RotateCcw,
   RotateCw,
+  Settings,
   SkipForward,
   Volume2,
   VolumeX,
@@ -15,6 +17,8 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+  type AudioTrack,
+  getItemTracks,
   mediaUrl,
   type Playable,
   reportProgress,
@@ -68,11 +72,22 @@ export function PlayerModal({
   const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Where to seek once the (re)loaded stream is ready, and whether to resume
+  // playing — set on item change (resume point) and on audio-track switches
+  // (current position), so swapping audio is seamless.
+  const seekTargetRef = useRef(0)
+  const wasPlayingRef = useRef(true)
+  // Desired subtitle track, re-applied after an audio reload rebuilds hls.
+  const subPrefRef = useRef(-1)
 
-  const [audioTracks, setAudioTracks] = useState<Track[]>([])
+  // Server-provided audio tracks. `audioIndex` is the selected Jellyfin stream
+  // index; `undefined` = still loading (gates stream setup so we load the right
+  // track once instead of flashing the file's default first).
+  const [audioOpts, setAudioOpts] = useState<AudioTrack[]>([])
+  const [audioIndex, setAudioIndex] = useState<number | null | undefined>(undefined)
   const [subTracks, setSubTracks] = useState<Track[]>([])
-  const [curAudio, setCurAudio] = useState(0)
   const [curSub, setCurSub] = useState(-1)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -86,21 +101,66 @@ export function PlayerModal({
     setIndex((i) => (i < queue.length - 1 ? i + 1 : i))
   }, [queue.length])
 
-  // Load + wire up the video whenever the current item (index) changes.
+  // On item change, fetch its audio tracks and pick the default (English →
+  // Japanese → the file's own default). `audioIndex` starts `undefined` here,
+  // which gates the stream-setup effect so it loads the right track in one shot
+  // instead of flashing the file's (often Spanish) default first.
+  useEffect(() => {
+    let cancelled = false
+    setAudioIndex(undefined)
+    setAudioOpts([])
+    setSettingsOpen(false)
+    setCurSub(-1)
+    subPrefRef.current = -1
+    wasPlayingRef.current = true
+    seekTargetRef.current =
+      item.resumePositionTicks > 0 ? item.resumePositionTicks / TICKS_PER_SECOND : 0
+    getItemTracks(item.id)
+      .then((t) => {
+        if (cancelled) return
+        setAudioOpts(t.audio)
+        setAudioIndex(t.preferredAudioIndex)
+      })
+      .catch(() => {
+        if (!cancelled) setAudioIndex(null) // fall back to the stream's default audio
+      })
+    return () => {
+      cancelled = true
+    }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item change
+  }, [index])
+
+  // (Re)load + wire up the video when the item OR the chosen audio track changes.
+  // Switching audio re-requests the HLS with a different AudioStreamIndex because
+  // Jellyfin muxes a single audio stream into the segments; `seekTargetRef` keeps
+  // playback position across the swap.
   useEffect(() => {
     const video = videoRef.current
-    if (!video) return
-    const src = mediaUrl(item.hlsUrl)
+    if (!video || audioIndex === undefined) return
+    const src =
+      mediaUrl(item.hlsUrl) + (audioIndex != null ? `&audioStreamIndex=${audioIndex}` : "")
     const ticks = () => Math.round(video.currentTime * TICKS_PER_SECOND)
-    const startAt = item.resumePositionTicks > 0 ? item.resumePositionTicks / TICKS_PER_SECOND : 0
+    const startAt = seekTargetRef.current
+    const resume = wasPlayingRef.current
     let hls: Hls | null = null
 
-    setAudioTracks([])
     setSubTracks([])
-    setCurAudio(0)
-    setCurSub(-1)
     setCurrent(0)
     setDuration(0)
+
+    const applySubs = () => {
+      setSubTracks(
+        hls?.subtitleTracks.map((t, i) => ({
+          id: i,
+          label: t.name || t.lang || `Track ${i + 1}`,
+        })) ?? []
+      )
+      // Re-apply the chosen subtitle after an audio switch rebuilds hls.
+      if (hls && subPrefRef.current >= 0) {
+        hls.subtitleTrack = subPrefRef.current
+        hls.subtitleDisplay = true
+      }
+    }
 
     if (Hls.isSupported()) {
       hls = new Hls({ enableWorker: true })
@@ -108,39 +168,12 @@ export function PlayerModal({
       hls.loadSource(src)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setAudioTracks(
-          hls?.audioTracks.map((t, i) => ({
-            id: i,
-            label: t.name || t.lang || `Audio ${i + 1}`,
-          })) ?? []
-        )
-        setSubTracks(
-          hls?.subtitleTracks.map((t, i) => ({
-            id: i,
-            label: t.name || t.lang || `Track ${i + 1}`,
-          })) ?? []
-        )
+        applySubs()
         if (startAt > 0) video.currentTime = startAt
-        void video.play().catch(() => {})
+        if (resume) void video.play().catch(() => {})
       })
-      // Track lists can settle after MANIFEST_PARSED; keep the menus in sync so
-      // embedded subtitle/audio tracks always surface.
-      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () =>
-        setSubTracks(
-          hls?.subtitleTracks.map((t, i) => ({
-            id: i,
-            label: t.name || t.lang || `Track ${i + 1}`,
-          })) ?? []
-        )
-      )
-      hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () =>
-        setAudioTracks(
-          hls?.audioTracks.map((t, i) => ({
-            id: i,
-            label: t.name || t.lang || `Audio ${i + 1}`,
-          })) ?? []
-        )
-      )
+      // Subtitle list can settle after MANIFEST_PARSED; keep the menu in sync.
+      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, applySubs)
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Safari plays HLS natively.
       video.src = src
@@ -148,7 +181,7 @@ export function PlayerModal({
         "loadedmetadata",
         () => {
           if (startAt > 0) video.currentTime = startAt
-          void video.play().catch(() => {})
+          if (resume) void video.play().catch(() => {})
         },
         { once: true }
       )
@@ -199,15 +232,20 @@ export function PlayerModal({
       hls?.destroy()
       hlsRef.current = null
     }
-    // Re-init only when the playing item changes; other deps are stable refs/setters.
-    // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item change
-  }, [index])
+    // Re-init on item change or audio-track switch; other deps are stable refs/setters.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item/audio change
+  }, [index, audioIndex])
 
   useEffect(() => {
     const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement))
     document.addEventListener("fullscreenchange", onFs)
     return () => document.removeEventListener("fullscreenchange", onFs)
   }, [])
+
+  // Auto-hiding controls shouldn't leave the settings popover floating.
+  useEffect(() => {
+    if (!uiVisible) setSettingsOpen(false)
+  }, [uiVisible])
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current
@@ -291,18 +329,24 @@ export function PlayerModal({
     return () => window.removeEventListener("keydown", onKey)
   }, [onClose, togglePlay, skip, toggleFullscreen, toggleMute, goNext, revealUi])
 
-  const selectAudio = (id: number) => {
-    if (hlsRef.current) {
-      hlsRef.current.audioTrack = id
-      setCurAudio(id)
+  // Switching audio re-requests the stream at a new AudioStreamIndex; remember
+  // the current position + play state so the setup effect resumes seamlessly.
+  const selectAudio = (streamIndex: number) => {
+    if (streamIndex === audioIndex) return
+    const v = videoRef.current
+    if (v) {
+      seekTargetRef.current = v.currentTime
+      wasPlayingRef.current = !v.paused
     }
+    setAudioIndex(streamIndex)
   }
   const selectSub = (id: number) => {
+    subPrefRef.current = id
     if (hlsRef.current) {
       hlsRef.current.subtitleTrack = id
       hlsRef.current.subtitleDisplay = id >= 0
-      setCurSub(id)
     }
+    setCurSub(id)
   }
 
   const remaining = duration - current
@@ -467,38 +511,66 @@ export function PlayerModal({
             </div>
 
             <div className="ml-auto flex items-center gap-3">
-              {audioTracks.length > 1 ? (
-                <label className="flex items-center gap-1 text-xs">
-                  Audio
-                  <select
-                    value={curAudio}
-                    onChange={(e) => selectAudio(Number(e.target.value))}
-                    className="rounded bg-black/60 px-1 py-0.5 text-white text-xs"
+              {audioOpts.length > 1 || subTracks.length > 0 ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen((o) => !o)}
+                    aria-label="Audio and subtitles"
+                    aria-expanded={settingsOpen}
+                    className={`rounded p-1 hover:text-white/80 ${settingsOpen ? "text-white" : ""}`}
                   >
-                    {audioTracks.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {subTracks.length > 0 ? (
-                <label className="flex items-center gap-1 text-xs">
-                  Subtitles
-                  <select
-                    value={curSub}
-                    onChange={(e) => selectSub(Number(e.target.value))}
-                    className="rounded bg-black/60 px-1 py-0.5 text-white text-xs"
-                  >
-                    <option value={-1}>Off</option>
-                    {subTracks.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <Settings className="h-6 w-6" />
+                  </button>
+                  {settingsOpen ? (
+                    <div className="absolute right-0 bottom-10 flex w-72 gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15">
+                      {audioOpts.length > 1 ? (
+                        <div className="min-w-0 flex-1">
+                          <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
+                            Audio
+                          </p>
+                          <div className="max-h-56 overflow-y-auto">
+                            {audioOpts.map((t) => (
+                              <button
+                                key={t.index}
+                                type="button"
+                                onClick={() => selectAudio(t.index)}
+                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                              >
+                                <Check
+                                  className={`h-4 w-4 shrink-0 ${t.index === audioIndex ? "opacity-100" : "opacity-0"}`}
+                                />
+                                <span className="truncate">{t.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      {subTracks.length > 0 ? (
+                        <div className="min-w-0 flex-1">
+                          <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
+                            Subtitles
+                          </p>
+                          <div className="max-h-56 overflow-y-auto">
+                            {[{ id: -1, label: "Off" }, ...subTracks].map((t) => (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => selectSub(t.id)}
+                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                              >
+                                <Check
+                                  className={`h-4 w-4 shrink-0 ${t.id === curSub ? "opacity-100" : "opacity-0"}`}
+                                />
+                                <span className="truncate">{t.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
               <button
                 type="button"

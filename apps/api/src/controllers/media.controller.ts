@@ -1,4 +1,4 @@
-import type { JellyfinItem } from "@cnet/engine"
+import type { JellyfinItem, JellyfinMediaStream } from "@cnet/engine"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Query, Request, Route, Security } from "tsoa"
 import { getJellyfin } from "../media/clients"
@@ -40,6 +40,61 @@ export interface StoppedBody {
 export interface WatchedBody {
   itemId: string
   played: boolean
+}
+
+export interface AudioTrackDTO {
+  /** Jellyfin MediaStream index — pass as `audioStreamIndex` on the HLS URL to select it. */
+  index: number
+  language: string | null
+  label: string
+}
+
+export interface ItemTracksDTO {
+  audio: AudioTrackDTO[]
+  /** Preferred default track index (English, else Japanese, else file default). */
+  preferredAudioIndex: number | null
+}
+
+// ISO 639-2/B codes → display name for the common audio languages we ship.
+const LANGUAGE_NAMES: Record<string, string> = {
+  eng: "English",
+  jpn: "Japanese",
+  spa: "Spanish",
+  fra: "French",
+  fre: "French",
+  por: "Portuguese",
+  ger: "German",
+  deu: "German",
+  ita: "Italian",
+  kor: "Korean",
+  chi: "Chinese",
+  zho: "Chinese",
+  rus: "Russian",
+}
+
+function audioLabel(s: JellyfinMediaStream): string {
+  const lang = (s.Language ?? "").toLowerCase()
+  return LANGUAGE_NAMES[lang] ?? s.DisplayTitle ?? s.Language ?? `Audio ${s.Index}`
+}
+
+/**
+ * Audio tracks for an item plus the preferred default index. Anime is usually
+ * dual-audio (English + Japanese) but ships with a non-English default flag
+ * (often Spanish Latino), so we pick English first, then Japanese, then the
+ * file's own default — the player loads that track and offers the rest.
+ */
+export function buildItemTracks(item: JellyfinItem): ItemTracksDTO {
+  const audioStreams = (item.MediaStreams ?? []).filter((s) => s.Type === "Audio")
+  const audio = audioStreams.map((s) => ({
+    index: s.Index,
+    language: s.Language ?? null,
+    label: audioLabel(s),
+  }))
+  const byLang = (code: string) =>
+    audioStreams.find((s) => (s.Language ?? "").toLowerCase() === code)
+  const preferred =
+    byLang("eng") ?? byLang("jpn") ?? audioStreams.find((s) => s.IsDefault) ?? audioStreams[0]
+  return { audio, preferredAudioIndex: preferred ? preferred.Index : null }
 }
 
 /** Shared mapper: Jellyfin movie/episode item -> playable DTO with signed URLs. */
@@ -110,6 +165,17 @@ export class MediaController extends Controller {
     const actor = actorFrom(req)
     const { jellyfinUserId } = await resolveJellyfinUser(actor)
     return toMovieDTO(actor.id, await getJellyfin().item(jellyfinUserId, itemId))
+  }
+
+  /** Audio tracks (+ preferred default) for a movie or episode, for the player's track menu. */
+  @Get("item/{itemId}/tracks")
+  public async getItemTracks(
+    @Request() req: ExpressRequest,
+    @Path() itemId: string
+  ): Promise<ItemTracksDTO> {
+    const actor = actorFrom(req)
+    const { jellyfinUserId } = await resolveJellyfinUser(actor)
+    return buildItemTracks(await getJellyfin().item(jellyfinUserId, itemId))
   }
 
   @Post("progress")

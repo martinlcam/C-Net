@@ -7,6 +7,7 @@ export type {
   JellyfinItem,
   JellyfinItemsResponse,
   JellyfinLibraryOpts,
+  JellyfinMediaStream,
   JellyfinUser,
   JellyfinUserData,
 } from "./jellyfin/types"

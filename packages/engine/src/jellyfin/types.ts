@@ -8,6 +8,15 @@ export type JellyfinUserData = {
   Played?: boolean
 }
 
+export type JellyfinMediaStream = {
+  Index: number
+  Type?: string
+  Codec?: string
+  Language?: string
+  DisplayTitle?: string
+  IsDefault?: boolean
+}
+
 export type JellyfinItem = {
   Id: string
   Name: string
@@ -21,6 +30,7 @@ export type JellyfinItem = {
   ImageTags?: Record<string, string>
   BackdropImageTags?: string[]
   UserData?: JellyfinUserData
+  MediaStreams?: JellyfinMediaStream[]
   MediaSources?: Array<{ Id: string; Container?: string; Size?: number }>
   // TV (series / season / episode) fields
   IndexNumber?: number
