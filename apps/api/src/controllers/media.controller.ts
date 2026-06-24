@@ -2,7 +2,7 @@ import type { JellyfinItem } from "@cnet/engine"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Query, Request, Route, Security } from "tsoa"
 import { getJellyfin } from "../media/clients"
-import { resolveJellyfinUser } from "../media/provision"
+import { resolveJellyfinUser, withJellyfinToken } from "../media/provision"
 import { signMediaUrls } from "../media/urls"
 import { actorFrom } from "../vault/access"
 
@@ -118,8 +118,9 @@ export class MediaController extends Controller {
     @Body() body: ProgressBody
   ): Promise<{ ok: boolean }> {
     const actor = actorFrom(req)
-    const { token } = await resolveJellyfinUser(actor)
-    await getJellyfin().reportProgress(token, body.itemId, body.positionTicks, body.paused ?? false)
+    await withJellyfinToken(actor, (token) =>
+      getJellyfin().reportProgress(token, body.itemId, body.positionTicks, body.paused ?? false)
+    )
     return { ok: true }
   }
 
@@ -129,8 +130,9 @@ export class MediaController extends Controller {
     @Body() body: StoppedBody
   ): Promise<{ ok: boolean }> {
     const actor = actorFrom(req)
-    const { token } = await resolveJellyfinUser(actor)
-    await getJellyfin().reportStopped(token, body.itemId, body.positionTicks)
+    await withJellyfinToken(actor, (token) =>
+      getJellyfin().reportStopped(token, body.itemId, body.positionTicks)
+    )
     return { ok: true }
   }
 
