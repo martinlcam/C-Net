@@ -101,14 +101,16 @@ export function buildItemTracks(item: JellyfinItem): ItemTracksDTO {
 export function toMovieDTO(userId: string, item: JellyfinItem): MovieDTO {
   const urls = signMediaUrls(userId, item.Id)
   const hasPoster = Boolean(item.ImageTags?.Primary)
-  const hasBackdrop = Boolean(item.BackdropImageTags?.length)
+  const hasBackdrop = (item.BackdropImageTags?.length ?? 0) > 0
   return {
     id: item.Id,
     title: item.Name,
     year: item.ProductionYear,
     overview: item.Overview,
     genres: item.Genres ?? [],
-    runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS_PER_MINUTE) : undefined,
+    runtimeMinutes: item.RunTimeTicks
+      ? Math.round(item.RunTimeTicks / TICKS_PER_MINUTE)
+      : undefined,
     communityRating: item.CommunityRating,
     officialRating: item.OfficialRating,
     posterUrl: hasPoster ? urls.posterUrl : null,

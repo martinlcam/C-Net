@@ -55,7 +55,7 @@ function toSeriesDTO(userId: string, item: JellyfinItem): SeriesDTO {
     communityRating: item.CommunityRating,
     officialRating: item.OfficialRating,
     posterUrl: item.ImageTags?.Primary ? urls.posterUrl : null,
-    backdropUrl: item.BackdropImageTags?.length ? urls.backdropUrl : null,
+    backdropUrl: (item.BackdropImageTags?.length ?? 0) > 0 ? urls.backdropUrl : null,
     seasonCount: item.ChildCount,
   }
 }
@@ -78,7 +78,9 @@ function toEpisodeDTO(userId: string, item: JellyfinItem): EpisodeDTO {
     seriesName: item.SeriesName,
     seasonNumber: item.ParentIndexNumber,
     episodeNumber: item.IndexNumber,
-    runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS_PER_MINUTE) : undefined,
+    runtimeMinutes: item.RunTimeTicks
+      ? Math.round(item.RunTimeTicks / TICKS_PER_MINUTE)
+      : undefined,
     posterUrl: item.ImageTags?.Primary ? urls.posterUrl : null,
     streamUrl: urls.streamUrl,
     hlsUrl: urls.hlsUrl,

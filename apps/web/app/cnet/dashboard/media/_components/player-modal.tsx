@@ -105,6 +105,7 @@ export function PlayerModal({
   // Japanese → the file's own default). `audioIndex` starts `undefined` here,
   // which gates the stream-setup effect so it loads the right track in one shot
   // instead of flashing the file's (often Spanish) default first.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item change
   useEffect(() => {
     let cancelled = false
     setAudioIndex(undefined)
@@ -127,13 +128,13 @@ export function PlayerModal({
     return () => {
       cancelled = true
     }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item change
   }, [index])
 
   // (Re)load + wire up the video when the item OR the chosen audio track changes.
   // Switching audio re-requests the HLS with a different AudioStreamIndex because
   // Jellyfin muxes a single audio stream into the segments; `seekTargetRef` keeps
   // playback position across the swap.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item/audio change
   useEffect(() => {
     const video = videoRef.current
     if (!video || audioIndex === undefined) return
@@ -233,7 +234,6 @@ export function PlayerModal({
       hlsRef.current = null
     }
     // Re-init on item change or audio-track switch; other deps are stable refs/setters.
-    // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item/audio change
   }, [index, audioIndex])
 
   useEffect(() => {
@@ -353,6 +353,7 @@ export function PlayerModal({
   const showUpNext = duration > 0 && remaining <= NEXT_CARD_AT && remaining > 0
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: player chrome reveals controls on mouse move; not a control itself
     <div
       ref={containerRef}
       className="fixed inset-0 z-50 flex select-none flex-col bg-black"
@@ -594,7 +595,9 @@ export function PlayerModal({
         >
           <SkipForward className="h-8 w-8 shrink-0" />
           <span className="min-w-0">
-            <span className="block text-white/60 text-xs">Up next · in {Math.ceil(remaining)}s</span>
+            <span className="block text-white/60 text-xs">
+              Up next · in {Math.ceil(remaining)}s
+            </span>
             <span className="block truncate font-medium text-sm">{displayTitle(next)}</span>
           </span>
         </button>

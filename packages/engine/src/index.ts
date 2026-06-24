@@ -8,6 +8,7 @@ export type {
   JellyfinItemsResponse,
   JellyfinLibraryOpts,
   JellyfinMediaStream,
+  JellyfinMediaType,
   JellyfinUser,
   JellyfinUserData,
 } from "./jellyfin/types"
@@ -84,15 +85,6 @@ export type {
   SonarIssueRaw,
   SonarSearchResponse,
 } from "./sonar/types"
-export type { StorageAdapter } from "./vault/adapter"
-export { FilesystemAdapter, getStorageAdapter } from "./vault/filesystem-adapter"
-export {
-  generateThumbnail,
-  pickGenerator,
-  type ThumbnailKind,
-  type ThumbnailResult,
-} from "./vault/thumbnails"
-export type { JellyfinMediaType } from "./jellyfin/types"
 export { SonarrService } from "./sonarr/service"
 export type {
   SonarrImage,
@@ -101,3 +93,11 @@ export type {
   SonarrSeries,
   SonarrStatistics,
 } from "./sonarr/types"
+export type { StorageAdapter } from "./vault/adapter"
+export { FilesystemAdapter, getStorageAdapter } from "./vault/filesystem-adapter"
+export {
+  generateThumbnail,
+  pickGenerator,
+  type ThumbnailKind,
+  type ThumbnailResult,
+} from "./vault/thumbnails"
