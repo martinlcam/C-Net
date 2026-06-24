@@ -44,15 +44,19 @@ export class JellyfinService {
     return data.find((u) => u.Name === name) ?? null
   }
 
-  /** Authenticate a (passwordless) Jellyfin user to mint a per-user access token. */
-  async authenticate(name: string): Promise<JellyfinAuthResult> {
+  /**
+   * Authenticate a (passwordless) Jellyfin user to mint a per-user access token.
+   * `deviceId` MUST be unique per C-Net user: Jellyfin binds a token to its
+   * (Client, Device) pair, so a shared device id makes each new user's login
+   * revoke the previous user's token (silently breaking playback reporting).
+   */
+  async authenticate(name: string, deviceId: string): Promise<JellyfinAuthResult> {
     const { data } = await this.client.post<JellyfinAuthResult>(
       "/Users/AuthenticateByName",
       { Username: name, Pw: "" },
       {
         headers: {
-          "X-Emby-Authorization":
-            'MediaBrowser Client="cnet", Device="cnet-web", DeviceId="cnet-server", Version="1.0.0"',
+          "X-Emby-Authorization": `MediaBrowser Client="cnet", Device="cnet-web", DeviceId="${deviceId}", Version="1.0.0"`,
         },
       }
     )
