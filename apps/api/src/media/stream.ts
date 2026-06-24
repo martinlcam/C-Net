@@ -173,9 +173,16 @@ export function registerMediaStream(app: Express): void {
       // Optional audio-track selection: Jellyfin muxes one audio stream into the
       // HLS, so switching audio means re-requesting the master with a different
       // AudioStreamIndex (not signed — the signature covers only user+item+exp).
+      // Crucial: Jellyfin keys an ACTIVE transcode session by (item, deviceId) and
+      // reuses it for a new request even when AudioStreamIndex changed — so a shared
+      // device id makes mid-playback audio switching a silent no-op (you keep hearing
+      // the first track). Fold the track into the device id so each audio is its own
+      // session and actually switches.
       const ai = Number(req.query.audioStreamIndex)
-      const audioParam = Number.isInteger(ai) && ai >= 0 ? `&AudioStreamIndex=${ai}` : ""
-      relpath = `Videos/${v.itemId}/master.m3u8?mediaSourceId=${v.itemId}&deviceId=cnet-${v.userId}&${HLS_PARAMS}${audioParam}`
+      const hasAi = Number.isInteger(ai) && ai >= 0
+      const deviceId = hasAi ? `cnet-${v.userId}-a${ai}` : `cnet-${v.userId}`
+      const audioParam = hasAi ? `&AudioStreamIndex=${ai}` : ""
+      relpath = `Videos/${v.itemId}/master.m3u8?mediaSourceId=${v.itemId}&deviceId=${deviceId}&${HLS_PARAMS}${audioParam}`
     } else if (
       pathParam.includes("..") ||
       pathParam.startsWith("/") ||
