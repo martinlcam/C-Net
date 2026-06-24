@@ -121,8 +121,10 @@ export function SeriesModal({
           </div>
           <div className="p-4">
             <h2 className="font-semibold text-lg">{series.title}</h2>
-            {meta.length > 0 ? <p className="mt-1 text-white/60 text-xs">{meta.join(" · ")}</p> : null}
-            {series.genres?.length ? (
+            {meta.length > 0 ? (
+              <p className="mt-1 text-white/60 text-xs">{meta.join(" · ")}</p>
+            ) : null}
+            {(series.genres?.length ?? 0) > 0 ? (
               <p className="mt-2 text-white/70 text-xs">{series.genres.join(", ")}</p>
             ) : null}
             {series.overview ? (

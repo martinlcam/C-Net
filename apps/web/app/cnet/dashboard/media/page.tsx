@@ -207,11 +207,7 @@ export default function MediaPage() {
       )}
 
       {openSeries ? (
-        <SeriesModal
-          series={openSeries}
-          onClose={() => setOpenSeries(null)}
-          onPlay={playEpisode}
-        />
+        <SeriesModal series={openSeries} onClose={() => setOpenSeries(null)} onPlay={playEpisode} />
       ) : null}
       {queue ? (
         <PlayerModal queue={queue} startIndex={startIndex} onClose={() => setQueue(null)} />

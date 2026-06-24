@@ -151,7 +151,7 @@ export function registerMediaStream(app: Express): void {
       }
       if (upstream.body) await pump(upstream.body, res)
       else res.end()
-    } catch (err) {
+    } catch (_err) {
       if (!res.headersSent && !ac.signal.aborted) res.status(502).end()
       else if (!res.writableEnded) res.end()
     }
@@ -176,7 +176,11 @@ export function registerMediaStream(app: Express): void {
       const ai = Number(req.query.audioStreamIndex)
       const audioParam = Number.isInteger(ai) && ai >= 0 ? `&AudioStreamIndex=${ai}` : ""
       relpath = `Videos/${v.itemId}/master.m3u8?mediaSourceId=${v.itemId}&deviceId=cnet-${v.userId}&${HLS_PARAMS}${audioParam}`
-    } else if (pathParam.includes("..") || pathParam.startsWith("/") || /^https?:/i.test(pathParam)) {
+    } else if (
+      pathParam.includes("..") ||
+      pathParam.startsWith("/") ||
+      /^https?:/i.test(pathParam)
+    ) {
       res.status(400).end()
       return
     } else {
@@ -203,7 +207,7 @@ export function registerMediaStream(app: Express): void {
         if (upstream.body) await pump(upstream.body, res)
         else res.end()
       }
-    } catch (err) {
+    } catch (_err) {
       if (!res.headersSent && !ac.signal.aborted) res.status(502).end()
       else if (!res.writableEnded) res.end()
     }
