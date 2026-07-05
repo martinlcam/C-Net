@@ -524,7 +524,7 @@ export function PlayerModal({
                     <Settings className="h-6 w-6" />
                   </button>
                   {settingsOpen ? (
-                    <div className="absolute right-0 bottom-10 flex w-72 gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15">
+                    <div className="absolute right-0 bottom-10 flex w-[26rem] max-w-[calc(100vw-1.5rem)] gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15">
                       {audioOpts.length > 1 ? (
                         <div className="min-w-0 flex-1">
                           <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
@@ -536,12 +536,12 @@ export function PlayerModal({
                                 key={t.index}
                                 type="button"
                                 onClick={() => selectAudio(t.index)}
-                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                                className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
                               >
                                 <Check
-                                  className={`h-4 w-4 shrink-0 ${t.index === audioIndex ? "opacity-100" : "opacity-0"}`}
+                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === audioIndex ? "opacity-100" : "opacity-0"}`}
                                 />
-                                <span className="truncate">{t.label}</span>
+                                <span className="min-w-0 break-words">{t.label}</span>
                               </button>
                             ))}
                           </div>
@@ -558,12 +558,12 @@ export function PlayerModal({
                                 key={t.id}
                                 type="button"
                                 onClick={() => selectSub(t.id)}
-                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                                className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
                               >
                                 <Check
-                                  className={`h-4 w-4 shrink-0 ${t.id === curSub ? "opacity-100" : "opacity-0"}`}
+                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.id === curSub ? "opacity-100" : "opacity-0"}`}
                                 />
-                                <span className="truncate">{t.label}</span>
+                                <span className="min-w-0 break-words">{t.label}</span>
                               </button>
                             ))}
                           </div>
