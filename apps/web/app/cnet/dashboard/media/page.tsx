@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { Plus, Search } from "lucide-react"
-import { useId, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import {
   type Episode,
   getContinue,
@@ -17,6 +17,7 @@ import {
   type Playable,
   type Series,
 } from "@/lib/media-api"
+import { useMediaViewStore } from "@/lib/stores/media-view"
 import { Button } from "@/stories/button/button"
 import { EpisodeCard } from "./_components/episode-card"
 import { MovieCard } from "./_components/movie-card"
@@ -150,6 +151,15 @@ export default function MediaPage() {
   const [requesting, setRequesting] = useState(false)
   const [query, setQuery] = useState("")
   const searchId = useId()
+
+  // Hide the bottom-right transfers widget while a title is open for viewing
+  // (player or series detail modal). Transfers keep running in the background.
+  const setViewing = useMediaViewStore((s) => s.setViewing)
+  const viewing = Boolean(queue || openSeries)
+  useEffect(() => {
+    setViewing(viewing)
+    return () => setViewing(false)
+  }, [viewing, setViewing])
 
   const playSingle = (p: Playable) => {
     setStartIndex(0)

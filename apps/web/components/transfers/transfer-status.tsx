@@ -2,6 +2,7 @@
 
 import { Check, ChevronUp, Download, Loader2, Minus, Upload, X } from "lucide-react"
 import { useEffect } from "react"
+import { useMediaViewStore } from "@/lib/stores/media-view"
 import { type TransferItem, useTransferStore } from "@/lib/stores/transfers"
 
 const AUTO_HIDE_MS = 30_000
@@ -16,6 +17,8 @@ export function TransferStatus() {
   const items = useTransferStore((s) => s.items)
   const minimized = useTransferStore((s) => s.minimized)
   const hidden = useTransferStore((s) => s.hidden)
+  // Hide the widget while a title is open for viewing; transfers keep running.
+  const viewing = useMediaViewStore((s) => s.viewing)
   const setMinimized = useTransferStore((s) => s.setMinimized)
   const hide = useTransferStore((s) => s.hide)
   const clearSettled = useTransferStore((s) => s.clearSettled)
@@ -41,7 +44,7 @@ export function TransferStatus() {
     return () => window.removeEventListener("beforeunload", handler)
   }, [activeCount])
 
-  if (list.length === 0 || hidden) return null
+  if (list.length === 0 || hidden || viewing) return null
 
   const uploads = list.filter((i) => i.kind === "upload" && i.status === "active").length
   const downloads = list.filter((i) => i.kind === "download" && i.status === "active").length

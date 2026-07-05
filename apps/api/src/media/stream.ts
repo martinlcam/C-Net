@@ -105,6 +105,74 @@ function rewritePlaylist(text: string, exp: string, sig: string, baseDir: string
     .join("\n")
 }
 
+/** Parse a WebVTT timestamp (mm:ss.mmm or hh:mm:ss.mmm) to milliseconds. */
+function vttMs(t: string): number {
+  const parts = t.split(":")
+  let ms = Math.round(Number.parseFloat(parts.pop() ?? "0") * 1000)
+  const mins = parts.pop()
+  if (mins) ms += Number.parseInt(mins, 10) * 60_000
+  const hrs = parts.pop()
+  if (hrs) ms += Number.parseInt(hrs, 10) * 3_600_000
+  return ms
+}
+
+type VttCue = { pre: string[]; start: string; end: string; rest: string; text: string }
+
+/**
+ * Jellyfin's on-the-fly ASS->WebVTT conversion leaves raw ASS override blocks
+ * ({\blur}, {\fad}, {\pos}, {\alpha}, ...) inside heavily-typeset (anime) cues and
+ * emits overlapping alpha-animation keyframe cues, so the browser prints the braces
+ * as literal text and flickers. Strip the override blocks, normalise ASS escapes,
+ * drop cues that were pure typesetting, and merge consecutive identical cues into
+ * one span (collapses the alpha-fade duplicates). Header blocks (WEBVTT, the
+ * X-TIMESTAMP-MAP sync line, Region defs) pass through untouched.
+ */
+function sanitizeVtt(text: string): string {
+  const strip = (s: string) =>
+    s
+      .replace(/\{\\[^}]*\}/g, "")
+      .replace(/\\N/g, "\n")
+      .replace(/\\h/g, " ")
+  const timeRe = /^((?:\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((?:\d{2}:)?\d{2}:\d{2}\.\d{3})(.*)$/
+  const head: string[] = []
+  const cues: VttCue[] = []
+
+  for (const block of text.replace(/\r\n/g, "\n").split(/\n\n+/)) {
+    const lines = block.split("\n")
+    const ti = lines.findIndex((l) => timeRe.test(l))
+    if (ti === -1) {
+      if (block.trim()) head.push(block)
+      continue
+    }
+    const m = timeRe.exec(lines[ti])
+    if (!m) continue
+    const body = lines
+      .slice(ti + 1)
+      .map(strip)
+      .join("\n")
+      .replace(/\n{2,}/g, "\n")
+      .trim()
+    if (!body) continue
+    cues.push({ pre: lines.slice(0, ti), start: m[1], end: m[2], rest: m[3] ?? "", text: body })
+  }
+
+  const merged: VttCue[] = []
+  for (const c of cues) {
+    const last = merged[merged.length - 1]
+    if (last && last.text === c.text && vttMs(c.start) <= vttMs(last.end) + 250) {
+      if (vttMs(c.start) < vttMs(last.start)) last.start = c.start
+      if (vttMs(c.end) > vttMs(last.end)) last.end = c.end
+      continue
+    }
+    merged.push({ ...c })
+  }
+
+  const rendered = merged
+    .map((c) => [...c.pre, `${c.start} --> ${c.end}${c.rest}`, c.text].join("\n"))
+    .join("\n\n")
+  return `${[...head, rendered].filter(Boolean).join("\n\n")}\n`
+}
+
 export function registerMediaStream(app: Express): void {
   app.get("/media/img/:userId/:itemId", async (req: Request, res: Response) => {
     const v = verify(req)
@@ -208,6 +276,12 @@ export function registerMediaStream(app: Express): void {
         res.setHeader("Cache-Control", "no-store")
         // baseDir = this playlist's own directory relative to Videos/{itemId}/.
         res.end(rewritePlaylist(text, exp, sig, pathParam ? dirOf(pathParam) : ""))
+      } else if (relpath.includes(".vtt")) {
+        // Anime ASS subtitles arrive from Jellyfin's ASS->WebVTT conversion with raw
+        // override tags still in the cue text; sanitizeVtt strips them so captions read.
+        res.setHeader("Content-Type", "text/vtt")
+        res.setHeader("Cache-Control", "no-store")
+        res.end(sanitizeVtt(await upstream.text()))
       } else {
         const ct = upstream.headers.get("content-type")
         if (ct) res.setHeader("Content-Type", ct)
