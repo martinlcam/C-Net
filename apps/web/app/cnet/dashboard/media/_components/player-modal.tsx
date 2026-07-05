@@ -23,11 +23,10 @@ import {
   type Playable,
   reportProgress,
   reportStopped,
+  type SubtitleTrack,
   setWatched,
   TICKS_PER_SECOND,
 } from "@/lib/media-api"
-
-type Track = { id: number; label: string }
 
 const SKIP = 5 // seconds for the back/forward skip buttons
 const NEXT_CARD_AT = 25 // show the "Up next" card this many seconds before the end
@@ -77,15 +76,15 @@ export function PlayerModal({
   // (current position), so swapping audio is seamless.
   const seekTargetRef = useRef(0)
   const wasPlayingRef = useRef(true)
-  // Desired subtitle track, re-applied after an audio reload rebuilds hls.
-  const subPrefRef = useRef(-1)
 
   // Server-provided audio tracks. `audioIndex` is the selected Jellyfin stream
   // index; `undefined` = still loading (gates stream setup so we load the right
   // track once instead of flashing the file's default first).
   const [audioOpts, setAudioOpts] = useState<AudioTrack[]>([])
   const [audioIndex, setAudioIndex] = useState<number | null | undefined>(undefined)
-  const [subTracks, setSubTracks] = useState<Track[]>([])
+  // Text subtitle tracks from the API (each a full Stream.vtt, not HLS-segmented).
+  const [subTracks, setSubTracks] = useState<SubtitleTrack[]>([])
+  // Selected subtitle = Jellyfin stream index, or -1 for off.
   const [curSub, setCurSub] = useState(-1)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -110,9 +109,9 @@ export function PlayerModal({
     let cancelled = false
     setAudioIndex(undefined)
     setAudioOpts([])
+    setSubTracks([])
     setSettingsOpen(false)
     setCurSub(-1)
-    subPrefRef.current = -1
     wasPlayingRef.current = true
     seekTargetRef.current =
       item.resumePositionTicks > 0 ? item.resumePositionTicks / TICKS_PER_SECOND : 0
@@ -120,6 +119,7 @@ export function PlayerModal({
       .then((t) => {
         if (cancelled) return
         setAudioOpts(t.audio)
+        setSubTracks(t.subtitles)
         setAudioIndex(t.preferredAudioIndex)
       })
       .catch(() => {
@@ -145,36 +145,21 @@ export function PlayerModal({
     const resume = wasPlayingRef.current
     let hls: Hls | null = null
 
-    setSubTracks([])
     setCurrent(0)
     setDuration(0)
 
-    const applySubs = () => {
-      setSubTracks(
-        hls?.subtitleTracks.map((t, i) => ({
-          id: i,
-          label: t.name || t.lang || `Track ${i + 1}`,
-        })) ?? []
-      )
-      // Re-apply the chosen subtitle after an audio switch rebuilds hls.
-      if (hls && subPrefRef.current >= 0) {
-        hls.subtitleTrack = subPrefRef.current
-        hls.subtitleDisplay = true
-      }
-    }
-
     if (Hls.isSupported()) {
-      hls = new Hls({ enableWorker: true })
+      // renderTextTracksNatively:false — subtitles are handled by our own <track>
+      // elements (full Stream.vtt). Jellyfin's HLS-segmented subtitles only fill
+      // the OP window for heavily-typeset anime ASS, so we don't let hls use them.
+      hls = new Hls({ enableWorker: true, renderTextTracksNatively: false })
       hlsRef.current = hls
       hls.loadSource(src)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        applySubs()
         if (startAt > 0) video.currentTime = startAt
         if (resume) void video.play().catch(() => {})
       })
-      // Subtitle list can settle after MANIFEST_PARSED; keep the menu in sync.
-      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, applySubs)
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Safari plays HLS natively.
       video.src = src
@@ -340,14 +325,26 @@ export function PlayerModal({
     }
     setAudioIndex(streamIndex)
   }
-  const selectSub = (id: number) => {
-    subPrefRef.current = id
-    if (hlsRef.current) {
-      hlsRef.current.subtitleTrack = id
-      hlsRef.current.subtitleDisplay = id >= 0
+  // Selecting a subtitle just records the chosen stream index (-1 = off); the
+  // effect below toggles the matching native <track>'s mode.
+  const selectSub = (streamIndex: number) => setCurSub(streamIndex)
+
+  // Full-file WebVTT URL for a subtitle stream, signed via the item's HLS URL and
+  // routed through the proxy's .vtt sanitizer. One file with every cue — Jellyfin's
+  // 30s HLS subtitle windows drop all cues after the OP for typeset anime ASS.
+  const subtitleUrl = (streamIndex: number) =>
+    `${mediaUrl(item.hlsUrl)}&path=${encodeURIComponent(`${item.id}/Subtitles/${streamIndex}/0/Stream.vtt`)}`
+
+  // Apply the selected subtitle by toggling native <track> modes. Re-runs when the
+  // track list loads, the selection changes, or the video reloads on an audio switch.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: audioIndex reload may reset modes
+  useEffect(() => {
+    const tracks = videoRef.current?.textTracks
+    if (!tracks) return
+    for (let i = 0; i < subTracks.length && i < tracks.length; i++) {
+      tracks[i].mode = subTracks[i].index === curSub ? "showing" : "disabled"
     }
-    setCurSub(id)
-  }
+  }, [subTracks, curSub, audioIndex])
 
   const remaining = duration - current
   const showUpNext = duration > 0 && remaining <= NEXT_CARD_AT && remaining > 0
@@ -359,13 +356,23 @@ export function PlayerModal({
       className="fixed inset-0 z-50 flex select-none flex-col bg-black"
       onMouseMove={revealUi}
     >
-      {/* biome-ignore lint/a11y/useMediaCaption: subtitles are selectable HLS tracks */}
+      {/* biome-ignore lint/a11y/useMediaCaption: subtitles are selectable, user-controlled tracks */}
       <video
         ref={videoRef}
         autoPlay
         onClick={togglePlay}
         className="absolute inset-0 h-full w-full bg-black"
-      />
+      >
+        {subTracks.map((s) => (
+          <track
+            key={s.index}
+            kind="subtitles"
+            label={s.label}
+            srcLang={s.language ?? "und"}
+            src={subtitleUrl(s.index)}
+          />
+        ))}
+      </video>
 
       {/* Controls overlay */}
       <div
@@ -553,15 +560,18 @@ export function PlayerModal({
                             Subtitles
                           </p>
                           <div className="max-h-56 overflow-y-auto">
-                            {[{ id: -1, label: "Off" }, ...subTracks].map((t) => (
+                            {[
+                              { index: -1, label: "Off" },
+                              ...subTracks.map((s) => ({ index: s.index, label: s.label })),
+                            ].map((t) => (
                               <button
-                                key={t.id}
+                                key={t.index}
                                 type="button"
-                                onClick={() => selectSub(t.id)}
+                                onClick={() => selectSub(t.index)}
                                 className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
                               >
                                 <Check
-                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.id === curSub ? "opacity-100" : "opacity-0"}`}
+                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === curSub ? "opacity-100" : "opacity-0"}`}
                                 />
                                 <span className="min-w-0 break-words">{t.label}</span>
                               </button>

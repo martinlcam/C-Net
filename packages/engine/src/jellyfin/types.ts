@@ -15,6 +15,7 @@ export type JellyfinMediaStream = {
   Language?: string
   DisplayTitle?: string
   IsDefault?: boolean
+  IsForced?: boolean
 }
 
 export type JellyfinItem = {

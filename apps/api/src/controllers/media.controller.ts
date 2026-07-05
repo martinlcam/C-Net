@@ -49,8 +49,24 @@ export interface AudioTrackDTO {
   label: string
 }
 
+export interface SubtitleTrackDTO {
+  /** Jellyfin MediaStream index — fetch `.../Subtitles/{index}/0/Stream.vtt` for the full track. */
+  index: number
+  language: string | null
+  label: string
+  /** Forced/"Signs & Songs" track (only signs + song lyrics, for dub watchers). */
+  forced: boolean
+}
+
 export interface ItemTracksDTO {
   audio: AudioTrackDTO[]
+  /**
+   * Selectable text subtitle tracks. Image subs (PGS/DVD) are excluded — they
+   * can't be delivered as WebVTT, so the player can't render them anyway. We
+   * serve each as one full `Stream.vtt` (not HLS-segmented, which Jellyfin
+   * mis-windows for heavily-typeset anime ASS — only the OP gets cues).
+   */
+  subtitles: SubtitleTrackDTO[]
   /** Preferred default track index (English, else Japanese, else file default). */
   preferredAudioIndex: number | null
 }
@@ -77,6 +93,22 @@ function audioLabel(s: JellyfinMediaStream): string {
   return LANGUAGE_NAMES[lang] ?? s.DisplayTitle ?? s.Language ?? `Audio ${s.Index}`
 }
 
+// Image-based subtitle codecs can't be converted to WebVTT, so we don't offer them.
+const IMAGE_SUB_CODECS = new Set([
+  "pgssub",
+  "hdmv_pgs_subtitle",
+  "dvdsub",
+  "dvd_subtitle",
+  "dvbsub",
+  "dvb_subtitle",
+  "xsub",
+])
+
+function subtitleLabel(s: JellyfinMediaStream): string {
+  const lang = (s.Language ?? "").toLowerCase()
+  return s.DisplayTitle ?? LANGUAGE_NAMES[lang] ?? s.Language ?? `Subtitle ${s.Index}`
+}
+
 /**
  * Audio tracks for an item plus the preferred default index. Anime is usually
  * dual-audio (English + Japanese) but ships with a non-English default flag
@@ -90,11 +122,19 @@ export function buildItemTracks(item: JellyfinItem): ItemTracksDTO {
     language: s.Language ?? null,
     label: audioLabel(s),
   }))
+  const subtitles = (item.MediaStreams ?? [])
+    .filter((s) => s.Type === "Subtitle" && !IMAGE_SUB_CODECS.has((s.Codec ?? "").toLowerCase()))
+    .map((s) => ({
+      index: s.Index,
+      language: s.Language ?? null,
+      label: subtitleLabel(s),
+      forced: s.IsForced ?? false,
+    }))
   const byLang = (code: string) =>
     audioStreams.find((s) => (s.Language ?? "").toLowerCase() === code)
   const preferred =
     byLang("eng") ?? byLang("jpn") ?? audioStreams.find((s) => s.IsDefault) ?? audioStreams[0]
-  return { audio, preferredAudioIndex: preferred ? preferred.Index : null }
+  return { audio, subtitles, preferredAudioIndex: preferred ? preferred.Index : null }
 }
 
 /** Shared mapper: Jellyfin movie/episode item -> playable DTO with signed URLs. */

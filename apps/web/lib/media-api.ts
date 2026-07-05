@@ -69,7 +69,17 @@ export type Playable = {
 }
 
 export type AudioTrack = { index: number; language: string | null; label: string }
-export type ItemTracks = { audio: AudioTrack[]; preferredAudioIndex: number | null }
+export type SubtitleTrack = {
+  index: number
+  language: string | null
+  label: string
+  forced: boolean
+}
+export type ItemTracks = {
+  audio: AudioTrack[]
+  subtitles: SubtitleTrack[]
+  preferredAudioIndex: number | null
+}
 
 export type DiscoverResult = {
   tmdbId: number
