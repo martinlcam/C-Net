@@ -157,6 +157,7 @@ export function PlayerModal({
       hls.loadSource(src)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        applySubtitleMode()
         if (startAt > 0) video.currentTime = startAt
         if (resume) void video.play().catch(() => {})
       })
@@ -174,7 +175,10 @@ export function PlayerModal({
     }
 
     const onTime = () => setCurrent(video.currentTime)
-    const onMeta = () => setDuration(video.duration || 0)
+    const onMeta = () => {
+      setDuration(video.duration || 0)
+      applySubtitleMode()
+    }
     const onPlayEv = () => {
       setIsPlaying(true)
       void reportProgress(item.id, ticks(), false).catch(() => {})
@@ -196,6 +200,9 @@ export function PlayerModal({
     video.addEventListener("timeupdate", onTime)
     video.addEventListener("durationchange", onMeta)
     video.addEventListener("loadedmetadata", onMeta)
+    // A reload can reset text-track modes slightly after metadata; re-apply once
+    // frame data is ready too, so subtitles survive an audio switch.
+    video.addEventListener("loadeddata", applySubtitleMode)
     video.addEventListener("play", onPlayEv)
     video.addEventListener("pause", onPauseEv)
     video.addEventListener("volumechange", onVol)
@@ -211,6 +218,7 @@ export function PlayerModal({
       video.removeEventListener("timeupdate", onTime)
       video.removeEventListener("durationchange", onMeta)
       video.removeEventListener("loadedmetadata", onMeta)
+      video.removeEventListener("loadeddata", applySubtitleMode)
       video.removeEventListener("play", onPlayEv)
       video.removeEventListener("pause", onPauseEv)
       video.removeEventListener("volumechange", onVol)
@@ -335,16 +343,36 @@ export function PlayerModal({
   const subtitleUrl = (streamIndex: number) =>
     `${mediaUrl(item.hlsUrl)}&path=${encodeURIComponent(`${item.id}/Subtitles/${streamIndex}/0/Stream.vtt`)}`
 
-  // Apply the selected subtitle by toggling native <track> modes. Re-runs when the
-  // track list loads, the selection changes, or the video reloads on an audio switch.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: audioIndex reload may reset modes
+  // Refs mirror the current selection + track list so the stream-reload handlers
+  // (closures below) can re-apply subtitle modes without capturing stale values.
+  const curSubRef = useRef(-1)
+  const subTracksRef = useRef<SubtitleTrack[]>([])
   useEffect(() => {
+    curSubRef.current = curSub
+  }, [curSub])
+  useEffect(() => {
+    subTracksRef.current = subTracks
+  }, [subTracks])
+
+  // Toggle the chosen native <track> to "showing" (others "disabled"). Called on
+  // selection change AND after every (re)load: switching audio rebuilds hls and
+  // reattaches the media, which resets text-track modes, so we must re-apply then
+  // (else subs vanish on an audio switch and don't come back on switching again).
+  const applySubtitleMode = useCallback(() => {
     const tracks = videoRef.current?.textTracks
     if (!tracks) return
-    for (let i = 0; i < subTracks.length && i < tracks.length; i++) {
-      tracks[i].mode = subTracks[i].index === curSub ? "showing" : "disabled"
+    const subs = subTracksRef.current
+    for (let i = 0; i < subs.length && i < tracks.length; i++) {
+      tracks[i].mode = subs[i].index === curSubRef.current ? "showing" : "disabled"
     }
-  }, [subTracks, curSub, audioIndex])
+  }, [])
+
+  // Re-apply when the track list loads or the selection changes (the no-reload case;
+  // the reload case is handled in the stream effect's load handlers).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: subTracks/curSub drive the re-apply (applySubtitleMode reads them via refs)
+  useEffect(() => {
+    applySubtitleMode()
+  }, [subTracks, curSub, applySubtitleMode])
 
   const remaining = duration - current
   const showUpNext = duration > 0 && remaining <= NEXT_CARD_AT && remaining > 0
