@@ -69,6 +69,13 @@ export interface ItemTracksDTO {
   subtitles: SubtitleTrackDTO[]
   /** Preferred default track index (English, else Japanese, else file default). */
   preferredAudioIndex: number | null
+  /**
+   * Seconds into the item where the end credits / ED start, from chapter markers
+   * (anime "ED"/"Ending"/"Credits"/"Outro"). Lets the player pop the "Up next" card
+   * when the credits begin instead of a fixed few-seconds-before-end. Null if the
+   * item has no such chapter.
+   */
+  creditsStartSeconds: number | null
 }
 
 // ISO 639-2/B codes → display name for the common audio languages we ship.
@@ -109,6 +116,16 @@ function subtitleLabel(s: JellyfinMediaStream): string {
   return s.DisplayTitle ?? LANGUAGE_NAMES[lang] ?? s.Language ?? `Subtitle ${s.Index}`
 }
 
+// Chapter names that mark the start of the end credits / ED (anime convention).
+const CREDITS_CHAPTER = /^(ed|ending|credits?|outro|end\s*credits?)$/i
+
+/** Seconds into the item where the end credits start, from chapter markers, or null. */
+function creditsStartSeconds(item: JellyfinItem): number | null {
+  const credit = (item.Chapters ?? []).find((c) => CREDITS_CHAPTER.test((c.Name ?? "").trim()))
+  if (!credit?.StartPositionTicks) return null
+  return Math.round(credit.StartPositionTicks / 10_000_000)
+}
+
 /**
  * Audio tracks for an item plus the preferred default index. Anime is usually
  * dual-audio (English + Japanese) but ships with a non-English default flag
@@ -134,7 +151,12 @@ export function buildItemTracks(item: JellyfinItem): ItemTracksDTO {
     audioStreams.find((s) => (s.Language ?? "").toLowerCase() === code)
   const preferred =
     byLang("eng") ?? byLang("jpn") ?? audioStreams.find((s) => s.IsDefault) ?? audioStreams[0]
-  return { audio, subtitles, preferredAudioIndex: preferred ? preferred.Index : null }
+  return {
+    audio,
+    subtitles,
+    preferredAudioIndex: preferred ? preferred.Index : null,
+    creditsStartSeconds: creditsStartSeconds(item),
+  }
 }
 
 /** Shared mapper: Jellyfin movie/episode item -> playable DTO with signed URLs. */
