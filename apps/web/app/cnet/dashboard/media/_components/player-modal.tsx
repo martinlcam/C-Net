@@ -392,8 +392,11 @@ export function PlayerModal({
         className="absolute inset-0 h-full w-full bg-black"
       >
         {subTracks.map((s) => (
+          // Key by audioIndex so the <track> remounts on every audio switch: hls.destroy()
+          // wipes native text-track cues (leaving readyState "loaded" so a mode toggle
+          // won't re-fetch) — a fresh element forces the browser to reload the VTT.
           <track
-            key={s.index}
+            key={`${s.index}-${audioIndex}`}
             kind="subtitles"
             label={s.label}
             srcLang={s.language ?? "und"}
