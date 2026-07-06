@@ -33,6 +33,7 @@ export type JellyfinItem = {
   UserData?: JellyfinUserData
   MediaStreams?: JellyfinMediaStream[]
   MediaSources?: Array<{ Id: string; Container?: string; Size?: number }>
+  Chapters?: Array<{ StartPositionTicks?: number; Name?: string }>
   // TV (series / season / episode) fields
   IndexNumber?: number
   ParentIndexNumber?: number

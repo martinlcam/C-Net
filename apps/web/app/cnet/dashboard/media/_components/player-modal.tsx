@@ -86,6 +86,13 @@ export function PlayerModal({
   const [subTracks, setSubTracks] = useState<SubtitleTrack[]>([])
   // Selected subtitle = Jellyfin stream index, or -1 for off.
   const [curSub, setCurSub] = useState(-1)
+  // Seconds into the item where the end credits start (from chapter markers), or
+  // null — used to pop the "Up next" card when the credits begin.
+  const [creditsStart, setCreditsStart] = useState<number | null>(null)
+  // Playback speed. The media element resets playbackRate to 1 on every (re)load,
+  // so we stash it in a ref and re-apply it after each load (audio switch / episode).
+  const [speed, setSpeed] = useState(1)
+  const speedRef = useRef(1)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const [isPlaying, setIsPlaying] = useState(false)
@@ -110,6 +117,7 @@ export function PlayerModal({
     setAudioIndex(undefined)
     setAudioOpts([])
     setSubTracks([])
+    setCreditsStart(null)
     setSettingsOpen(false)
     setCurSub(-1)
     wasPlayingRef.current = true
@@ -120,6 +128,7 @@ export function PlayerModal({
         if (cancelled) return
         setAudioOpts(t.audio)
         setSubTracks(t.subtitles)
+        setCreditsStart(t.creditsStartSeconds)
         setAudioIndex(t.preferredAudioIndex)
       })
       .catch(() => {
@@ -178,6 +187,7 @@ export function PlayerModal({
     const onMeta = () => {
       setDuration(video.duration || 0)
       applySubtitleMode()
+      video.playbackRate = speedRef.current
     }
     const onPlayEv = () => {
       setIsPlaying(true)
@@ -337,6 +347,12 @@ export function PlayerModal({
   // effect below toggles the matching native <track>'s mode.
   const selectSub = (streamIndex: number) => setCurSub(streamIndex)
 
+  const selectSpeed = (rate: number) => {
+    speedRef.current = rate
+    if (videoRef.current) videoRef.current.playbackRate = rate
+    setSpeed(rate)
+  }
+
   // Full-file WebVTT URL for a subtitle stream, signed via the item's HLS URL and
   // routed through the proxy's .vtt sanitizer. One file with every cue — Jellyfin's
   // 30s HLS subtitle windows drop all cues after the OP for typeset anime ASS.
@@ -375,7 +391,11 @@ export function PlayerModal({
   }, [subTracks, curSub, applySubtitleMode])
 
   const remaining = duration - current
-  const showUpNext = duration > 0 && remaining <= NEXT_CARD_AT && remaining > 0
+  // Show the "Up next" card once the end credits start (chapter marker), else fall
+  // back to a fixed window before the end for items without a credits chapter.
+  const inCredits = creditsStart != null && current >= creditsStart
+  const nearEnd = duration > 0 && remaining <= NEXT_CARD_AT && remaining > 0
+  const showUpNext = (inCredits || nearEnd) && (duration === 0 || remaining > 0)
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: player chrome reveals controls on mouse move; not a control itself
@@ -550,70 +570,88 @@ export function PlayerModal({
             </div>
 
             <div className="ml-auto flex items-center gap-3">
-              {audioOpts.length > 1 || subTracks.length > 0 ? (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setSettingsOpen((o) => !o)}
-                    aria-label="Audio and subtitles"
-                    aria-expanded={settingsOpen}
-                    className={`rounded p-1 hover:text-white/80 ${settingsOpen ? "text-white" : ""}`}
-                  >
-                    <Settings className="h-6 w-6" />
-                  </button>
-                  {settingsOpen ? (
-                    <div className="absolute right-0 bottom-10 flex w-[26rem] max-w-[calc(100vw-1.5rem)] gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15">
-                      {audioOpts.length > 1 ? (
-                        <div className="min-w-0 flex-1">
-                          <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
-                            Audio
-                          </p>
-                          <div className="max-h-56 overflow-y-auto">
-                            {audioOpts.map((t) => (
-                              <button
-                                key={t.index}
-                                type="button"
-                                onClick={() => selectAudio(t.index)}
-                                className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
-                              >
-                                <Check
-                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === audioIndex ? "opacity-100" : "opacity-0"}`}
-                                />
-                                <span className="min-w-0 break-words">{t.label}</span>
-                              </button>
-                            ))}
-                          </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen((o) => !o)}
+                  aria-label="Audio, subtitles, and speed"
+                  aria-expanded={settingsOpen}
+                  className={`rounded p-1 hover:text-white/80 ${settingsOpen ? "text-white" : ""}`}
+                >
+                  <Settings className="h-6 w-6" />
+                </button>
+                {settingsOpen ? (
+                  <div className="absolute right-0 bottom-10 flex w-[30rem] max-w-[calc(100vw-1.5rem)] gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15">
+                    {audioOpts.length > 1 ? (
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
+                          Audio
+                        </p>
+                        <div className="max-h-56 overflow-y-auto">
+                          {audioOpts.map((t) => (
+                            <button
+                              key={t.index}
+                              type="button"
+                              onClick={() => selectAudio(t.index)}
+                              className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                            >
+                              <Check
+                                className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === audioIndex ? "opacity-100" : "opacity-0"}`}
+                              />
+                              <span className="min-w-0 break-words">{t.label}</span>
+                            </button>
+                          ))}
                         </div>
-                      ) : null}
-                      {subTracks.length > 0 ? (
-                        <div className="min-w-0 flex-1">
-                          <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
-                            Subtitles
-                          </p>
-                          <div className="max-h-56 overflow-y-auto">
-                            {[
-                              { index: -1, label: "Off" },
-                              ...subTracks.map((s) => ({ index: s.index, label: s.label })),
-                            ].map((t) => (
-                              <button
-                                key={t.index}
-                                type="button"
-                                onClick={() => selectSub(t.index)}
-                                className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
-                              >
-                                <Check
-                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === curSub ? "opacity-100" : "opacity-0"}`}
-                                />
-                                <span className="min-w-0 break-words">{t.label}</span>
-                              </button>
-                            ))}
-                          </div>
+                      </div>
+                    ) : null}
+                    {subTracks.length > 0 ? (
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
+                          Subtitles
+                        </p>
+                        <div className="max-h-56 overflow-y-auto">
+                          {[
+                            { index: -1, label: "Off" },
+                            ...subTracks.map((s) => ({ index: s.index, label: s.label })),
+                          ].map((t) => (
+                            <button
+                              key={t.index}
+                              type="button"
+                              onClick={() => selectSub(t.index)}
+                              className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                            >
+                              <Check
+                                className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === curSub ? "opacity-100" : "opacity-0"}`}
+                              />
+                              <span className="min-w-0 break-words">{t.label}</span>
+                            </button>
+                          ))}
                         </div>
-                      ) : null}
+                      </div>
+                    ) : null}
+                    <div className="w-20 shrink-0">
+                      <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
+                        Speed
+                      </p>
+                      <div className="max-h-56 overflow-y-auto">
+                        {[0.5, 1, 1.25, 1.5, 1.75, 2].map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => selectSpeed(r)}
+                            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                          >
+                            <Check
+                              className={`h-4 w-4 shrink-0 ${r === speed ? "opacity-100" : "opacity-0"}`}
+                            />
+                            <span>{r}×</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  ) : null}
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={toggleFullscreen}
@@ -637,7 +675,7 @@ export function PlayerModal({
           <SkipForward className="h-8 w-8 shrink-0" />
           <span className="min-w-0">
             <span className="block text-white/60 text-xs">
-              Up next · in {Math.ceil(remaining)}s
+              Up next{nearEnd ? ` · in ${Math.ceil(remaining)}s` : ""}
             </span>
             <span className="block truncate font-medium text-sm">{displayTitle(next)}</span>
           </span>
