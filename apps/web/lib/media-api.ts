@@ -43,6 +43,8 @@ export type Episode = {
   title: string
   overview?: string
   seriesName?: string
+  seriesId?: string
+  seasonId?: string
   seasonNumber?: number
   episodeNumber?: number
   runtimeMinutes?: number
@@ -64,6 +66,9 @@ export type Playable = {
   resumePositionTicks: number
   /** TV-only labelling for the player's "Up next" card. */
   seriesName?: string
+  /** TV-only: parent series/season ids, for the in-player episode selector. */
+  seriesId?: string
+  seasonId?: string
   seasonNumber?: number
   episodeNumber?: number
 }
