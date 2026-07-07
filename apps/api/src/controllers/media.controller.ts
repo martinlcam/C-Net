@@ -76,6 +76,13 @@ export interface ItemTracksDTO {
    * item has no such chapter.
    */
   creditsStartSeconds: number | null
+  /**
+   * Intro/OP [start, end) in seconds (from chapters) for the "Skip Intro" button —
+   * shown while playback is inside the range, seeks to `introEndSeconds` on click.
+   * Both null if the item has no OP chapter.
+   */
+  introStartSeconds: number | null
+  introEndSeconds: number | null
 }
 
 // ISO 639-2/B codes → display name for the common audio languages we ship.
@@ -126,6 +133,26 @@ function creditsStartSeconds(item: JellyfinItem): number | null {
   return Math.round(credit.StartPositionTicks / 10_000_000)
 }
 
+// Chapter names that mark the intro / opening (OP). Not "prologue"/"cold open" —
+// those are story, not the skippable OP.
+const INTRO_CHAPTER = /^(op|opening|intro)$/i
+const TICKS_PER_SEC = 10_000_000
+
+/**
+ * Intro [start, end) seconds from chapters: the OP chapter's start to the start of
+ * the chapter that follows it. Null if there's no OP chapter or nothing after it —
+ * there's no reliable time-based fallback for where an OP is without a marker.
+ */
+function introRangeSeconds(item: JellyfinItem): { start: number; end: number } | null {
+  const chapters = item.Chapters ?? []
+  const i = chapters.findIndex((c) => INTRO_CHAPTER.test((c.Name ?? "").trim()))
+  if (i === -1) return null
+  const start = chapters[i].StartPositionTicks
+  const end = chapters[i + 1]?.StartPositionTicks
+  if (start == null || end == null) return null
+  return { start: Math.round(start / TICKS_PER_SEC), end: Math.round(end / TICKS_PER_SEC) }
+}
+
 /**
  * Audio tracks for an item plus the preferred default index. Anime is usually
  * dual-audio (English + Japanese) but ships with a non-English default flag
@@ -151,11 +178,14 @@ export function buildItemTracks(item: JellyfinItem): ItemTracksDTO {
     audioStreams.find((s) => (s.Language ?? "").toLowerCase() === code)
   const preferred =
     byLang("eng") ?? byLang("jpn") ?? audioStreams.find((s) => s.IsDefault) ?? audioStreams[0]
+  const intro = introRangeSeconds(item)
   return {
     audio,
     subtitles,
     preferredAudioIndex: preferred ? preferred.Index : null,
     creditsStartSeconds: creditsStartSeconds(item),
+    introStartSeconds: intro?.start ?? null,
+    introEndSeconds: intro?.end ?? null,
   }
 }
 

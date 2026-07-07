@@ -80,6 +80,8 @@ export type ItemTracks = {
   subtitles: SubtitleTrack[]
   preferredAudioIndex: number | null
   creditsStartSeconds: number | null
+  introStartSeconds: number | null
+  introEndSeconds: number | null
 }
 
 export type DiscoverResult = {

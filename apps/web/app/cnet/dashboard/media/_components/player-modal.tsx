@@ -89,6 +89,8 @@ export function PlayerModal({
   // Seconds into the item where the end credits start (from chapter markers), or
   // null — used to pop the "Up next" card when the credits begin.
   const [creditsStart, setCreditsStart] = useState<number | null>(null)
+  // Intro/OP [start, end) seconds (from chapters) for the "Skip Intro" button.
+  const [intro, setIntro] = useState<{ start: number; end: number } | null>(null)
   // Playback speed. The media element resets playbackRate to 1 on every (re)load,
   // so we stash it in a ref and re-apply it after each load (audio switch / episode).
   const [speed, setSpeed] = useState(1)
@@ -118,6 +120,7 @@ export function PlayerModal({
     setAudioOpts([])
     setSubTracks([])
     setCreditsStart(null)
+    setIntro(null)
     setSettingsOpen(false)
     setCurSub(-1)
     wasPlayingRef.current = true
@@ -129,6 +132,11 @@ export function PlayerModal({
         setAudioOpts(t.audio)
         setSubTracks(t.subtitles)
         setCreditsStart(t.creditsStartSeconds)
+        setIntro(
+          t.introStartSeconds != null && t.introEndSeconds != null
+            ? { start: t.introStartSeconds, end: t.introEndSeconds }
+            : null
+        )
         setAudioIndex(t.preferredAudioIndex)
       })
       .catch(() => {
@@ -353,6 +361,10 @@ export function PlayerModal({
     setSpeed(rate)
   }
 
+  const skipIntro = () => {
+    if (videoRef.current && intro) videoRef.current.currentTime = intro.end
+  }
+
   // Full-file WebVTT URL for a subtitle stream, signed via the item's HLS URL and
   // routed through the proxy's .vtt sanitizer. One file with every cue — Jellyfin's
   // 30s HLS subtitle windows drop all cues after the OP for typeset anime ASS.
@@ -393,6 +405,7 @@ export function PlayerModal({
   const remaining = duration - current
   // Show the "Up next" card once the end credits start (chapter marker), else fall
   // back to a fixed window before the end for items without a credits chapter.
+  const showSkipIntro = intro != null && current >= intro.start && current < intro.end
   const inCredits = creditsStart != null && current >= creditsStart
   const nearEnd = duration > 0 && remaining <= NEXT_CARD_AT && remaining > 0
   const showUpNext = (inCredits || nearEnd) && (duration === 0 || remaining > 0)
@@ -664,6 +677,18 @@ export function PlayerModal({
           </div>
         </div>
       </div>
+
+      {/* Skip Intro (Netflix style) — shown while playback is inside the OP chapter */}
+      {showSkipIntro ? (
+        <button
+          type="button"
+          onClick={skipIntro}
+          className="absolute right-6 bottom-28 z-10 flex items-center gap-2 rounded-md bg-neutral-900/90 px-5 py-2.5 font-semibold text-sm text-white shadow-xl ring-1 ring-white/25 hover:bg-neutral-800"
+        >
+          <SkipForward className="h-4 w-4" />
+          Skip Intro
+        </button>
+      ) : null}
 
       {/* Up next card (Netflix style) */}
       {next && showUpNext ? (
