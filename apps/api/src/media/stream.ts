@@ -116,7 +116,7 @@ function vttMs(t: string): number {
   return ms
 }
 
-type VttCue = { pre: string[]; start: string; end: string; rest: string; text: string }
+type VttCue = { pre: string[]; start: string; end: string; text: string }
 
 /**
  * Jellyfin's on-the-fly ASS->WebVTT conversion leaves raw ASS override blocks
@@ -125,7 +125,12 @@ type VttCue = { pre: string[]; start: string; end: string; rest: string; text: s
  * as literal text and flickers. Strip the override blocks, normalise ASS escapes,
  * drop cues that were pure typesetting, and merge consecutive identical cues into
  * one span (collapses the alpha-fade duplicates). Header blocks (WEBVTT, the
- * X-TIMESTAMP-MAP sync line, Region defs) pass through untouched.
+ * X-TIMESTAMP-MAP sync line) pass through untouched.
+ *
+ * Jellyfin also emits a fixed-width WebVTT `Region` (`width:80% lines:3`) and tags
+ * every cue with `region:subtitle`; Chromium renders region cues without wrapping,
+ * so long lines run off the right edge. Drop the region defs and the per-cue setting
+ * so cues fall back to the default bottom-centre box, which wraps to the video width.
  */
 function sanitizeVtt(text: string): string {
   const strip = (s: string) =>
@@ -141,7 +146,8 @@ function sanitizeVtt(text: string): string {
     const lines = block.split("\n")
     const ti = lines.findIndex((l) => timeRe.test(l))
     if (ti === -1) {
-      if (block.trim()) head.push(block)
+      // Drop WebVTT region definitions — see sanitizeVtt doc (they break wrapping).
+      if (block.trim() && !/^region\b/i.test(block.trimStart())) head.push(block)
       continue
     }
     const m = timeRe.exec(lines[ti])
@@ -153,7 +159,9 @@ function sanitizeVtt(text: string): string {
       .replace(/\n{2,}/g, "\n")
       .trim()
     if (!body) continue
-    cues.push({ pre: lines.slice(0, ti), start: m[1], end: m[2], rest: m[3] ?? "", text: body })
+    // Drop the cue settings (`m[3]`: `region:subtitle line:90% ...`) so the cue uses
+    // the default wrapping box instead of the fixed-width, non-wrapping region.
+    cues.push({ pre: lines.slice(0, ti), start: m[1], end: m[2], text: body })
   }
 
   const merged: VttCue[] = []
@@ -168,7 +176,7 @@ function sanitizeVtt(text: string): string {
   }
 
   const rendered = merged
-    .map((c) => [...c.pre, `${c.start} --> ${c.end}${c.rest}`, c.text].join("\n"))
+    .map((c) => [...c.pre, `${c.start} --> ${c.end}`, c.text].join("\n"))
     .join("\n\n")
   return `${[...head, rendered].filter(Boolean).join("\n\n")}\n`
 }

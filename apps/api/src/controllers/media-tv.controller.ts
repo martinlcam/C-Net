@@ -33,6 +33,9 @@ export interface EpisodeDTO {
   title: string
   overview?: string
   seriesName?: string
+  /** Parent series/season ids — let the in-player episode selector browse the whole show. */
+  seriesId?: string
+  seasonId?: string
   seasonNumber?: number
   episodeNumber?: number
   runtimeMinutes?: number
@@ -76,6 +79,8 @@ function toEpisodeDTO(userId: string, item: JellyfinItem): EpisodeDTO {
     title: item.Name,
     overview: item.Overview,
     seriesName: item.SeriesName,
+    seriesId: item.SeriesId,
+    seasonId: item.SeasonId,
     seasonNumber: item.ParentIndexNumber,
     episodeNumber: item.IndexNumber,
     runtimeMinutes: item.RunTimeTicks

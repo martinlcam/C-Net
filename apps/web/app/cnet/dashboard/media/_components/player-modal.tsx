@@ -3,6 +3,7 @@
 import Hls from "hls.js"
 import {
   Check,
+  ListVideo,
   Maximize,
   Minimize,
   Pause,
@@ -18,6 +19,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   type AudioTrack,
+  type Episode,
   getItemTracks,
   mediaUrl,
   type Playable,
@@ -27,9 +29,17 @@ import {
   setWatched,
   TICKS_PER_SECOND,
 } from "@/lib/media-api"
+import { EpisodePanel } from "./episode-panel"
 
 const SKIP = 5 // seconds for the back/forward skip buttons
 const NEXT_CARD_AT = 25 // show the "Up next" card this many seconds before the end
+// How many audio tracks to keep warm at once. Each is a full muxed stream (video is
+// copied, only audio transcodes, so extra tracks are cheap) — capped so a file with a
+// pathological number of audio streams doesn't spin up a dozen sessions.
+const MAX_PARALLEL_AUDIO = 6
+// Key for the "no explicit audio stream" instance (file default) — real Jellyfin audio
+// stream indices are ≥ 1, so -1 is a safe sentinel.
+const AUDIO_DEFAULT = -1
 
 function fmtTime(input: number): string {
   const s = Number.isFinite(input) && input > 0 ? input : 0
@@ -51,8 +61,13 @@ function displayTitle(item: Playable): string {
  * Full-screen, Netflix-style HLS player. Plays Jellyfin's transcoded stream
  * (video copied, audio→AAC so it's browser-playable) via hls.js with custom
  * controls: auto-hiding overlay, ±5s skip, scrubber, volume, fullscreen,
- * audio/subtitle menus, and — for a series queue — a "Next episode" button
- * plus an "Up next" card that auto-advances when an episode ends.
+ * audio/subtitle menus, an in-player episode selector, and — for a series queue —
+ * a "Next episode" button plus an "Up next" card that auto-advances at the end.
+ *
+ * Instant audio switching: rather than reload the stream (a new Jellyfin transcode
+ * session) when you pick a different language, we keep one warm hls.js instance per
+ * audio track, all playing in lockstep and muted except the active one. Switching just
+ * hands audio from one <video> to another — no wait, exactly like switching subtitles.
  */
 export function PlayerModal({
   queue,
@@ -63,57 +78,127 @@ export function PlayerModal({
   startIndex?: number
   onClose: () => void
 }) {
+  // The play queue lives in state so the in-player episode selector can swap it (e.g.
+  // jumping to another season) while keeping auto-advance ("Up next") working.
+  const [list, setList] = useState<Playable[]>(queue)
   const [index, setIndex] = useState(startIndex)
-  const item = queue[index]
-  const next = index < queue.length - 1 ? queue[index + 1] : null
+  const item = list[index] ?? list[0]
+  const next = index < list.length - 1 ? list[index + 1] : null
 
-  const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
+  // One <video> + hls.js instance per warm audio track, keyed by audio stream index.
+  const mediaRefs = useRef(new Map<number, HTMLVideoElement>())
+  const hlsRefs = useRef(new Map<number, Hls>())
+  const refSetters = useRef(new Map<number, (el: HTMLVideoElement | null) => void>())
+  const activeAudioRef = useRef<number>(AUDIO_DEFAULT)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Where to seek once the (re)loaded stream is ready, and whether to resume
-  // playing — set on item change (resume point) and on audio-track switches
-  // (current position), so swapping audio is seamless.
+  // Where to seek once the (re)loaded stream is ready, and whether to resume playing —
+  // set on item change (resume point) and on the rare reload-fallback audio switch.
   const seekTargetRef = useRef(0)
   const wasPlayingRef = useRef(true)
+  // Last known playback position (seconds); used to report "stopped" on teardown, when
+  // the active <video> has already been unmounted by the keyed remount.
+  const lastPosRef = useRef(0)
 
-  // Server-provided audio tracks. `audioIndex` is the selected Jellyfin stream
-  // index; `undefined` = still loading (gates stream setup so we load the right
-  // track once instead of flashing the file's default first).
+  // Server-provided audio tracks. `audioIndex` is the active (audible) Jellyfin stream
+  // index; `undefined` = still loading (gates stream setup so we load the right track
+  // once instead of flashing the file's default first). `null` = file default.
   const [audioOpts, setAudioOpts] = useState<AudioTrack[]>([])
   const [audioIndex, setAudioIndex] = useState<number | null | undefined>(undefined)
   // Text subtitle tracks from the API (each a full Stream.vtt, not HLS-segmented).
   const [subTracks, setSubTracks] = useState<SubtitleTrack[]>([])
   // Selected subtitle = Jellyfin stream index, or -1 for off.
   const [curSub, setCurSub] = useState(-1)
-  // Seconds into the item where the end credits start (from chapter markers), or
-  // null — used to pop the "Up next" card when the credits begin.
+  // Seconds into the item where the end credits start (chapter markers), or null.
   const [creditsStart, setCreditsStart] = useState<number | null>(null)
   // Intro/OP [start, end) seconds (from chapters) for the "Skip Intro" button.
   const [intro, setIntro] = useState<{ start: number; end: number } | null>(null)
-  // Playback speed. The media element resets playbackRate to 1 on every (re)load,
-  // so we stash it in a ref and re-apply it after each load (audio switch / episode).
+  // Playback speed. The media element resets playbackRate to 1 on every (re)load, so we
+  // stash it in a ref and re-apply after each load (audio switch / episode).
   const [speed, setSpeed] = useState(1)
   const speedRef = useRef(1)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [episodesOpen, setEpisodesOpen] = useState(false)
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
   const [duration, setDuration] = useState(0)
   const [muted, setMuted] = useState(false)
   const [volume, setVolume] = useState(1)
+  const mutedRef = useRef(false)
+  const volumeRef = useRef(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [uiVisible, setUiVisible] = useState(true)
 
-  const goNext = useCallback(() => {
-    setIndex((i) => (i < queue.length - 1 ? i + 1 : i))
-  }, [queue.length])
+  // The set of audio streams to keep warm (all of them, capped), plus a stable signature
+  // so the setup effect rebuilds only on item / track-set change — NOT on audio switch.
+  const activeKey = audioIndex ?? AUDIO_DEFAULT
+  const audioKeys: number[] =
+    audioIndex === undefined
+      ? []
+      : audioOpts.length <= 1
+        ? [activeKey]
+        : (() => {
+            const keys = audioOpts.map((a) => a.index).slice(0, MAX_PARALLEL_AUDIO)
+            if (!keys.includes(activeKey)) keys.push(activeKey)
+            return keys.sort((a, b) => a - b)
+          })()
+  const audioKeysSig = audioKeys.join(",")
 
-  // On item change, fetch its audio tracks and pick the default (English →
-  // Japanese → the file's own default). `audioIndex` starts `undefined` here,
-  // which gates the stream-setup effect so it loads the right track in one shot
-  // instead of flashing the file's (often Spanish) default first.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item change
+  const goNext = useCallback(() => {
+    setIndex((i) => (i < list.length - 1 ? i + 1 : i))
+  }, [list.length])
+
+  const registerMedia = (ai: number) => {
+    let fn = refSetters.current.get(ai)
+    if (!fn) {
+      fn = (el: HTMLVideoElement | null) => {
+        if (el) mediaRefs.current.set(ai, el)
+        else mediaRefs.current.delete(ai)
+      }
+      refSetters.current.set(ai, fn)
+    }
+    return fn
+  }
+
+  const getActive = useCallback(() => mediaRefs.current.get(activeAudioRef.current) ?? null, [])
+  const ticksNow = useCallback(
+    () => Math.round((getActive()?.currentTime ?? lastPosRef.current) * TICKS_PER_SECOND),
+    [getActive]
+  )
+
+  const subTracksRef = useRef<SubtitleTrack[]>([])
+  const curSubRef = useRef(-1)
+  useEffect(() => {
+    subTracksRef.current = subTracks
+  }, [subTracks])
+  useEffect(() => {
+    curSubRef.current = curSub
+  }, [curSub])
+  useEffect(() => {
+    activeAudioRef.current = audioIndex ?? AUDIO_DEFAULT
+  }, [audioIndex])
+
+  // Apply the chosen subtitle across every warm <video>: "showing" on the active one,
+  // "hidden" on the standbys (so their cues are pre-fetched and appear instantly on an
+  // audio switch), "disabled" otherwise. Instances persist across audio switches, so a
+  // switch never drops or re-downloads video — only audio hands over.
+  const applySubtitleMode = useCallback(() => {
+    const active = activeAudioRef.current
+    const subs = subTracksRef.current
+    mediaRefs.current.forEach((video, ai) => {
+      const tracks = video.textTracks
+      for (let i = 0; i < subs.length && i < tracks.length; i++) {
+        tracks[i].mode =
+          subs[i].index === curSubRef.current ? (ai === active ? "showing" : "hidden") : "disabled"
+      }
+    })
+  }, [])
+
+  // On item change, (re)fetch its tracks and pick the default audio (English → Japanese
+  // → the file's own default). `audioIndex` starts `undefined`, which gates the setup
+  // effect so it loads the right track in one shot instead of flashing the file default.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on played item change
   useEffect(() => {
     let cancelled = false
     setAudioIndex(undefined)
@@ -126,6 +211,7 @@ export function PlayerModal({
     wasPlayingRef.current = true
     seekTargetRef.current =
       item.resumePositionTicks > 0 ? item.resumePositionTicks / TICKS_PER_SECOND : 0
+    lastPosRef.current = seekTargetRef.current
     getItemTracks(item.id)
       .then((t) => {
         if (cancelled) return
@@ -137,61 +223,120 @@ export function PlayerModal({
             ? { start: t.introStartSeconds, end: t.introEndSeconds }
             : null
         )
+        activeAudioRef.current = t.preferredAudioIndex ?? AUDIO_DEFAULT
         setAudioIndex(t.preferredAudioIndex)
       })
       .catch(() => {
-        if (!cancelled) setAudioIndex(null) // fall back to the stream's default audio
+        if (cancelled) return
+        activeAudioRef.current = AUDIO_DEFAULT
+        setAudioIndex(null) // fall back to the stream's default audio
       })
     return () => {
       cancelled = true
     }
-  }, [index])
+  }, [item.id])
 
-  // (Re)load + wire up the video when the item OR the chosen audio track changes.
-  // Switching audio re-requests the HLS with a different AudioStreamIndex because
-  // Jellyfin muxes a single audio stream into the segments; `seekTargetRef` keeps
-  // playback position across the swap.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only on item/audio change
+  // Full-file WebVTT URL for a subtitle stream, signed via the item's HLS URL and routed
+  // through the proxy's .vtt sanitizer. One file with every cue — Jellyfin's 30s HLS
+  // subtitle windows drop all cues after the OP for typeset anime ASS.
+  const subtitleUrl = (streamIndex: number) =>
+    `${mediaUrl(item.hlsUrl)}&path=${encodeURIComponent(`${item.id}/Subtitles/${streamIndex}/0/Stream.vtt`)}`
+  const srcFor = (ai: number) =>
+    mediaUrl(item.hlsUrl) + (ai !== AUDIO_DEFAULT ? `&audioStreamIndex=${ai}` : "")
+
+  // Build one warm hls.js instance per audio track and attach each to its own <video>.
+  // Rebuilt only on item / track-set change — an audio switch reuses these instances.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setup keys on item + track set; other reads are refs
   useEffect(() => {
-    const video = videoRef.current
-    if (!video || audioIndex === undefined) return
-    const src =
-      mediaUrl(item.hlsUrl) + (audioIndex != null ? `&audioStreamIndex=${audioIndex}` : "")
-    const ticks = () => Math.round(video.currentTime * TICKS_PER_SECOND)
+    if (audioKeys.length === 0) return
     const startAt = seekTargetRef.current
     const resume = wasPlayingRef.current
-    let hls: Hls | null = null
+    const active = activeAudioRef.current
+    const itemId = item.id
 
-    setCurrent(0)
-    setDuration(0)
-
-    if (Hls.isSupported()) {
-      // renderTextTracksNatively:false — subtitles are handled by our own <track>
-      // elements (full Stream.vtt). Jellyfin's HLS-segmented subtitles only fill
-      // the OP window for heavily-typeset anime ASS, so we don't let hls use them.
-      hls = new Hls({ enableWorker: true, renderTextTracksNatively: false })
-      hlsRef.current = hls
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        applySubtitleMode()
+    for (const ai of audioKeys) {
+      const video = mediaRefs.current.get(ai)
+      if (!video) continue
+      const isActive = ai === active
+      video.muted = isActive ? mutedRef.current : true
+      video.volume = volumeRef.current
+      const src = srcFor(ai)
+      // Called once the stream is ready: seek to the resume point, then start playback.
+      // The active track autoplays (on resume); a standby only plays if the active is
+      // already playing — so a blocked autoplay or a pause never lets the muted standbys
+      // drift ahead of what you're watching (which would desync an audio switch).
+      const onReady = () => {
         if (startAt > 0) video.currentTime = startAt
-        if (resume) void video.play().catch(() => {})
-      })
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari plays HLS natively.
-      video.src = src
-      video.addEventListener(
-        "loadedmetadata",
-        () => {
-          if (startAt > 0) video.currentTime = startAt
+        video.playbackRate = speedRef.current
+        if (isActive) {
+          applySubtitleMode()
           if (resume) void video.play().catch(() => {})
-        },
-        { once: true }
-      )
+        } else {
+          const a = getActive()
+          if (a && !a.paused) {
+            // Align to the active's live position (not the stale resume point) so a
+            // late-ready standby doesn't sit permanently behind.
+            try {
+              video.currentTime = a.currentTime
+            } catch {}
+            void video.play().catch(() => {})
+          }
+        }
+      }
+      if (Hls.isSupported()) {
+        // renderTextTracksNatively:false — subtitles are our own <track> elements (full
+        // Stream.vtt). Standby tracks keep a short buffer so N warm streams stay light.
+        const hls = new Hls({
+          enableWorker: true,
+          renderTextTracksNatively: false,
+          maxBufferLength: isActive ? 30 : 12,
+          backBufferLength: isActive ? 30 : 6,
+        })
+        hlsRefs.current.set(ai, hls)
+        hls.loadSource(src)
+        hls.attachMedia(video)
+        hls.on(Hls.Events.MANIFEST_PARSED, onReady)
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = src // Safari plays HLS natively.
+        video.addEventListener("loadedmetadata", onReady, { once: true })
+      }
     }
 
-    const onTime = () => setCurrent(video.currentTime)
+    return () => {
+      void reportStopped(itemId, Math.round(lastPosRef.current * TICKS_PER_SECOND)).catch(() => {})
+      for (const h of hlsRefs.current.values()) h.destroy()
+      hlsRefs.current.clear()
+    }
+  }, [item.id, audioKeysSig])
+
+  // Bind playback listeners to whichever <video> is currently active. Re-runs on an audio
+  // switch (cheap add/removeEventListener) but never touches the hls instances.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: rebinds to the active element on item/audio change
+  useEffect(() => {
+    const video = getActive()
+    if (!video) return
+    const playOthers = () => {
+      mediaRefs.current.forEach((v) => {
+        if (v === video) return
+        // Re-align a standby that fell behind (e.g. started late) before resuming it.
+        if (Math.abs(v.currentTime - video.currentTime) > 0.5) {
+          try {
+            v.currentTime = video.currentTime
+          } catch {}
+        }
+        void v.play().catch(() => {})
+      })
+    }
+    const pauseOthers = () => {
+      mediaRefs.current.forEach((v) => {
+        if (v !== video) v.pause()
+      })
+    }
+
+    const onTime = () => {
+      lastPosRef.current = video.currentTime
+      setCurrent(video.currentTime)
+    }
     const onMeta = () => {
       setDuration(video.duration || 0)
       applySubtitleMode()
@@ -199,40 +344,44 @@ export function PlayerModal({
     }
     const onPlayEv = () => {
       setIsPlaying(true)
-      void reportProgress(item.id, ticks(), false).catch(() => {})
+      playOthers() // keep standby audio tracks in lockstep so a switch is seamless
+      void reportProgress(item.id, ticksNow(), false).catch(() => {})
     }
     const onPauseEv = () => {
       setIsPlaying(false)
-      void reportProgress(item.id, ticks(), true).catch(() => {})
+      pauseOthers()
+      void reportProgress(item.id, ticksNow(), true).catch(() => {})
     }
     const onVol = () => {
-      setMuted(video.muted)
-      setVolume(video.volume)
+      const a = getActive()
+      if (!a) return
+      setMuted(a.muted)
+      setVolume(a.volume)
+      mutedRef.current = a.muted
+      volumeRef.current = a.volume
     }
     const onEnded = () => {
       void setWatched(item.id, true).catch(() => {})
-      if (index < queue.length - 1) setIndex((i) => i + 1)
+      if (index < list.length - 1) setIndex((i) => i + 1)
       else onClose()
     }
 
     video.addEventListener("timeupdate", onTime)
     video.addEventListener("durationchange", onMeta)
     video.addEventListener("loadedmetadata", onMeta)
-    // A reload can reset text-track modes slightly after metadata; re-apply once
-    // frame data is ready too, so subtitles survive an audio switch.
     video.addEventListener("loadeddata", applySubtitleMode)
     video.addEventListener("play", onPlayEv)
     video.addEventListener("pause", onPauseEv)
     video.addEventListener("volumechange", onVol)
     video.addEventListener("ended", onEnded)
+    applySubtitleMode()
 
     const heartbeat = setInterval(() => {
-      if (!video.paused) void reportProgress(item.id, ticks(), false).catch(() => {})
+      if (!video.paused) void reportProgress(item.id, ticksNow(), false).catch(() => {})
     }, 15_000)
 
     return () => {
       clearInterval(heartbeat)
-      void reportStopped(item.id, ticks()).catch(() => {})
       video.removeEventListener("timeupdate", onTime)
       video.removeEventListener("durationchange", onMeta)
       video.removeEventListener("loadedmetadata", onMeta)
@@ -241,11 +390,18 @@ export function PlayerModal({
       video.removeEventListener("pause", onPauseEv)
       video.removeEventListener("volumechange", onVol)
       video.removeEventListener("ended", onEnded)
-      hls?.destroy()
-      hlsRef.current = null
     }
-    // Re-init on item change or audio-track switch; other deps are stable refs/setters.
-  }, [index, audioIndex])
+  }, [
+    item.id,
+    audioIndex,
+    audioKeysSig,
+    index,
+    list.length,
+    getActive,
+    ticksNow,
+    applySubtitleMode,
+    onClose,
+  ])
 
   useEffect(() => {
     const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement))
@@ -259,31 +415,45 @@ export function PlayerModal({
   }, [uiVisible])
 
   const togglePlay = useCallback(() => {
-    const v = videoRef.current
-    if (!v) return
-    if (v.paused) void v.play().catch(() => {})
-    else v.pause()
-  }, [])
+    const active = getActive()
+    if (!active) return
+    // Decide once up front: playing the active element flips its own `.paused` mid-loop.
+    const play = active.paused
+    mediaRefs.current.forEach((v) => {
+      if (play) void v.play().catch(() => {})
+      else v.pause()
+    })
+  }, [getActive])
 
-  const seekTo = useCallback((t: number) => {
-    const v = videoRef.current
-    if (!v) return
-    v.currentTime = Math.max(0, Math.min(v.duration || t, t))
-    setCurrent(v.currentTime)
-  }, [])
+  // Seek every warm instance together so they stay aligned for an instant audio switch.
+  const seekTo = useCallback(
+    (t: number) => {
+      const active = getActive()
+      if (!active) return
+      const clamped = Math.max(0, Math.min(active.duration || t, t))
+      mediaRefs.current.forEach((v) => {
+        try {
+          v.currentTime = clamped
+        } catch {}
+      })
+      lastPosRef.current = clamped
+      setCurrent(clamped)
+    },
+    [getActive]
+  )
 
   const skip = useCallback(
     (d: number) => {
-      const v = videoRef.current
-      if (v) seekTo(v.currentTime + d)
+      const active = getActive()
+      if (active) seekTo(active.currentTime + d)
     },
-    [seekTo]
+    [getActive, seekTo]
   )
 
   const toggleMute = useCallback(() => {
-    const v = videoRef.current
-    if (v) v.muted = !v.muted
-  }, [])
+    const active = getActive()
+    if (active) active.muted = !active.muted
+  }, [getActive])
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
@@ -294,9 +464,9 @@ export function PlayerModal({
     setUiVisible(true)
     if (hideTimer.current) clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => {
-      if (videoRef.current && !videoRef.current.paused) setUiVisible(false)
+      if (!getActive()?.paused) setUiVisible(false)
     }, 3000)
-  }, [])
+  }, [getActive])
 
   useEffect(() => {
     revealUi()
@@ -309,7 +479,8 @@ export function PlayerModal({
     const onKey = (e: KeyboardEvent) => {
       switch (e.key) {
         case "Escape":
-          if (!document.fullscreenElement) onClose()
+          if (episodesOpen) setEpisodesOpen(false)
+          else if (!document.fullscreenElement) onClose()
           break
         case " ":
         case "k":
@@ -331,6 +502,9 @@ export function PlayerModal({
         case "n":
           goNext()
           break
+        case "e":
+          if (item.seriesId) setEpisodesOpen((o) => !o)
+          break
         default:
           return
       }
@@ -338,73 +512,83 @@ export function PlayerModal({
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [onClose, togglePlay, skip, toggleFullscreen, toggleMute, goNext, revealUi])
+  }, [
+    onClose,
+    togglePlay,
+    skip,
+    toggleFullscreen,
+    toggleMute,
+    goNext,
+    revealUi,
+    episodesOpen,
+    item.seriesId,
+  ])
 
-  // Switching audio re-requests the stream at a new AudioStreamIndex; remember
-  // the current position + play state so the setup effect resumes seamlessly.
-  const selectAudio = (streamIndex: number) => {
-    if (streamIndex === audioIndex) return
-    const v = videoRef.current
-    if (v) {
-      seekTargetRef.current = v.currentTime
-      wasPlayingRef.current = !v.paused
+  // Instant audio switch: hand audio from the current <video> to the chosen warm one —
+  // sync position (correct any drift), copy volume/mute, then swap. No reload.
+  const selectAudio = (ai: number) => {
+    if (ai === activeKey) return
+    const prev = mediaRefs.current.get(activeKey) ?? getActive()
+    const target = mediaRefs.current.get(ai)
+    activeAudioRef.current = ai
+    if (!target) {
+      // Not warm (a file with more audio tracks than we preload) — fall back to a reload.
+      if (prev) {
+        seekTargetRef.current = prev.currentTime
+        wasPlayingRef.current = !prev.paused
+      }
+      setAudioIndex(ai)
+      return
     }
-    setAudioIndex(streamIndex)
+    if (prev && prev !== target) {
+      if (Math.abs(target.currentTime - prev.currentTime) > 0.3) {
+        try {
+          target.currentTime = prev.currentTime
+        } catch {}
+      }
+      target.playbackRate = prev.playbackRate
+      target.volume = prev.volume
+      target.muted = prev.muted
+      prev.muted = true
+      if (!prev.paused) void target.play().catch(() => {})
+    }
+    setAudioIndex(ai)
   }
-  // Selecting a subtitle just records the chosen stream index (-1 = off); the
-  // effect below toggles the matching native <track>'s mode.
+  // Selecting a subtitle just records the chosen stream index (-1 = off); applySubtitleMode
+  // toggles the matching native <track>'s mode across the warm instances.
   const selectSub = (streamIndex: number) => setCurSub(streamIndex)
 
   const selectSpeed = (rate: number) => {
     speedRef.current = rate
-    if (videoRef.current) videoRef.current.playbackRate = rate
+    mediaRefs.current.forEach((v) => {
+      v.playbackRate = rate
+    })
     setSpeed(rate)
   }
 
   const skipIntro = () => {
-    if (videoRef.current && intro) videoRef.current.currentTime = intro.end
+    if (intro) seekTo(intro.end)
   }
 
-  // Full-file WebVTT URL for a subtitle stream, signed via the item's HLS URL and
-  // routed through the proxy's .vtt sanitizer. One file with every cue — Jellyfin's
-  // 30s HLS subtitle windows drop all cues after the OP for typeset anime ASS.
-  const subtitleUrl = (streamIndex: number) =>
-    `${mediaUrl(item.hlsUrl)}&path=${encodeURIComponent(`${item.id}/Subtitles/${streamIndex}/0/Stream.vtt`)}`
+  // Selecting an episode re-queues the whole season it belongs to (so auto-advance keeps
+  // working) and jumps to it. Picking the one already playing just closes the panel.
+  const selectEpisode = (episodes: Episode[], i: number) => {
+    setEpisodesOpen(false)
+    if (i < 0 || episodes[i]?.id === item.id) return
+    wasPlayingRef.current = true
+    setList(episodes)
+    setIndex(i)
+  }
 
-  // Refs mirror the current selection + track list so the stream-reload handlers
-  // (closures below) can re-apply subtitle modes without capturing stale values.
-  const curSubRef = useRef(-1)
-  const subTracksRef = useRef<SubtitleTrack[]>([])
-  useEffect(() => {
-    curSubRef.current = curSub
-  }, [curSub])
-  useEffect(() => {
-    subTracksRef.current = subTracks
-  }, [subTracks])
-
-  // Toggle the chosen native <track> to "showing" (others "disabled"). Called on
-  // selection change AND after every (re)load: switching audio rebuilds hls and
-  // reattaches the media, which resets text-track modes, so we must re-apply then
-  // (else subs vanish on an audio switch and don't come back on switching again).
-  const applySubtitleMode = useCallback(() => {
-    const tracks = videoRef.current?.textTracks
-    if (!tracks) return
-    const subs = subTracksRef.current
-    for (let i = 0; i < subs.length && i < tracks.length; i++) {
-      tracks[i].mode = subs[i].index === curSubRef.current ? "showing" : "disabled"
-    }
-  }, [])
-
-  // Re-apply when the track list loads or the selection changes (the no-reload case;
-  // the reload case is handled in the stream effect's load handlers).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: subTracks/curSub drive the re-apply (applySubtitleMode reads them via refs)
+  // Re-apply subtitle mode on the no-reload paths (track list load / selection change).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: subTracks/curSub drive the re-apply (read via refs)
   useEffect(() => {
     applySubtitleMode()
-  }, [subTracks, curSub, applySubtitleMode])
+  }, [subTracks, curSub, audioIndex, applySubtitleMode])
 
   const remaining = duration - current
-  // Show the "Up next" card once the end credits start (chapter marker), else fall
-  // back to a fixed window before the end for items without a credits chapter.
+  // Show the "Up next" card once the end credits start (chapter marker), else fall back
+  // to a fixed window before the end for items without a credits chapter.
   const showSkipIntro = intro != null && current >= intro.start && current < intro.end
   const inCredits = creditsStart != null && current >= creditsStart
   const nearEnd = duration > 0 && remaining <= NEXT_CARD_AT && remaining > 0
@@ -417,26 +601,31 @@ export function PlayerModal({
       className="fixed inset-0 z-50 flex select-none flex-col bg-black"
       onMouseMove={revealUi}
     >
-      {/* biome-ignore lint/a11y/useMediaCaption: subtitles are selectable, user-controlled tracks */}
-      <video
-        ref={videoRef}
-        autoPlay
-        onClick={togglePlay}
-        className="absolute inset-0 h-full w-full bg-black"
-      >
-        {subTracks.map((s) => (
-          // Key by audioIndex so the <track> remounts on every audio switch: hls.destroy()
-          // wipes native text-track cues (leaving readyState "loaded" so a mode toggle
-          // won't re-fetch) — a fresh element forces the browser to reload the VTT.
-          <track
-            key={`${s.index}-${audioIndex}`}
-            kind="subtitles"
-            label={s.label}
-            srcLang={s.language ?? "und"}
-            src={subtitleUrl(s.index)}
-          />
-        ))}
-      </video>
+      {audioKeys.map((ai) => {
+        const isActive = ai === activeKey
+        return (
+          // biome-ignore lint/a11y/useMediaCaption: subtitles are selectable, user-controlled tracks
+          <video
+            key={`${item.id}-${ai}`}
+            ref={registerMedia(ai)}
+            playsInline
+            onClick={togglePlay}
+            className={`absolute inset-0 h-full w-full bg-black transition-opacity duration-200 ${
+              isActive ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+          >
+            {subTracks.map((s) => (
+              <track
+                key={s.index}
+                kind="subtitles"
+                label={s.label}
+                srcLang={s.language ?? "und"}
+                src={subtitleUrl(s.index)}
+              />
+            ))}
+          </video>
+        )
+      })}
 
       {/* Controls overlay */}
       <div
@@ -571,7 +760,7 @@ export function PlayerModal({
                 step={0.05}
                 value={muted ? 0 : volume}
                 onChange={(e) => {
-                  const v = videoRef.current
+                  const v = getActive()
                   if (v) {
                     v.volume = Number(e.target.value)
                     v.muted = Number(e.target.value) === 0
@@ -583,6 +772,18 @@ export function PlayerModal({
             </div>
 
             <div className="ml-auto flex items-center gap-3">
+              {item.seriesId ? (
+                <button
+                  type="button"
+                  onClick={() => setEpisodesOpen((o) => !o)}
+                  aria-label="Episodes"
+                  aria-expanded={episodesOpen}
+                  title="Episodes"
+                  className={`rounded p-1 hover:text-white/80 ${episodesOpen ? "text-white" : ""}`}
+                >
+                  <ListVideo className="h-6 w-6" />
+                </button>
+              ) : null}
               <div className="relative">
                 <button
                   type="button"
@@ -691,7 +892,7 @@ export function PlayerModal({
       ) : null}
 
       {/* Up next card (Netflix style) */}
-      {next && showUpNext ? (
+      {next && showUpNext && !episodesOpen ? (
         <button
           type="button"
           onClick={goNext}
@@ -705,6 +906,18 @@ export function PlayerModal({
             <span className="block truncate font-medium text-sm">{displayTitle(next)}</span>
           </span>
         </button>
+      ) : null}
+
+      {/* In-player episode selector (TV only) */}
+      {episodesOpen && item.seriesId ? (
+        <EpisodePanel
+          seriesId={item.seriesId}
+          seriesName={item.seriesName}
+          currentSeasonId={item.seasonId}
+          currentItemId={item.id}
+          onSelect={selectEpisode}
+          onClose={() => setEpisodesOpen(false)}
+        />
       ) : null}
     </div>
   )
