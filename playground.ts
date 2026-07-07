@@ -15,4 +15,3 @@ async function main() {
 main()
 
 "Would you hesitate to throw a bundle of logs onto a fire... because you pitied the tree they came from?"
-a
