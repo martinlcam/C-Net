@@ -22,6 +22,9 @@ lerna-debug.log*
 
 # Local env files
 .env*
+# ...except the deploy template, which holds only placeholders and which the runbook
+# instructs you to copy. `.env*` silently kept it out of the tree once already.
+!deploy/.env.production.example
 
 # Vercel
 .vercel
