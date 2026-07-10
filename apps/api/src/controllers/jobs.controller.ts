@@ -63,6 +63,10 @@ export class JobsController extends Controller {
 
   /* POST /jobs/trigger — add a job to a queue */
   @Post("trigger")
+  /* Enqueueing drives host-global work (backups, cleanup, Proxmox metrics), so it is
+     superuser-only — the class-level `jwt` scope alone would let any allowlisted user in. */
+  @Security("jwt", ["superuser"])
+  @Response<JobsErrorResponse>(403, "Forbidden")
   @Response<JobsErrorResponse>(500, "Server error")
   public async triggerJob(
     @Body() body: TriggerJobBody,
@@ -81,10 +85,11 @@ export class JobsController extends Controller {
       const user = req.user as { id: string }
       const queue = this.getQueueByName(body.queue)
 
-      /* Add userId to job data if not present */
+      /* userId is spread last so a caller-supplied one can never win: workers read it to
+         look up and decrypt that user's credentials (see metrics-collector, backup-runner). */
       const jobData = {
         ...body.data,
-        userId: body.data.userId || user.id,
+        userId: user.id,
       }
 
       /* Add job to queue */
