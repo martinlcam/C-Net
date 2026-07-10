@@ -9,6 +9,8 @@ import NextAuth from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import Google from "next-auth/providers/google"
 
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days
+
 /* Auth.js v5 reads AUTH_SECRET; we also accept legacy NEXTAUTH_SECRET. */
 function authSecret(): string | undefined {
   return process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
@@ -83,10 +85,15 @@ export const authConfig: NextAuthConfig = {
     },
   },
   jwt: {
-    encode({ token, secret }) {
+    encode({ token, secret, maxAge }) {
       const key = Array.isArray(secret) ? secret[0] : secret
+      // Auth.js stamps exp/iat only inside the default (jose) encoder we're replacing here, so
+      // without expiresIn the session JWT would verify forever. Drop any registered claims a
+      // decode/re-encode refresh carried over — jsonwebtoken rejects a payload that already has
+      // `exp`, and a stale `iat` would anchor the new expiry to the original issue time.
       // biome-ignore lint/style/noNonNullAssertion: NextAuth guarantees token is set during encode
-      return jwt.sign(token!, key)
+      const { exp: _exp, iat: _iat, jti: _jti, ...claims } = token!
+      return jwt.sign(claims, key, { expiresIn: maxAge ?? SESSION_MAX_AGE_SECONDS })
     },
     decode({ token, secret }) {
       const key = Array.isArray(secret) ? secret[0] : secret
@@ -96,7 +103,7 @@ export const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: SESSION_MAX_AGE_SECONDS,
   },
   secret: authSecret(),
 }
