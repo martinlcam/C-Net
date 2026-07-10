@@ -6,6 +6,7 @@ import { registerMediaStream } from "./media/stream"
 import { errorHandler } from "./middleware/error.middleware"
 import { registerVaultDownload } from "./vault/download"
 
+// Placeholder anchor for the comb review PR — remove before merge.
 const defaultDevOrigins = ["http://localhost:3001", "http://127.0.0.1:3001"]
 
 function isPrivateLanDevOrigin(origin: string): boolean {
