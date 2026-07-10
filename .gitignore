@@ -20,11 +20,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Local env files
+# Local env files. No env template is ever committed — not even a placeholder one.
 .env*
-# ...except the deploy template, which holds only placeholders and which the runbook
-# instructs you to copy. `.env*` silently kept it out of the tree once already.
-!deploy/.env.production.example
+
+# Ad-hoc database dumps must never be committed.
+*_backup_*.csv
 
 # Vercel
 .vercel

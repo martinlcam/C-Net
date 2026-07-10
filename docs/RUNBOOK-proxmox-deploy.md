@@ -76,10 +76,18 @@ bun --version   # sanity check
 mkdir -p /opt/cnet && chown cnet:cnet /opt/cnet
 sudo -u cnet git clone https://github.com/martinlcam/C-Net.git /opt/cnet
 cd /opt/cnet
-sudo -u cnet cp deploy/.env.production.example .env
+sudo -u cnet touch .env
 chmod 600 .env && chown cnet:cnet .env
-# Generate secrets and fill in .env (POSTGRES_PASSWORD, REDIS_PASSWORD, NEXTAUTH_SECRET, BD_INGEST_KEY,
-# GOOGLE_ID/SECRET, RESEND_API_KEY, PROXMOX_*). Set DATABASE_URL/REDIS_URL to use those passwords.
+# No env template is committed to this repo, by design. Author .env by hand with these keys:
+#   NODE_ENV, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_REALTIME_WS_URL, NEXTAUTH_URL, CORS_ORIGIN
+#   NEXTAUTH_SECRET, GOOGLE_ID, GOOGLE_SECRET
+#   POSTGRES_PASSWORD, REDIS_PASSWORD, DATABASE_URL, REDIS_URL
+#   REDIS_BIND_IP   <- the LXC's internal-network address; compose.data.yml refuses to start without it
+#   API_PORT, REALTIME_PORT
+#   BD_INGEST_KEY, BD_REDIS_CHANNEL_SAMPLES, BD_REDIS_CHANNEL_STATUS
+#   RESEND_API_KEY, PROXMOX_USER, PROXMOX_TOKEN
+# Generate each secret with `openssl rand -base64 32` (BD_INGEST_KEY: `openssl rand -hex 16`), and set
+# DATABASE_URL/REDIS_URL to use the passwords you just generated.
 nano .env
 ```
 
