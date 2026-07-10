@@ -18,9 +18,12 @@ services:
     # An empty --requirepass disables auth outright rather than failing, so REDIS_PASSWORD
     # must be present: an unset var would otherwise leave Redis wide open.
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
-    # Bound to the LXC's internal-network address, not 0.0.0.0, so the host-resident
-    # neural-bridge can publish without exposing Redis on every interface.
-    ports: ["${REDIS_BIND_IP:?REDIS_BIND_IP is required}:6379:6379"]
+    # Two explicit binds instead of 0.0.0.0: localhost for the LXC's own api/workers
+    # (REDIS_URL points at 127.0.0.1), and the internal-network address so the
+    # host-resident neural-bridge can publish. Nothing else is exposed.
+    ports:
+      - "127.0.0.1:6379:6379"
+      - "${REDIS_BIND_IP:?REDIS_BIND_IP is required}:6379:6379"
     volumes: ["redis_data:/data"]
 
 volumes:
