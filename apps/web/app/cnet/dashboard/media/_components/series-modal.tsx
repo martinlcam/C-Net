@@ -32,6 +32,7 @@ function EpisodeRow({ ep, onPlay }: { ep: Episode; onPlay: (e: Episode) => void 
       <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded bg-neutral-10">
         {ep.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
           <img
             src={mediaUrl(ep.posterUrl)}
             alt={ep.title}
@@ -116,6 +117,7 @@ export function SeriesModal({
           <div className="aspect-[2/3] w-full bg-neutral-80">
             {art ? (
               // eslint-disable-next-line @next/next/no-img-element
+              // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
               <img src={mediaUrl(art)} alt={series.title} className="h-full w-full object-cover" />
             ) : null}
           </div>

@@ -18,7 +18,8 @@
       "!apps/api/src/routes",
       "!apps/api/src/swagger.json",
       "!packages/api-client/src",
-      "!**/migrations/meta"
+      "!**/migrations/meta",
+      "!playground.ts"
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
