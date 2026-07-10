@@ -33,6 +33,7 @@ export function EpisodeCard({
       <div className="relative aspect-video overflow-hidden rounded-md bg-neutral-10 ring-1 ring-neutral-30 transition group-hover:ring-2 group-hover:ring-neutral-60">
         {episode.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
           <img
             src={mediaUrl(episode.posterUrl)}
             alt={episode.title}

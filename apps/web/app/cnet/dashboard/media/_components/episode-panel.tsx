@@ -36,6 +36,7 @@ function EpisodeRow({
       <div className="relative aspect-video w-28 shrink-0 overflow-hidden rounded bg-neutral-800">
         {ep.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
           <img
             src={mediaUrl(ep.posterUrl)}
             alt={ep.title}

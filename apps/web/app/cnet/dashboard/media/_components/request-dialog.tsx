@@ -36,6 +36,7 @@ function ResultRow({ row }: { row: Row }) {
     <div className="flex gap-3 border-neutral-10 border-b py-2">
       {row.posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
+        // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
         <img src={row.posterUrl} alt={row.title} className="h-24 w-16 rounded object-cover" />
       ) : (
         <div className="h-24 w-16 rounded bg-neutral-10" />

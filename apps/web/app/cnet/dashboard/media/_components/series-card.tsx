@@ -13,6 +13,7 @@ export function SeriesCard({ series, onOpen }: { series: Series; onOpen: (s: Ser
       <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-neutral-10 ring-1 ring-neutral-30 transition group-hover:ring-2 group-hover:ring-neutral-60">
         {series.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
           <img
             src={mediaUrl(series.posterUrl)}
             alt={series.title}
