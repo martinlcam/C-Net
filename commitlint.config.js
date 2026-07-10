@@ -4,6 +4,12 @@ const allowedTypes = process.env.COMMIT_TYPES
 
 export default {
   extends: ["@commitlint/config-conventional"],
+  parserPreset: {
+    parserOpts: {
+      headerPattern: /^(?:\[agent\] )?(\w*)(?:\(([\w$. \-*]*)\))?!?: (.*)$/,
+      headerCorrespondence: ["type", "scope", "subject"],
+    },
+  },
   rules: {
     "type-enum": [2, "always", allowedTypes],
   },

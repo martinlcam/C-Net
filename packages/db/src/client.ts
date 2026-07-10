@@ -10,5 +10,11 @@ const pool = new Pool({
       : false,
 })
 
+// pg emits 'error' on the pool for failures on *idle* clients (DB restart, network blip).
+// EventEmitter throws on an unhandled 'error', which would take down the api/worker process.
+pool.on("error", (err) => {
+  console.error("Postgres pool error:", err)
+})
+
 export const db = drizzle(pool, { schema })
 export type Database = typeof db

@@ -20,8 +20,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Local env files
+# Local env files. No env template is ever committed — not even a placeholder one.
 .env*
+
+# Ad-hoc database dumps must never be committed.
+*_backup_*.csv
 
 # Vercel
 .vercel
