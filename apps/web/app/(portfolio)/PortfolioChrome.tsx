@@ -9,9 +9,9 @@ import { useEffect } from "react"
  */
 export function PortfolioChrome() {
   useEffect(() => {
-    document.body.dataset.portfolio = "1"
+    document.documentElement.classList.add("portfolio-no-scrollbar")
     return () => {
-      delete document.body.dataset.portfolio
+      document.documentElement.classList.remove("portfolio-no-scrollbar")
     }
   }, [])
 
