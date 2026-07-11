@@ -102,6 +102,16 @@
   section[id] {
     scroll-margin-top: 80px;
   }
+
+  /* Front-facing (portfolio) pages hide the window scrollbar entirely.
+     The scroll container is the root element, so target it via :has() when the
+     body is marked by PortfolioChrome; content still scrolls, just no track. */
+  html:has(body[data-portfolio="1"]) {
+    scrollbar-width: none; /* Firefox */
+  }
+  html:has(body[data-portfolio="1"])::-webkit-scrollbar {
+    display: none; /* WebKit / Chromium */
+  }
 }
 
 /* =========================================================================

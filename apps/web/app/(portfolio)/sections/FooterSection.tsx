@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 export function FooterSection() {
   return (
     <footer className="py-8 px-12 lg:px-20">
@@ -6,6 +8,9 @@ export function FooterSection() {
           © {new Date().getFullYear()} Martin Cam. All rights reserved.
         </p>
         <div className="flex gap-6">
+          <Link href="/attributions" className="text-gray-500 hover:text-black text-sm">
+            Attributions
+          </Link>
           <a
             href="https://github.com/martinlcam"
             target="_blank"
