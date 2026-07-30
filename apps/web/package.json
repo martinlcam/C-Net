@@ -13,7 +13,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "1.11.1",
+    "@auth/drizzle-adapter": "1.11.3",
     "@cnet/api-client": "workspace:*",
     "@cnet/core": "workspace:*",
     "@cnet/db": "workspace:*",
@@ -44,7 +44,7 @@
     "katex": "0.17.0",
     "lucide-react": "1.17.0",
     "next": "16.1.3",
-    "next-auth": "5.0.0-beta.30",
+    "next-auth": "5.0.0-beta.32",
     "papaparse": "^5.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
