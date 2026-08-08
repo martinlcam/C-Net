@@ -6,6 +6,7 @@ export const auditActionEnum = pgEnum("audit_action", [
   "VM_STOPPED",
   "VM_DELETED",
   "VM_RESTARTED",
+  "VM_SHUTDOWN",
   "LXC_CREATED",
   "LXC_STARTED",
   "LXC_STOPPED",

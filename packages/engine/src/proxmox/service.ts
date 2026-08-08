@@ -11,7 +11,63 @@ import type {
   PveZfsListEntry,
   PveZfsTree,
 } from "./storage-types"
-import type { NodeMetrics, ProxmoxNode, ProxmoxVM, StoragePool } from "./types"
+import type {
+  NodeMetrics,
+  ProxmoxGuestAction,
+  ProxmoxGuestType,
+  ProxmoxNode,
+  ProxmoxVM,
+  ProxmoxVMStatus,
+  StoragePool,
+} from "./types"
+
+const GUEST_STATUSES: ProxmoxVMStatus[] = ["running", "stopped", "paused", "suspended"]
+
+/** PVE omits counters it has no value for; keep those `undefined` rather than collapsing to 0. */
+function num(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined
+  const n = Number(value)
+  return Number.isFinite(n) ? n : undefined
+}
+
+function toStatus(value: unknown): ProxmoxVMStatus {
+  const status = String(value ?? "")
+  return GUEST_STATUSES.includes(status as ProxmoxVMStatus)
+    ? (status as ProxmoxVMStatus)
+    : "stopped"
+}
+
+function toTags(value: unknown): string[] | undefined {
+  if (typeof value !== "string" || !value) return undefined
+  const tags = value.split(/[;,]/).filter(Boolean)
+  return tags.length > 0 ? tags : undefined
+}
+
+function mapGuest(raw: Record<string, unknown>, node: string, type: ProxmoxGuestType): ProxmoxVM {
+  return {
+    vmid: Number(raw.vmid) || 0,
+    // Both guest endpoints report the display name as `name`; older PVE builds
+    // only set `hostname` on containers, so fall back to it.
+    name: (raw.name as string) || (raw.hostname as string) || "",
+    status: toStatus(raw.status),
+    node,
+    type,
+    cpu: num(raw.cpu),
+    cpus: num(raw.cpus),
+    mem: num(raw.mem),
+    maxmem: num(raw.maxmem),
+    disk: num(raw.disk),
+    maxdisk: num(raw.maxdisk),
+    diskread: num(raw.diskread),
+    diskwrite: num(raw.diskwrite),
+    netin: num(raw.netin),
+    netout: num(raw.netout),
+    uptime: num(raw.uptime),
+    lock: (raw.lock as string) || undefined,
+    template: raw.template === 1 || raw.template === true,
+    tags: toTags(raw.tags),
+  }
+}
 
 export class ProxmoxService {
   private readonly client: AxiosInstance
@@ -72,54 +128,41 @@ export class ProxmoxService {
     }
   }
 
+  /** One guest kind on one node. A failure is logged and yields nothing, never throws. */
+  private async listGuests(
+    node: string,
+    type: ProxmoxGuestType,
+    params?: Record<string, number>
+  ): Promise<ProxmoxVM[]> {
+    try {
+      const response = await this.client.get(`/nodes/${node}/${type}`, { params })
+      return (response.data.data || []).map((raw: Record<string, unknown>) =>
+        mapGuest(raw, node, type)
+      )
+    } catch (error) {
+      console.error(`Failed to fetch ${type} guests from node ${node}:`, error)
+      return []
+    }
+  }
+
+  /**
+   * Both guest kinds on one node, fetched independently so a failure on one
+   * doesn't hide the other. `full=1` is accepted by the qemu endpoint only —
+   * the lxc schema rejects unknown properties outright with a 400.
+   */
+  private async getNodeGuests(node: string): Promise<ProxmoxVM[]> {
+    const [qemu, lxc] = await Promise.all([
+      this.listGuests(node, "qemu", { full: 1 }),
+      this.listGuests(node, "lxc"),
+    ])
+    return [...qemu, ...lxc]
+  }
+
   async getAllVMs(): Promise<ProxmoxVM[]> {
     try {
       const nodes = await this.getNodes()
-      const allVMs: ProxmoxVM[] = []
-
-      for (const node of nodes) {
-        try {
-          // Get QEMU VMs
-          const response = await this.client.get(`/nodes/${node.node}/qemu?full=1`)
-          const vms = response.data.data || []
-
-          allVMs.push(
-            ...vms.map((vm: Record<string, unknown>) => ({
-              vmid: Number(vm.vmid) || 0,
-              name: (vm.name as string) || "",
-              status: (vm.status as string) === "running" ? "running" : "stopped",
-              node: node.node,
-              cpu: Number(vm.cpus) || 0,
-              maxmem: Number(vm.maxmem) || 0,
-              mem: Number(vm.mem) || 0,
-              uptime: Number(vm.uptime) || 0,
-              type: "qemu" as const,
-            }))
-          )
-
-          // Get LXC containers
-          const lxcResponse = await this.client.get(`/nodes/${node.node}/lxc?full=1`)
-          const lxcs = lxcResponse.data.data || []
-
-          allVMs.push(
-            ...lxcs.map((lxc: Record<string, unknown>) => ({
-              vmid: Number(lxc.vmid) || 0,
-              name: (lxc.hostname as string) || "",
-              status: (lxc.status as string) === "running" ? "running" : "stopped",
-              node: node.node,
-              cpu: Number(lxc.cpus) || 0,
-              maxmem: Number(lxc.maxmem) || 0,
-              mem: Number(lxc.mem) || 0,
-              uptime: Number(lxc.uptime) || 0,
-              type: "lxc" as const,
-            }))
-          )
-        } catch (nodeError) {
-          console.error(`Failed to fetch VMs from node ${node.node}:`, nodeError)
-        }
-      }
-
-      return allVMs
+      const perNode = await Promise.all(nodes.map((n) => this.getNodeGuests(n.node)))
+      return perNode.flat().sort((a, b) => a.vmid - b.vmid)
     } catch (error) {
       throw new Error(
         `Failed to fetch all VMs: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -127,64 +170,55 @@ export class ProxmoxService {
     }
   }
 
-  async startVM(vmid: number): Promise<string> {
-    try {
-      const vms = await this.getAllVMs()
-      const vm = vms.find((v) => v.vmid === vmid)
+  async getVM(vmid: number): Promise<ProxmoxVM | undefined> {
+    const vms = await this.getAllVMs()
+    return vms.find((v) => v.vmid === vmid)
+  }
 
+  /**
+   * Power action on a guest. The vmid alone doesn't say which node holds it or
+   * whether it's a container, so resolve it first — PVE has no cluster-wide
+   * status endpoint that would let us skip the lookup.
+   */
+  async guestAction(vmid: number, action: ProxmoxGuestAction): Promise<string> {
+    try {
+      const vm = await this.getVM(vmid)
       if (!vm) {
         throw new Error(`VM ${vmid} not found`)
       }
+      if (vm.lock) {
+        throw new Error(`VM ${vmid} is locked by PVE (${vm.lock}) — try again once it clears`)
+      }
 
       const endpoint = vm.type === "lxc" ? "lxc" : "qemu"
-      const response = await this.client.post(`/nodes/${vm.node}/${endpoint}/${vmid}/status/start`)
+      const response = await this.client.post(
+        `/nodes/${vm.node}/${endpoint}/${vmid}/status/${action}`
+      )
 
       return response.data.data // Task ID
     } catch (error) {
       throw new Error(
-        `Failed to start VM: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to ${action} VM ${vmid}: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
   }
 
-  async stopVM(vmid: number): Promise<string> {
-    try {
-      const vms = await this.getAllVMs()
-      const vm = vms.find((v) => v.vmid === vmid)
-
-      if (!vm) {
-        throw new Error(`VM ${vmid} not found`)
-      }
-
-      const endpoint = vm.type === "lxc" ? "lxc" : "qemu"
-      const response = await this.client.post(`/nodes/${vm.node}/${endpoint}/${vmid}/status/stop`)
-
-      return response.data.data
-    } catch (error) {
-      throw new Error(
-        `Failed to stop VM: ${error instanceof Error ? error.message : "Unknown error"}`
-      )
-    }
+  startVM(vmid: number): Promise<string> {
+    return this.guestAction(vmid, "start")
   }
 
-  async restartVM(vmid: number): Promise<string> {
-    try {
-      const vms = await this.getAllVMs()
-      const vm = vms.find((v) => v.vmid === vmid)
+  /** Hard power-off. Prefer `shutdownVM` — this is the pull-the-cord path. */
+  stopVM(vmid: number): Promise<string> {
+    return this.guestAction(vmid, "stop")
+  }
 
-      if (!vm) {
-        throw new Error(`VM ${vmid} not found`)
-      }
+  /** Graceful ACPI/init shutdown; the guest may refuse or take a while. */
+  shutdownVM(vmid: number): Promise<string> {
+    return this.guestAction(vmid, "shutdown")
+  }
 
-      const endpoint = vm.type === "lxc" ? "lxc" : "qemu"
-      const response = await this.client.post(`/nodes/${vm.node}/${endpoint}/${vmid}/status/reboot`)
-
-      return response.data.data
-    } catch (error) {
-      throw new Error(
-        `Failed to restart VM: ${error instanceof Error ? error.message : "Unknown error"}`
-      )
-    }
+  restartVM(vmid: number): Promise<string> {
+    return this.guestAction(vmid, "reboot")
   }
 
   async getStorage(): Promise<StoragePool[]> {

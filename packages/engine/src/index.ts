@@ -54,7 +54,15 @@ export type {
   SmartHealth,
 } from "./proxmox/storage-types"
 export { type ProxmoxConnectionTestResult, testProxmoxConnection } from "./proxmox/test"
-export type { NodeMetrics, ProxmoxNode, ProxmoxVM, StoragePool } from "./proxmox/types"
+export type {
+  NodeMetrics,
+  ProxmoxGuestAction,
+  ProxmoxGuestType,
+  ProxmoxNode,
+  ProxmoxVM,
+  ProxmoxVMStatus,
+  StoragePool,
+} from "./proxmox/types"
 export { RadarrService } from "./radarr/service"
 export type {
   RadarrImage,

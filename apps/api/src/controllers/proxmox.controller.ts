@@ -1,7 +1,7 @@
 import { decrypt, getEncryptionPassword } from "@cnet/core"
 import { db } from "@cnet/db"
 import { infrastructureConfigs } from "@cnet/db/schema"
-import { logAuditAction, ProxmoxService } from "@cnet/engine"
+import { logAuditAction, type ProxmoxGuestAction, ProxmoxService } from "@cnet/engine"
 import { eq } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Controller, Get, Path, Post, Request, Response, Route, Security } from "tsoa"
@@ -11,10 +11,36 @@ interface ProxmoxErrorResponse {
   message?: string
 }
 
+interface GuestActionResponse {
+  success: boolean
+  taskId: string
+}
+
+/**
+ * Audit action name per power verb. `satisfies` keeps the values as literals so
+ * they still narrow to the audit_action enum rather than widening to string.
+ */
+const AUDIT_ACTIONS = {
+  start: "VM_STARTED",
+  stop: "VM_STOPPED",
+  shutdown: "VM_SHUTDOWN",
+  reboot: "VM_RESTARTED",
+} as const satisfies Record<ProxmoxGuestAction, string>
+
+/*
+ * Guest inventory + power control for the proxbox node. Superuser-gated for the
+ * same reason as the storage GUI: these verbs act on host-global infrastructure,
+ * and the fallback credentials below are the host's own API token.
+ */
 @Route("proxmox")
-@Security("jwt")
+@Security("jwt", ["superuser"])
 export class ProxmoxController extends Controller {
-  /* Helper: get a ProxmoxService instance for the authenticated user */
+  /*
+   * Per-user credentials win when a row exists; otherwise fall back to the
+   * host-global CNET_STORAGE_PVE_* token the storage controller already uses.
+   * infrastructure_configs has never been populated, so without the fallback
+   * every guest request 404s.
+   */
   private async getProxmoxService(
     userId: string
   ): Promise<{ proxmox: ProxmoxService } | { error: string }> {
@@ -22,14 +48,63 @@ export class ProxmoxController extends Controller {
       where: eq(infrastructureConfigs.userId, userId),
     })
 
-    if (!config) {
+    if (config) {
+      const token = await decrypt(config.proxmoxToken, getEncryptionPassword())
+      return { proxmox: new ProxmoxService(config.proxmoxHost, config.proxmoxUser, token) }
+    }
+
+    const host = process.env.CNET_STORAGE_PVE_HOST
+    const user = process.env.CNET_STORAGE_PVE_USER
+    const token = process.env.CNET_STORAGE_PVE_TOKEN
+
+    if (!host || !user || !token) {
       return { error: "Proxmox configuration not found" }
     }
 
-    const password = getEncryptionPassword()
-    const token = await decrypt(config.proxmoxToken, password)
+    return { proxmox: new ProxmoxService(host, user, token) }
+  }
 
-    return { proxmox: new ProxmoxService(config.proxmoxHost, config.proxmoxUser, token) }
+  /**
+   * Run a power verb and audit it either way. Every outcome — including the
+   * missing-config 404 — is recorded, so the audit log never silently skips an
+   * attempt someone made against a guest.
+   */
+  private async runGuestAction(
+    vmid: number,
+    action: ProxmoxGuestAction,
+    req: ExpressRequest
+  ): Promise<GuestActionResponse | ProxmoxErrorResponse> {
+    const user = req.user as { id: string }
+    const ipAddress = req.ip || req.headers["x-forwarded-for"]?.toString() || undefined
+    const audit = {
+      userId: user.id,
+      action: AUDIT_ACTIONS[action],
+      resourceType: "vm",
+      resourceId: String(vmid),
+      ipAddress,
+    }
+
+    try {
+      const result = await this.getProxmoxService(user.id)
+
+      if ("error" in result) {
+        await logAuditAction({ ...audit, status: "failed", errorMessage: result.error })
+        this.setStatus(404)
+        return { error: result.error }
+      }
+
+      const taskId = await result.proxmox.guestAction(vmid, action)
+      await logAuditAction({ ...audit, status: "success" })
+
+      return { success: true, taskId }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error"
+      await logAuditAction({ ...audit, status: "failed", errorMessage: message })
+
+      console.error(`Failed to ${action} VM ${vmid}:`, error)
+      this.setStatus(500)
+      return { error: `Failed to ${action} VM`, message }
+    }
   }
 
   /* GET /proxmox/nodes */
@@ -95,99 +170,30 @@ export class ProxmoxController extends Controller {
   public async startVM(
     @Path() vmid: number,
     @Request() req: ExpressRequest
-  ): Promise<{ success: boolean; taskId: string } | ProxmoxErrorResponse> {
-    const user = req.user as { id: string }
-    const ipAddress = req.ip || req.headers["x-forwarded-for"]?.toString() || undefined
-
-    try {
-      const result = await this.getProxmoxService(user.id)
-
-      if ("error" in result) {
-        this.setStatus(404)
-        return { error: result.error }
-      }
-
-      const taskId = await result.proxmox.startVM(vmid)
-
-      await logAuditAction({
-        userId: user.id,
-        action: "VM_STARTED",
-        resourceType: "vm",
-        resourceId: String(vmid),
-        status: "success",
-        ipAddress: ipAddress,
-      })
-
-      return { success: true, taskId }
-    } catch (error) {
-      await logAuditAction({
-        userId: user.id,
-        action: "VM_STARTED",
-        resourceType: "vm",
-        resourceId: String(vmid),
-        status: "failed",
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        ipAddress: ipAddress,
-      })
-
-      console.error("Failed to start VM:", error)
-      this.setStatus(500)
-      return {
-        error: "Failed to start VM",
-        message: error instanceof Error ? error.message : "Unknown error",
-      }
-    }
+  ): Promise<GuestActionResponse | ProxmoxErrorResponse> {
+    return this.runGuestAction(vmid, "start", req)
   }
 
-  /* POST /proxmox/vms/{vmid}/stop */
+  /* POST /proxmox/vms/{vmid}/stop — hard power-off */
   @Post("vms/{vmid}/stop")
   @Response<ProxmoxErrorResponse>(404, "Config not found")
   @Response<ProxmoxErrorResponse>(500, "Server error")
   public async stopVM(
     @Path() vmid: number,
     @Request() req: ExpressRequest
-  ): Promise<{ success: boolean; taskId: string } | ProxmoxErrorResponse> {
-    const user = req.user as { id: string }
-    const ipAddress = req.ip || req.headers["x-forwarded-for"]?.toString() || undefined
+  ): Promise<GuestActionResponse | ProxmoxErrorResponse> {
+    return this.runGuestAction(vmid, "stop", req)
+  }
 
-    try {
-      const result = await this.getProxmoxService(user.id)
-
-      if ("error" in result) {
-        this.setStatus(404)
-        return { error: result.error }
-      }
-
-      const taskId = await result.proxmox.stopVM(vmid)
-
-      await logAuditAction({
-        userId: user.id,
-        action: "VM_STOPPED",
-        resourceType: "vm",
-        resourceId: String(vmid),
-        status: "success",
-        ipAddress: ipAddress,
-      })
-
-      return { success: true, taskId }
-    } catch (error) {
-      await logAuditAction({
-        userId: user.id,
-        action: "VM_STOPPED",
-        resourceType: "vm",
-        resourceId: String(vmid),
-        status: "failed",
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        ipAddress: ipAddress,
-      })
-
-      console.error("Failed to stop VM:", error)
-      this.setStatus(500)
-      return {
-        error: "Failed to stop VM",
-        message: error instanceof Error ? error.message : "Unknown error",
-      }
-    }
+  /* POST /proxmox/vms/{vmid}/shutdown — graceful, guest may refuse */
+  @Post("vms/{vmid}/shutdown")
+  @Response<ProxmoxErrorResponse>(404, "Config not found")
+  @Response<ProxmoxErrorResponse>(500, "Server error")
+  public async shutdownVM(
+    @Path() vmid: number,
+    @Request() req: ExpressRequest
+  ): Promise<GuestActionResponse | ProxmoxErrorResponse> {
+    return this.runGuestAction(vmid, "shutdown", req)
   }
 
   /* POST /proxmox/vms/{vmid}/restart */
@@ -197,47 +203,7 @@ export class ProxmoxController extends Controller {
   public async restartVM(
     @Path() vmid: number,
     @Request() req: ExpressRequest
-  ): Promise<{ success: boolean; taskId: string } | ProxmoxErrorResponse> {
-    const user = req.user as { id: string }
-    const ipAddress = req.ip || req.headers["x-forwarded-for"]?.toString() || undefined
-
-    try {
-      const result = await this.getProxmoxService(user.id)
-
-      if ("error" in result) {
-        this.setStatus(404)
-        return { error: result.error }
-      }
-
-      const taskId = await result.proxmox.restartVM(vmid)
-
-      await logAuditAction({
-        userId: user.id,
-        action: "VM_RESTARTED",
-        resourceType: "vm",
-        resourceId: String(vmid),
-        status: "success",
-        ipAddress: ipAddress,
-      })
-
-      return { success: true, taskId }
-    } catch (error) {
-      await logAuditAction({
-        userId: user.id,
-        action: "VM_RESTARTED",
-        resourceType: "vm",
-        resourceId: String(vmid),
-        status: "failed",
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        ipAddress: ipAddress,
-      })
-
-      console.error("Failed to restart VM:", error)
-      this.setStatus(500)
-      return {
-        error: "Failed to restart VM",
-        message: error instanceof Error ? error.message : "Unknown error",
-      }
-    }
+  ): Promise<GuestActionResponse | ProxmoxErrorResponse> {
+    return this.runGuestAction(vmid, "reboot", req)
   }
 }

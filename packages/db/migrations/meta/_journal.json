@@ -64,6 +64,13 @@
       "when": 1782107364949,
       "tag": "0008_heavy_steve_rogers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786182801393,
+      "tag": "0009_square_chamber",
+      "breakpoints": true
     }
   ]
 }
