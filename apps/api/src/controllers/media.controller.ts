@@ -59,6 +59,14 @@ export interface SubtitleTrackDTO {
 }
 
 export interface ItemTracksDTO {
+  /**
+   * Freshly signed HLS URL for this item. The player loads *this* rather than the
+   * `hlsUrl` on the library/continue DTO: that one is signed when the list is
+   * fetched and the list is not refetched while a tab sits open, so a player
+   * opened hours later would start on an already-stale signature and every
+   * segment would 403 mid-playback. Signed here, the TTL starts at play time.
+   */
+  hlsUrl: string
   audio: AudioTrackDTO[]
   /**
    * Selectable text subtitle tracks. Image subs (PGS/DVD) are excluded — they
@@ -159,7 +167,7 @@ function introRangeSeconds(item: JellyfinItem): { start: number; end: number } |
  * (often Spanish Latino), so we pick English first, then Japanese, then the
  * file's own default — the player loads that track and offers the rest.
  */
-export function buildItemTracks(item: JellyfinItem): ItemTracksDTO {
+export function buildItemTracks(userId: string, item: JellyfinItem): ItemTracksDTO {
   const audioStreams = (item.MediaStreams ?? []).filter((s) => s.Type === "Audio")
   const audio = audioStreams.map((s) => ({
     index: s.Index,
@@ -180,6 +188,7 @@ export function buildItemTracks(item: JellyfinItem): ItemTracksDTO {
     byLang("eng") ?? byLang("jpn") ?? audioStreams.find((s) => s.IsDefault) ?? audioStreams[0]
   const intro = introRangeSeconds(item)
   return {
+    hlsUrl: signMediaUrls(userId, item.Id).hlsUrl,
     audio,
     subtitles,
     preferredAudioIndex: preferred ? preferred.Index : null,
@@ -269,7 +278,7 @@ export class MediaController extends Controller {
   ): Promise<ItemTracksDTO> {
     const actor = actorFrom(req)
     const { jellyfinUserId } = await resolveJellyfinUser(actor)
-    return buildItemTracks(await getJellyfin().item(jellyfinUserId, itemId))
+    return buildItemTracks(actor.id, await getJellyfin().item(jellyfinUserId, itemId))
   }
 
   @Post("progress")

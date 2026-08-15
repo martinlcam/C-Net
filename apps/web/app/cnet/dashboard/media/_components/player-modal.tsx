@@ -100,6 +100,22 @@ export function PlayerModal({
   // the active <video> has already been unmounted by the keyed remount.
   const lastPosRef = useRef(0)
 
+  // Signed HLS URL for the current item, minted by the tracks fetch. Deliberately not
+  // `item.hlsUrl`: that one is signed when the library list is fetched, and the list is
+  // never refetched while a tab sits open (refetchOnWindowFocus is off), so a player
+  // opened later would start on a signature that expires mid-episode.
+  const [streamUrl, setStreamUrl] = useState<string | null>(null)
+  // Bumped to force a full rebuild of the warm instances — the recovery path below.
+  const [reloadNonce, setReloadNonce] = useState(0)
+  const [recovering, setRecovering] = useState(false)
+  const recoverAttempts = useRef(0)
+  const rebuildTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rebuilding = useRef(false)
+  // Consecutive fatal hls.js errors per warm instance, so we escalate rather than
+  // retry the same recovery forever.
+  const fatalCount = useRef(new Map<number, number>())
+  const itemIdRef = useRef(item.id)
+
   // Server-provided audio tracks. `audioIndex` is the active (audible) Jellyfin stream
   // index; `undefined` = still loading (gates stream setup so we load the right track
   // once instead of flashing the file's default first). `null` = file default.
@@ -178,6 +194,9 @@ export function PlayerModal({
   useEffect(() => {
     activeAudioRef.current = audioIndex ?? AUDIO_DEFAULT
   }, [audioIndex])
+  useEffect(() => {
+    itemIdRef.current = item.id
+  }, [item.id])
 
   // Apply the chosen subtitle across every warm <video>: "showing" on the active one,
   // "hidden" on the standbys (so their cues are pre-fetched and appear instantly on an
@@ -208,6 +227,10 @@ export function PlayerModal({
     setIntro(null)
     setSettingsOpen(false)
     setCurSub(-1)
+    setStreamUrl(null)
+    setRecovering(false)
+    recoverAttempts.current = 0
+    fatalCount.current.clear()
     wasPlayingRef.current = true
     seekTargetRef.current =
       item.resumePositionTicks > 0 ? item.resumePositionTicks / TICKS_PER_SECOND : 0
@@ -215,6 +238,7 @@ export function PlayerModal({
     getItemTracks(item.id)
       .then((t) => {
         if (cancelled) return
+        setStreamUrl(t.hlsUrl)
         setAudioOpts(t.audio)
         setSubTracks(t.subtitles)
         setCreditsStart(t.creditsStartSeconds)
@@ -229,6 +253,7 @@ export function PlayerModal({
       .catch(() => {
         if (cancelled) return
         activeAudioRef.current = AUDIO_DEFAULT
+        setStreamUrl(item.hlsUrl) // list-signed URL is all we have if tracks failed
         setAudioIndex(null) // fall back to the stream's default audio
       })
     return () => {
@@ -239,15 +264,50 @@ export function PlayerModal({
   // Full-file WebVTT URL for a subtitle stream, signed via the item's HLS URL and routed
   // through the proxy's .vtt sanitizer. One file with every cue — Jellyfin's 30s HLS
   // subtitle windows drop all cues after the OP for typeset anime ASS.
+  const signed = streamUrl ?? item.hlsUrl
   const subtitleUrl = (streamIndex: number) =>
-    `${mediaUrl(item.hlsUrl)}&path=${encodeURIComponent(`${item.id}/Subtitles/${streamIndex}/0/Stream.vtt`)}`
+    `${mediaUrl(signed)}&path=${encodeURIComponent(`${item.id}/Subtitles/${streamIndex}/0/Stream.vtt`)}`
   const srcFor = (ai: number) =>
-    mediaUrl(item.hlsUrl) + (ai !== AUDIO_DEFAULT ? `&audioStreamIndex=${ai}` : "")
+    mediaUrl(signed) + (ai !== AUDIO_DEFAULT ? `&audioStreamIndex=${ai}` : "")
+
+  /**
+   * Tear the stream down and build it again from the current position, on a freshly
+   * signed URL. This is the escape hatch from a *fatal* hls.js error: hls.js latches
+   * its stream controller into an error state and never loads again on its own, so
+   * without this the picture simply freezes for good — which is exactly how coming
+   * back to a player that had been left alone used to fail (signature aged out, or
+   * the socket/decoder went away while the tab was in the background).
+   */
+  const rebuild = useCallback(() => {
+    if (rebuilding.current) return
+    rebuilding.current = true
+    setRecovering(true)
+    const active = getActive()
+    seekTargetRef.current = active?.currentTime ?? lastPosRef.current
+    wasPlayingRef.current = active ? !active.paused : true
+    const id = itemIdRef.current
+    // Back off so a box that is genuinely down isn't hammered with transcode starts.
+    const wait = Math.min(1000 * 2 ** recoverAttempts.current++, 15_000)
+    rebuildTimer.current = setTimeout(() => {
+      // Re-sign first: once `exp` has passed every segment 403s, and reloading the
+      // same URL can only 403 again.
+      getItemTracks(id)
+        .then((t) => {
+          if (itemIdRef.current === id) setStreamUrl(t.hlsUrl)
+        })
+        .catch(() => {}) // no fresh signature — a plain rebuild still clears a wedged decoder
+        .finally(() => {
+          if (itemIdRef.current === id) setReloadNonce((n) => n + 1)
+          else rebuilding.current = false
+        })
+    }, wait)
+  }, [getActive])
 
   // Build one warm hls.js instance per audio track and attach each to its own <video>.
   // Rebuilt only on item / track-set change — an audio switch reuses these instances.
   // biome-ignore lint/correctness/useExhaustiveDependencies: setup keys on item + track set; other reads are refs
   useEffect(() => {
+    rebuilding.current = false
     if (audioKeys.length === 0) return
     const startAt = seekTargetRef.current
     const resume = wasPlayingRef.current
@@ -293,12 +353,42 @@ export function PlayerModal({
           backBufferLength: isActive ? 30 : 6,
         })
         hlsRefs.current.set(ai, hls)
+        // Fatal errors are terminal unless we act on them — see `rebuild`. Escalate
+        // in place first (cheap: no new transcode session on the box), then fall back
+        // to a full re-signed reload.
+        hls.on(Hls.Events.ERROR, (_evt, data) => {
+          if (!data.fatal) return
+          const n = (fatalCount.current.get(ai) ?? 0) + 1
+          fatalCount.current.set(ai, n)
+          if (ai === activeAudioRef.current) setRecovering(true)
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && n <= 2) {
+            // A backgrounded tab or a sleeping machine can lose the decoder; hls.js
+            // can usually re-attach it without refetching anything.
+            if (n === 2) hls.swapAudioCodec()
+            hls.recoverMediaError()
+            return
+          }
+          const code = data.response?.code
+          // 401/403 means the signature aged out, so retrying this URL is pointless.
+          if (
+            data.type === Hls.ErrorTypes.NETWORK_ERROR &&
+            n <= 2 &&
+            code !== 401 &&
+            code !== 403
+          ) {
+            hls.startLoad()
+            return
+          }
+          rebuild()
+        })
         hls.loadSource(src)
         hls.attachMedia(video)
         hls.on(Hls.Events.MANIFEST_PARSED, onReady)
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = src // Safari plays HLS natively.
         video.addEventListener("loadedmetadata", onReady, { once: true })
+        // No hls.js to escalate through here — a native error is already terminal.
+        video.addEventListener("error", rebuild)
       }
     }
 
@@ -306,8 +396,13 @@ export function PlayerModal({
       void reportStopped(itemId, Math.round(lastPosRef.current * TICKS_PER_SECOND)).catch(() => {})
       for (const h of hlsRefs.current.values()) h.destroy()
       hlsRefs.current.clear()
+      // The <video> elements outlive a rebuild (same React key), so the native-HLS
+      // error listener has to come off or it stacks up one per rebuild.
+      mediaRefs.current.forEach((v) => {
+        v.removeEventListener("error", rebuild)
+      })
     }
-  }, [item.id, audioKeysSig])
+  }, [item.id, audioKeysSig, reloadNonce])
 
   // Bind playback listeners to whichever <video> is currently active. Re-runs on an audio
   // switch (cheap add/removeEventListener) but never touches the hls instances.
@@ -360,6 +455,13 @@ export function PlayerModal({
       mutedRef.current = a.muted
       volumeRef.current = a.volume
     }
+    // Frames are flowing again — clear the recovery state so the next hiccup gets a
+    // full escalation ladder rather than resuming a half-spent one.
+    const onPlaying = () => {
+      recoverAttempts.current = 0
+      fatalCount.current.clear()
+      setRecovering(false)
+    }
     const onEnded = () => {
       void setWatched(item.id, true).catch(() => {})
       if (index < list.length - 1) setIndex((i) => i + 1)
@@ -373,6 +475,7 @@ export function PlayerModal({
     video.addEventListener("play", onPlayEv)
     video.addEventListener("pause", onPauseEv)
     video.addEventListener("volumechange", onVol)
+    video.addEventListener("playing", onPlaying)
     video.addEventListener("ended", onEnded)
     applySubtitleMode()
 
@@ -389,6 +492,7 @@ export function PlayerModal({
       video.removeEventListener("play", onPlayEv)
       video.removeEventListener("pause", onPauseEv)
       video.removeEventListener("volumechange", onVol)
+      video.removeEventListener("playing", onPlaying)
       video.removeEventListener("ended", onEnded)
     }
   }, [
@@ -402,6 +506,13 @@ export function PlayerModal({
     applySubtitleMode,
     onClose,
   ])
+
+  useEffect(
+    () => () => {
+      if (rebuildTimer.current) clearTimeout(rebuildTimer.current)
+    },
+    []
+  )
 
   useEffect(() => {
     const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement))
@@ -628,6 +739,15 @@ export function PlayerModal({
           </video>
         )
       })}
+
+      {/* Recovering from a fatal stream error — never let the picture freeze silently. */}
+      {recovering ? (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <span className="rounded-md bg-black/70 px-4 py-2 font-medium text-sm text-white ring-1 ring-white/20">
+            Reconnecting…
+          </span>
+        </div>
+      ) : null}
 
       {/* Controls overlay */}
       <div

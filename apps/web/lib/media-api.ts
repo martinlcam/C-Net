@@ -81,6 +81,8 @@ export type SubtitleTrack = {
   forced: boolean
 }
 export type ItemTracks = {
+  /** Signed HLS URL minted at request time — see ItemTracksDTO on the API side. */
+  hlsUrl: string
   audio: AudioTrack[]
   subtitles: SubtitleTrack[]
   preferredAudioIndex: number | null
