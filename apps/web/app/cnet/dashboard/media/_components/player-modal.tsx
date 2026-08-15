@@ -487,12 +487,14 @@ export function PlayerModal({
           e.preventDefault()
           togglePlay()
           break
+        // Seek silently. Flashing the whole overlay up on every ±5s nudge covers
+        // the picture you are scrubbing through, so these skip the reveal below.
         case "ArrowLeft":
           skip(-SKIP)
-          break
+          return
         case "ArrowRight":
           skip(SKIP)
-          break
+          return
         case "f":
           toggleFullscreen()
           break
