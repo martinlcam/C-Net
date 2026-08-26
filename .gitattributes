@@ -1,4 +1,4 @@
-# Enforce LF line endings repo-wide so Biome (LF) passes on every platform.
+# Enforce LF line endings repo-wide so Biome (LF) passes on every platform. <- dumb as hell
 # text=auto lets git auto-detect binary; eol=lf forces LF on text files at checkout.
 * text=auto eol=lf
 

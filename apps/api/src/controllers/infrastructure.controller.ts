@@ -6,6 +6,10 @@ import { eq } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Post, Request, Response, Route, Security } from "tsoa"
 
+
+//type this no why interface here, isnt response body already typed also
+//jokes its the cost of this this.setStatus(404); return { error }
+
 interface InfrastructureConfigBody {
   proxmoxHost: string
   proxmoxUser: string
