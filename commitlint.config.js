@@ -14,5 +14,3 @@ export default {
     "type-enum": [2, "always", allowedTypes],
   },
 }
-
-//aosdifjaslkdjhasdfklhj
