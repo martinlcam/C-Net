@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ChevronRight, FileUp, FolderPlus, FolderUp, Search, Upload } from "lucide-react"
-import { useId, useRef, useState } from "react"
+import { type RefObject, useId, useRef, useState } from "react"
 import { type TransferItem, useTransferStore } from "@/lib/stores/transfers"
 import {
   createDir,
@@ -40,9 +40,8 @@ export default function FilesPage() {
   const [prompt, setPrompt] = useState<TextPrompt | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
+  const [uploadMenuOpen, setUploadMenuOpen] = useState(false)
   const searchId = useId()
-  const filesId = useId()
-  const folderId = useId()
 
   const searching = query.trim().length > 0
 
@@ -136,6 +135,17 @@ export default function FilesPage() {
     }
   }
 
+  // Open the picker synchronously inside the select handler, while the tap's user
+  // activation is still live, and only then close the menu ourselves. Letting Radix
+  // close it first unmounts the menu before a <label>'s default action runs; Chrome
+  // still resolves a detached label's control, WebKit doesn't, so on iOS the label
+  // approach opened nothing.
+  const openPicker = (input: RefObject<HTMLInputElement | null>) => (event: Event) => {
+    event.preventDefault()
+    input.current?.click()
+    setUploadMenuOpen(false)
+  }
+
   const data = listing.data
   const error = listing.error ?? searchResults.error
   const loading = searching ? searchResults.isLoading : listing.isLoading
@@ -174,7 +184,7 @@ export default function FilesPage() {
           </Button>
           {/* One Upload button, two pickers: a native file dialog can select either
               loose files or a directory, never both, so the choice lives in the menu. */}
-          <DropdownMenu>
+          <DropdownMenu open={uploadMenuOpen} onOpenChange={setUploadMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button>
                 <Upload className="mr-2 h-4 w-4" />
@@ -182,19 +192,13 @@ export default function FilesPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              {/* Labels, not onSelect handlers: the browser opens the picker straight
-                  off the label click, so it never races the menu's close + focus restore. */}
-              <DropdownMenuItem asChild>
-                <label htmlFor={filesId} className="flex cursor-default items-center gap-2">
-                  <FileUp className="h-4 w-4" />
-                  Files…
-                </label>
+              <DropdownMenuItem onSelect={openPicker(fileInputRef)}>
+                <FileUp className="mr-2 h-4 w-4" />
+                Files…
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <label htmlFor={folderId} className="flex cursor-default items-center gap-2">
-                  <FolderUp className="h-4 w-4" />
-                  Folder…
-                </label>
+              <DropdownMenuItem onSelect={openPicker(folderInputRef)}>
+                <FolderUp className="mr-2 h-4 w-4" />
+                Folder…
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -202,7 +206,6 @@ export default function FilesPage() {
               included, so narrowing the picker would only hide valid files. */}
           <input
             ref={fileInputRef}
-            id={filesId}
             type="file"
             multiple
             className="hidden"
@@ -210,7 +213,6 @@ export default function FilesPage() {
           />
           <input
             ref={folderInputRef}
-            id={folderId}
             type="file"
             multiple
             // Non-standard directory-picker attributes; let the browser walk the
