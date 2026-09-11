@@ -60,7 +60,7 @@
 
 **`@cnet/web`** (foundation only; UI is Plan 3)
 - Modify `apps/web/lib/auth.config.ts` — allowlist gate + `role` in jwt/session callbacks.
-- Create `apps/web/middleware.ts` — redirect `storage` users to `/vault` away from other routes (route guard only; the page itself is Plan 3).
+- Create `apps/web/proxy.ts` (was `middleware.ts` before Next 16) — redirect `storage` users to `/vault` away from other routes (route guard only; the page itself is Plan 3).
 
 **Deploy / docs**
 - Modify `deploy/Caddyfile` — `/dl/*` direct-serve block (prod optimization).
