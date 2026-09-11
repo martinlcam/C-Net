@@ -24,7 +24,8 @@
     "VAULT_ALLOWLIST",
     "VAULT_SIGNING_SECRET",
     "VAULT_UPLOAD_TTL_HOURS",
-    "VAULT_TRASH_TTL_DAYS"
+    "VAULT_TRASH_TTL_DAYS",
+    "CNET_RAW"
   ],
   "tasks": {
     "api:generate": {

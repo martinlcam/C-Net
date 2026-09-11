@@ -20,6 +20,7 @@ C-Net — a self-hosted homelab dashboard. Bun-managed Turborepo (Bun is both pa
 ```bash
 bun install              # Install dependencies
 bun run dev              # All apps via turbo (dev:web / dev:api / dev:workers for one)
+bun run dev:raw          # Web only, no .env/DB/Redis/API needed — auth stubbed as super (frontend work)
 bun run build            # turbo build (also the type-check gate — runs tsoa codegen + tsc + next build)
 bun run lint             # Biome check + Sonar (if configured)
 bun run lint:check       # Biome check only (CI uses this)

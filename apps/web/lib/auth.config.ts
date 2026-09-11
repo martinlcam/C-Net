@@ -8,6 +8,7 @@ import type { NextAuthConfig, NextAuthResult, Session } from "next-auth"
 import NextAuth from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import Google from "next-auth/providers/google"
+import { RAW_MODE, rawSession } from "./raw-mode"
 
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days
 
@@ -15,6 +16,10 @@ const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60 // 30 days
 function authSecret(): string | undefined {
   return process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
 }
+
+// Auth.js throws MissingSecret (500 on /api/auth/*) without one; raw mode never signs a real
+// session, so any fixed string keeps the handlers alive.
+const RAW_SECRET = "cnet-raw-dev-secret"
 
 // Validate required environment variables at runtime (not during build)
 function validateEnv() {
@@ -105,17 +110,31 @@ export const authConfig: NextAuthConfig = {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE_SECONDS,
   },
-  secret: authSecret(),
+  secret: authSecret() ?? (RAW_MODE ? RAW_SECRET : undefined),
 }
 
 const nextAuth = NextAuth(authConfig)
 
-export const auth: (...args: [NextRequest] | []) => Promise<Session | null> = nextAuth.auth
+export const auth: (...args: [NextRequest] | []) => Promise<Session | null> = RAW_MODE
+  ? async () => rawSession()
+  : nextAuth.auth
 
 // Full-typed wrapper for Next.js middleware (supports the `auth((req) => ...)` overload).
 export const authMiddleware: NextAuthResult["auth"] = nextAuth.auth
 
-export const handlers: {
+type AuthHandlers = {
   GET: (request: NextRequest) => Promise<Response>
   POST: (request: NextRequest) => Promise<Response>
-} = nextAuth.handlers
+}
+
+// useSession()/getSession() read /api/auth/session, so raw mode must answer there too or
+// client components would render signed-out while server components see the stub.
+const rawHandlers: AuthHandlers = {
+  GET: (request) =>
+    request.nextUrl.pathname.endsWith("/session")
+      ? Promise.resolve(Response.json(rawSession()))
+      : nextAuth.handlers.GET(request),
+  POST: nextAuth.handlers.POST,
+}
+
+export const handlers: AuthHandlers = RAW_MODE ? rawHandlers : nextAuth.handlers

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=@cnet/web",
+    "dev:raw": "CNET_RAW=1 turbo dev --filter=@cnet/web",
     "dev:api": "turbo dev --filter=@cnet/api",
     "dev:workers": "turbo dev --filter=@cnet/workers",
     "build": "turbo build",
