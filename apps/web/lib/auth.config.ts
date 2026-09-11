@@ -119,7 +119,7 @@ export const auth: (...args: [NextRequest] | []) => Promise<Session | null> = RA
   ? async () => rawSession()
   : nextAuth.auth
 
-// Full-typed wrapper for Next.js middleware (supports the `auth((req) => ...)` overload).
+// Full-typed wrapper for Next.js proxy/middleware (supports the `auth((req) => ...)` overload).
 export const authMiddleware: NextAuthResult["auth"] = nextAuth.auth
 
 type AuthHandlers = {

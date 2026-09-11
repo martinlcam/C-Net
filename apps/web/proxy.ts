@@ -3,18 +3,18 @@ import { type NextRequest, NextResponse } from "next/server"
 // Edge-safe storage-role guard.
 //
 // The Vault is enforced server-side: the API returns 401 for unauthenticated
-// requests and server components/layouts enforce authorization. This middleware
-// only provides the UX redirect that keeps "storage"-role users off admin/settings
-// routes (overview, proxmox, monitoring, and vault remain accessible).
+// requests and server components/layouts enforce authorization. This proxy
+// (Next 16's replacement for the `middleware` file convention) only provides the
+// UX redirect that keeps "storage"-role users off admin/settings routes
+// (overview, proxmox, monitoring, and vault remain accessible).
 //
 // It deliberately does NOT import the auth config: that config overrides the JWT
-// codec with `jsonwebtoken`, which depends on Node's `crypto` — unavailable in
-// the Edge runtime where middleware runs (importing it 500s every request).
-// Instead we read the role from the session JWT payload WITHOUT verifying its
-// signature. That is sufficient for a redirect (forging a token only changes
-// what UI a user is steered to; the API/layouts still authorize every action)
-// and keeps the middleware free of Node-only crypto. Anything unexpected fails
-// open, so site availability never depends on this guard.
+// codec with `jsonwebtoken`, which pulls Node's `crypto` and the full auth setup
+// into every request. Instead we read the role from the session JWT payload
+// WITHOUT verifying its signature. That is sufficient for a redirect (forging a
+// token only changes what UI a user is steered to; the API/layouts still
+// authorize every action) and keeps the proxy dependency-free. Anything
+// unexpected fails open, so site availability never depends on this guard.
 
 const SESSION_COOKIE_FRAGMENT = "authjs.session-token"
 const STORAGE_LANDING = "/cnet/dashboard/files"
@@ -52,7 +52,7 @@ function isSuperOnlyRoute(pathname: string): boolean {
   return SUPER_ONLY_PREFIXES.some((p) => pathname.startsWith(p))
 }
 
-export default function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   if (readRole(req) === "storage" && isSuperOnlyRoute(pathname)) {
