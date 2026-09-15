@@ -71,7 +71,7 @@ export function HeroSection() {
           </h1>
         </div>
 
-        {/* tagline, split box, accent panel */}
+        {/* tagline, split box, accent panel, caption box */}
         <div className={`${styles.box} ${styles.tag}`}>
           <p className={styles.lede}>
             Building and shipping production software across the full stack.
@@ -94,7 +94,7 @@ export function HeroSection() {
         </div>
         <div className={`${styles.box} ${styles.mid}`} aria-hidden="true" />
         <div className={`${styles.box} ${styles.cta}`}>
-          <div className={styles.panelOutline}>
+          <div className={styles.panelWrap}>
             <div className={styles.panel}>
               <a href="#projects" className={`${styles.btn} ${styles.btnSolid}`}>
                 View Projects
@@ -104,6 +104,9 @@ export function HeroSection() {
               </a>
             </div>
           </div>
+        </div>
+        <div className={`${styles.box} ${styles.rail3}`} aria-hidden="true" />
+        <div className={`${styles.box} ${styles.cap}`}>
           <p className={`${styles.caption} ${styles.ctaCaption}`}>Projects / Contact / Work</p>
         </div>
 
@@ -123,11 +126,9 @@ export function HeroSection() {
             Drizzle ORM, PostgreSQL, and Docker.
           </p>
         </div>
-        <div className={`${styles.box} ${styles.b4}`} aria-hidden="true">
-          <svg className={styles.chamfer} viewBox="0 0 27 27" fill="none" aria-hidden="true">
-            <line x1="0" y1="0.5" x2="26.5" y2="27" stroke="#161616" strokeWidth="1" />
-          </svg>
-        </div>
+        <div className={`${styles.box} ${styles.b4top}`} aria-hidden="true" />
+        <div className={`${styles.box} ${styles.b4}`} aria-hidden="true" />
+        <div className={`${styles.box} ${styles.rrail2}`} aria-hidden="true" />
       </section>
     </div>
   )

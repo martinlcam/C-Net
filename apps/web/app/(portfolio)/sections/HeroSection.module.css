@@ -18,6 +18,8 @@
 .shell {
   background: #d6d6d6;
   border-bottom: 1px solid #161616;
+  /* lets the sheet size its tracks in cqw, so every box knows the column width */
+  container-type: inline-size;
 }
 
 .sheet {
@@ -39,25 +41,42 @@
   --hx-reach-left: 3px;
   /* size of the small boxes that live in the rails */
   --hx-railbox: 44px;
+  --hx-panel-h: 150px;
+  --hx-cut: 24px;
+  /* every track is snapped to whole pixels so the 1px lines never land on a
+     half pixel and smear; the right rail takes whatever is left over */
+  --hx-railw: round(down, 6cqw, 1px);
+  --hx-colw: round(down, calc((100cqw - 2 * var(--hx-railw) - 5px) / 4), 1px);
 
   position: relative;
   width: 100%;
   display: grid;
-  gap: 1px;
+  /* columns share 1px gap lines; horizontal lines are explicit 1px rows, so a
+     row boundary only draws a line where no box covers it */
+  gap: 0 1px;
   background: var(--hx-ink);
   color: var(--hx-ink);
-  /* every track is snapped to whole pixels so the 1px lines never land on a
-     half pixel and smear; the right rail takes whatever is left over */
-  --hx-col: round(down, calc((100% - 2 * var(--hx-rail) - 5px) / 4), 1px);
-  grid-template-columns: round(down, var(--hx-rail), 1px) repeat(4, var(--hx-col)) minmax(0, 1fr);
-  grid-template-rows: var(--hx-row-top) var(--hx-row-word) minmax(var(--hx-row-mid), auto) var(
-      --hx-row-bottom
-    );
+  grid-template-columns: var(--hx-railw) repeat(4, var(--hx-colw)) auto;
+  grid-template-rows:
+    var(--hx-row-top)
+    1px
+    var(--hx-row-word)
+    1px
+    calc(var(--hx-panel-h) - var(--hx-cut))
+    minmax(calc(var(--hx-row-mid) - var(--hx-panel-h) + var(--hx-cut)), auto)
+    1px
+    var(--hx-cut)
+    calc(var(--hx-row-bottom) - var(--hx-cut));
   grid-template-areas:
-    "lrail t1   t2   t3   t4   rrail"
-    "lrail word word word word rrail"
-    "lrail tag  tag  mid  cta  rrail"
-    "lrail b1   b2   b3   b4   rrail";
+    "lrail t1    t2    t3    t4    rrail"
+    "lrail .     .     .     .     rrail"
+    "lrail word  word  word  word  rrail"
+    "lrail .     .     .     .     rrail"
+    "lrail tag   tag   mid   cta   rail3"
+    "lrail tag   tag   mid   cap   cap"
+    "lrail .     .     .     b4top b4top"
+    "lrail b1    b2    b3    b4top b4top"
+    "lrail b1    b2    b3    b4    rrail2";
 }
 
 .box {
@@ -72,6 +91,12 @@
 }
 .rrail {
   grid-area: rrail;
+}
+.rail3 {
+  grid-area: rail3;
+}
+.rrail2 {
+  grid-area: rrail2;
 }
 .t1 {
   grid-area: t1;
@@ -97,6 +122,9 @@
 .cta {
   grid-area: cta;
 }
+.cap {
+  grid-area: cap;
+}
 .b1 {
   grid-area: b1;
 }
@@ -105,6 +133,9 @@
 }
 .b3 {
   grid-area: b3;
+}
+.b4top {
+  grid-area: b4top;
 }
 .b4 {
   grid-area: b4;
@@ -156,23 +187,34 @@
 .whiteBox {
   position: absolute;
   right: -1px;
-  top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) + 1px + var(--hx-row-mid));
+  /* anchored to the bottom row (the third row can grow with its text): its
+     bottom border lies on the grid box's line, its top on the row's line */
+  bottom: calc(var(--hx-row-bottom) * 0.45);
   width: var(--hx-railbox);
-  height: calc(var(--hx-row-bottom) * 0.55);
+  height: calc(var(--hx-row-bottom) * 0.55 + 1px);
   box-sizing: border-box;
   border: 1px solid var(--hx-ink);
   background: var(--hx-white);
 }
 
-/* the top strip's bottom line runs on through the right rail */
-.rrail::before {
+/* the right rail covers the two line rows beside it, so it draws those lines
+   itself: under the top strip and under the wordmark box */
+.rrail::before,
+.rrail::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: var(--hx-row-top);
   height: 1px;
   background: var(--hx-ink);
+}
+
+.rrail::before {
+  top: var(--hx-row-top);
+}
+
+.rrail::after {
+  top: calc(var(--hx-row-top) + 1px + var(--hx-row-word));
 }
 
 /* the small outlined square with a rounded-corner glyph, sitting on that line */
@@ -347,41 +389,46 @@
   background: var(--hx-ink);
 }
 
+/* the panel box is only as tall as the straight part of the panel's right
+   edge, so the grid line beside it ends exactly where the chamfer begins.
+   The panel itself is drawn 24px taller and spills over the caption box. */
 .cta {
-  --hx-panel-h: 150px;
-  --hx-cut: 24px;
   overflow: visible;
 }
 
-/* the right grid line ends where the chamfer begins; below it the box is open */
-.cta::after {
-  content: "";
+.panelWrap {
   position: absolute;
-  top: calc(var(--hx-panel-h) - var(--hx-cut));
-  bottom: 0;
-  right: -1px;
-  width: 1px;
-  background: var(--hx-paper);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--hx-panel-h);
+  z-index: 1;
 }
 
-/* the panel is outlined all round, chamfer included: a black layer clipped to
-   the shape sits under a red layer clipped to the same shape inset by 1px.
-   It overlaps the box's top, left and right grid lines by 1px so the outline
-   lies on them instead of doubling them. */
-.panelOutline {
+/* the top, left and right edges are the grid's own lines; the panel draws its
+   bottom line and the 45° cut itself */
+.panelWrap::before,
+.panelWrap::after {
+  content: "";
   position: absolute;
-  top: -1px;
-  left: -1px;
-  right: -1px;
-  height: calc(var(--hx-panel-h) + 1px);
+  z-index: 1;
+  height: 1px;
   background: var(--hx-ink);
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    100% calc(100% - var(--hx-cut)),
-    calc(100% - var(--hx-cut)) 100%,
-    0 100%
-  );
+}
+
+.panelWrap::before {
+  left: 0;
+  right: var(--hx-cut);
+  bottom: 0;
+}
+
+.panelWrap::after {
+  right: 0;
+  bottom: calc(var(--hx-cut) - 0.5px);
+  width: calc(var(--hx-cut) * 1.4142);
+  /* anchored at its right end, swung down-left along the cut */
+  transform-origin: 100% 50%;
+  transform: rotate(-45deg);
 }
 
 .panel {
@@ -394,11 +441,11 @@
   padding: 16px 28px 16px 8%;
   background: var(--hx-red);
   clip-path: polygon(
-    1px 1px,
-    calc(100% - 1px) 1px,
-    calc(100% - 1px) calc(100% - var(--hx-cut) - 0.41px),
-    calc(100% - var(--hx-cut) - 0.41px) calc(100% - 1px),
-    1px calc(100% - 1px)
+    0 0,
+    100% 0,
+    100% calc(100% - var(--hx-cut)),
+    calc(100% - var(--hx-cut)) 100%,
+    0 100%
   );
 }
 
@@ -438,10 +485,15 @@
   outline: none;
 }
 
-/* "HUMAN / EXPRESSION / INTEGRATION" sits under the panel, indented like it */
+/* "HUMAN / EXPRESSION / INTEGRATION" sits under the panel, indented like it;
+   it lives in the caption box, which runs on into the rail with no line between */
+.cap {
+  overflow: visible;
+}
+
 .ctaCaption {
-  top: calc(var(--hx-panel-h) + 22px);
-  left: 8%;
+  top: calc(var(--hx-cut) + 22px);
+  left: calc(var(--hx-colw) * 0.08);
 }
 
 /* ---------- bottom row ---------- */
@@ -509,43 +561,32 @@
   font-size: 13px;
 }
 
-/* the fourth box's top-right corner is chamfered: the top line stops short,
-   a 45° cut joins it to the right line, and the right line carries on down */
-.b4 {
+/* the fourth box's top-right corner is chamfered: its top 24px is a box that
+   also spans the rail (so no line can run beside it) and draws its own top line
+   and 45° cut; the grid line to its right only begins below, beside .b4 */
+.b4top {
   overflow: visible;
 }
 
-.b4::before,
-.b4::after {
+.b4top::before,
+.b4top::after {
   content: "";
   position: absolute;
-  background: var(--hx-paper);
-}
-
-/* hide the last stretch of the top line and the first stretch of the right line */
-.b4::before {
-  top: -1px;
-  right: -1px;
-  width: 27px;
+  top: 0;
   height: 1px;
+  background: var(--hx-ink);
 }
 
-.b4::after {
-  top: -1px;
-  right: -1px;
-  width: 1px;
-  height: 27px;
+.b4top::before {
+  left: 0;
+  width: calc(var(--hx-colw) - var(--hx-cut));
 }
 
-.chamfer {
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 27px;
-  height: 27px;
-  display: block;
-  overflow: visible;
-  z-index: 1;
+.b4top::after {
+  left: calc(var(--hx-colw) - var(--hx-cut));
+  width: calc(var(--hx-cut) * 1.4142);
+  transform-origin: 0 50%;
+  transform: rotate(45deg);
 }
 
 /* ---------- responsive ---------- */
@@ -571,8 +612,8 @@
     --hx-reach: 0px;
     --hx-row-top: 64px;
     --hx-row-word: 260px;
-    --hx-row-mid: 180px;
     --hx-row-bottom: 150px;
+    gap: 1px;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: var(--hx-row-top) var(--hx-row-word) auto auto var(--hx-row-bottom);
     grid-template-areas:
@@ -585,15 +626,33 @@
 
   .lrail,
   .rrail,
+  .rail3,
+  .rrail2,
   .t1,
   .t3,
   .mid,
   .b2,
+  .b4top,
   .b4,
-  .lrail::after,
   .t2::after,
   .t4::after {
     display: none;
+  }
+
+  /* the caption box sits on top of the panel box and shows the caption under it */
+  .cta {
+    min-height: calc(var(--hx-panel-h) + 64px);
+  }
+
+  .cap {
+    grid-area: cta;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .ctaCaption {
+    top: calc(var(--hx-panel-h) + 22px);
+    left: 24px;
   }
 
   .tag {
@@ -601,9 +660,6 @@
   }
   .panel {
     padding: 16px 24px;
-  }
-  .ctaCaption {
-    padding: 16px 0 16px 24px;
   }
 }
 
