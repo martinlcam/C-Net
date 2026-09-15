@@ -215,22 +215,11 @@
   background: var(--hx-slate);
 }
 
-/* the right rail covers the two line rows beside it. It draws the top strip's
-   line itself, over the slate bar; the wordmark's line stops at the bar,
-   whose bottom border carries it, and does not run on across the rail */
-.rrail::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  top: var(--hx-row-top);
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--hx-ink);
-}
-
-/* the small outlined square with a rounded-corner glyph, sitting on that line
-   at the head of the slate bar */
+/* the small outlined square with a rounded-corner glyph at the head of the
+   slate bar. The right rail covers the two line rows beside it, so neither
+   the top strip's line nor the wordmark's runs on across the rail: the mark's
+   bottom border carries the first and the bar's bottom border the second,
+   both only as wide as the bar */
 .railMark {
   position: absolute;
   z-index: 1;
