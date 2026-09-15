@@ -8,9 +8,11 @@
  * the bottom row is four boxes again with a fine-grid sub-box and pixel
  * figure at the left and a chamfered top-right corner at the right. The left
  * rail carries a fully enclosed white target box under the top strip and a
- * white box beside the bottom row; the right rail is one unbroken outlined
- * bar from the top of the sheet to its bottom, carrying a small outlined mark
- * at the top and a checker block straddling its line above the panel.
+ * white box beside the bottom row; the right rail is one unbroken column
+ * from the top of the sheet to its bottom, and holds a tall slate bar that
+ * climbs to the masthead's rule and ends on the wordmark's bottom line, with
+ * a small outlined mark seated on its top edge and a checker block straddling
+ * the rail's line at its foot.
  *
  * The column lines also reach up through the masthead's white strip to its
  * lower rule. The masthead sits lower on the left (photo) and higher on the
@@ -26,6 +28,7 @@
 .sheet {
   --hx-paper: #ffffff;
   --hx-white: #ececec;
+  --hx-slate: #d6d6d6;
   --hx-ink: #161616;
   --hx-ink-soft: #3a3a3a;
   --hx-grid-line: #8c8c8c;
@@ -192,12 +195,28 @@
   background: var(--hx-white);
 }
 
+/* the tall slate bar inset in the rail: its top border sits just under the
+   masthead's rule, level with the column lines' reach, and its bottom border
+   lies on the wordmark box's line */
+.railBar {
+  position: absolute;
+  z-index: 0;
+  left: 6px;
+  right: 8px;
+  top: calc(-1 * var(--hx-reach));
+  height: calc(var(--hx-reach) + var(--hx-row-top) + 1px + var(--hx-row-word) + 1px);
+  box-sizing: border-box;
+  border: 1px solid var(--hx-ink);
+  background: var(--hx-slate);
+}
+
 /* the right rail covers the two line rows beside it, so it draws those lines
-   itself: under the top strip and under the wordmark box */
+   itself: under the top strip and under the wordmark box, over the slate bar */
 .rrail::before,
 .rrail::after {
   content: "";
   position: absolute;
+  z-index: 1;
   left: 0;
   right: 0;
   height: 1px;
@@ -212,10 +231,12 @@
   top: calc(var(--hx-row-top) + 1px + var(--hx-row-word));
 }
 
-/* the small outlined square with a rounded-corner glyph, sitting on that line */
+/* the small outlined square with a rounded-corner glyph, sitting on that line
+   and flush with the slate bar's right edge */
 .railMark {
   position: absolute;
-  left: 0;
+  z-index: 1;
+  right: 8px;
   top: calc(var(--hx-row-top) - var(--hx-railbox) + 1px);
   width: var(--hx-railbox);
   height: var(--hx-railbox);
@@ -223,7 +244,6 @@
   place-items: center;
   box-sizing: border-box;
   border: 1px solid var(--hx-ink);
-  border-left: 0;
 }
 
 .railMark svg {
@@ -234,6 +254,7 @@
 /* the checker block straddles the rail's line just above the wordmark's bottom edge */
 .checker {
   position: absolute;
+  z-index: 1;
   left: -9px;
   top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) - 44px);
   width: 40px;
