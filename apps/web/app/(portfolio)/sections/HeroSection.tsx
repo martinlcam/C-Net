@@ -94,13 +94,15 @@ export function HeroSection() {
         </div>
         <div className={`${styles.box} ${styles.mid}`} aria-hidden="true" />
         <div className={`${styles.box} ${styles.cta}`}>
-          <div className={styles.panel}>
-            <a href="#projects" className={`${styles.btn} ${styles.btnSolid}`}>
-              View Projects
-            </a>
-            <a href="#contact" className={styles.btn}>
-              Get in Touch
-            </a>
+          <div className={styles.panelOutline}>
+            <div className={styles.panel}>
+              <a href="#projects" className={`${styles.btn} ${styles.btnSolid}`}>
+                View Projects
+              </a>
+              <a href="#contact" className={styles.btn}>
+                Get in Touch
+              </a>
+            </div>
           </div>
           <p className={`${styles.caption} ${styles.ctaCaption}`}>Projects / Contact / Work</p>
         </div>
