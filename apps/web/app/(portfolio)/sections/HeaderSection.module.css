@@ -6,8 +6,8 @@
  * photo parallelogram, tied together by white line art.
  *
  * The palette is black, slate and white to match the hero sheet below it
- * (slate paper, black lines, white boxes): white band, strip and news bar on
- * slate, with black hairlines and text. The three accent colours are
+ * (slate paper, black lines, white boxes): slate band and news bar set off by
+ * black hairlines, a white tab strip, black text. The three accent colours are
  * defined here for the page's highlights but the masthead itself stays
  * neutral. All colors live here because the masthead is one fixed-palette
  * illustration, not a themed surface, so it looks the same on the cream pages
@@ -29,13 +29,13 @@
   --gc-paper: #d6d6d6;
   --gc-ink: #161616;
   --gc-white: #f6f6f6;
-  --gc-steel: var(--gc-white);
+  --gc-steel: var(--gc-paper);
   --gc-steel-line: var(--gc-ink);
   --gc-strip: var(--gc-white);
   --gc-strip-ink: var(--gc-ink);
   --gc-strip-hover: var(--gc-ink);
   --gc-strip-hover-ink: var(--gc-white);
-  --gc-bar: var(--gc-white);
+  --gc-bar: var(--gc-paper);
   --gc-bar-ink: var(--gc-ink);
   --gc-bar-edge: var(--gc-ink);
   --gc-band-ink: var(--gc-ink);
@@ -60,7 +60,7 @@
   background: var(--gc-paper);
 }
 
-/* ---------- top block: logo column, slanted white band, white tab strip ---------- */
+/* ---------- top block: logo column, slanted slate band, white tab strip ---------- */
 
 .top {
   position: relative;

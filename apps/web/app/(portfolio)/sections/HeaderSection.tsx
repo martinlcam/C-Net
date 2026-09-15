@@ -76,7 +76,7 @@ function SectionArt() {
         stroke="#8c8c8c"
         vectorEffect="non-scaling-stroke"
       />
-      <polygon points="241,1 241,45 195,45" fill="#f6f6f6" />
+      <polygon points="241,1 241,45 195,45" fill="#d6d6d6" />
       <polyline
         points="220,20 178,63 0,63"
         stroke="#ffffff"
