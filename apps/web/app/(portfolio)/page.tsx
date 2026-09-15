@@ -14,7 +14,6 @@ export default function HomePage() {
     <div className="min-h-screen w-full bg-[#faf6f1]">
       <AuthModal />
       <HeaderSection />
-      <div className="h-[65px]" aria-hidden="true" />
       <HeroSection />
       <TechStripSection />
       <div>

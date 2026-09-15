@@ -16,7 +16,6 @@ export default function BfidaPage() {
     <div className="min-h-screen w-full bg-[#faf6f1]">
       <AuthModal />
       <HeaderSection />
-      <div className="h-[65px]" aria-hidden="true" />
       <BfidaHeroSection />
       <BfidaGameSection onScoreRecorded={() => setScoreVersion((v) => v + 1)} />
       <BfidaScoreboardSection refreshKey={scoreVersion} />
