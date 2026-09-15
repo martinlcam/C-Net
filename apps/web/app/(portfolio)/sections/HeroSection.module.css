@@ -215,6 +215,7 @@
   overflow: visible;
 }
 
+.lrail::after,
 .t1::after,
 .t2::after,
 .t3::after,
@@ -542,6 +543,7 @@
   .mid,
   .b2,
   .b4,
+  .lrail::after,
   .t2::after,
   .t4::after {
     display: none;
