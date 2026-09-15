@@ -43,7 +43,6 @@ export function HeroSection() {
           <span className={styles.railMark}>
             <CornerMark />
           </span>
-          <span className={styles.checker} />
         </div>
 
         {/* top strip: four boxes */}
