@@ -50,14 +50,14 @@ function SectionArt() {
         </filter>
       </defs>
       <g clipPath={`url(#${clipId})`}>
-        <rect x="0" y="20" width="352" height="83" fill="#1c3572" />
+        <rect x="0" y="20" width="352" height="83" fill="#2a2a2a" />
         <g filter={`url(#${blurId})`}>
-          <ellipse cx="60" cy="88" rx="70" ry="26" fill="#0b1633" />
-          <ellipse cx="125" cy="50" rx="42" ry="20" fill="#e3ebfb" />
-          <ellipse cx="220" cy="72" rx="75" ry="30" fill="#7e97d0" />
-          <ellipse cx="300" cy="42" rx="45" ry="18" fill="#b9c8ea" />
-          <ellipse cx="330" cy="92" rx="55" ry="22" fill="#101c45" />
-          <ellipse cx="180" cy="100" rx="60" ry="16" fill="#3b5aa0" />
+          <ellipse cx="60" cy="88" rx="70" ry="26" fill="#0c0c0c" />
+          <ellipse cx="125" cy="50" rx="42" ry="20" fill="#ededed" />
+          <ellipse cx="220" cy="72" rx="75" ry="30" fill="#9a9a9a" />
+          <ellipse cx="300" cy="42" rx="45" ry="18" fill="#cdcdcd" />
+          <ellipse cx="330" cy="92" rx="55" ry="22" fill="#151515" />
+          <ellipse cx="180" cy="100" rx="60" ry="16" fill="#555555" />
         </g>
       </g>
       <line
@@ -65,7 +65,7 @@ function SectionArt() {
         y1="20.5"
         x2="352"
         y2="20.5"
-        stroke="#8a9bba"
+        stroke="#8c8c8c"
         vectorEffect="non-scaling-stroke"
       />
       <line
@@ -73,10 +73,10 @@ function SectionArt() {
         y1="102.5"
         x2="273"
         y2="102.5"
-        stroke="#8a9bba"
+        stroke="#8c8c8c"
         vectorEffect="non-scaling-stroke"
       />
-      <polygon points="241,1 241,45 195,45" fill="#2f5f93" />
+      <polygon points="241,1 241,45 195,45" fill="#161616" />
       <polyline
         points="220,20 178,63 0,63"
         stroke="#ffffff"
@@ -193,7 +193,7 @@ export function HeaderSection() {
         <div className={styles.underline} aria-hidden="true" />
         <div className={styles.rule} aria-hidden="true" />
         <div className={styles.ticker}>
-          <TechTicker />
+          <TechTicker fadeOutColor="#d6d6d6" />
         </div>
       </div>
     </header>
