@@ -200,16 +200,16 @@
   background: var(--hx-white);
 }
 
-/* the tall slate bar inset in the rail: its top border sits just under the
-   masthead's rule, level with the column lines' reach, and its bottom border
-   lies on the wordmark box's line */
+/* the slate bar in the rail: exactly as wide as the mark box and sharing its
+   top edge, so the mark sits in its head; its bottom border lies on the
+   wordmark box's line */
 .railBar {
   position: absolute;
   z-index: 0;
-  left: 6px;
   right: 8px;
-  top: calc(-1 * var(--hx-reach));
-  height: calc(var(--hx-reach) + var(--hx-row-top) + 1px + var(--hx-row-word) + 1px);
+  top: calc(var(--hx-row-top) - var(--hx-railbox) + 1px);
+  width: var(--hx-railbox);
+  height: calc(var(--hx-railbox) + var(--hx-row-word) + 1px);
   box-sizing: border-box;
   border: 1px solid var(--hx-ink);
   background: var(--hx-slate);
