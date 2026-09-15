@@ -39,6 +39,7 @@ export function HeroSection() {
           <span className={styles.whiteBox} />
         </div>
         <div className={`${styles.box} ${styles.rrail}`} aria-hidden="true">
+          <span className={styles.railBar} />
           <span className={styles.railMark}>
             <CornerMark />
           </span>
