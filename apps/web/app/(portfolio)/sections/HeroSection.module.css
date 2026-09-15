@@ -2,47 +2,57 @@
  * The hero is one sheet of boxes on slate gray, drawn with shared 1px black
  * lines: every box is a grid cell and the lines are the grid gap showing
  * through, so neighbours never double up a border. The geometry follows an
- * editorial reference exactly: a three-tile top strip, a 2:1:1 column split
- * under one wide wordmark box, a mid tile cut by a horizontal line, an accent
- * panel with a clipped corner, a chamfered line running into the right rail,
- * a sub-grid box with a pixel figure at bottom-left, and two boxes that hang
- * off the sheet's left edge into the page rail.
+ * editorial reference exactly. Two deep rails (6% each) flank four equal
+ * columns; the top strip is four boxes, the wordmark box spans all four, the
+ * third row splits 2:1:1 with the middle box cut by a horizontal line, and
+ * the bottom row is four boxes again with a fine-grid sub-box and pixel
+ * figure at the left and a chamfered top-right corner at the right. The left
+ * rail carries a fully enclosed white target box under the top strip and a
+ * white box beside the bottom row; the right rail carries a small outlined
+ * mark at the top and a checker block straddling its line.
  *
  * The column lines also reach up through the masthead's white strip to its
  * lower rule. The masthead sits lower on the left (photo) and higher on the
  * right, so only lines right of the photo get the extension; that is intended.
  */
+.shell {
+  background: #d6d6d6;
+  border-bottom: 1px solid #161616;
+}
+
 .sheet {
   --hx-paper: #d6d6d6;
+  --hx-white: #f6f6f6;
   --hx-ink: #161616;
   --hx-ink-soft: #3a3a3a;
   --hx-grid-line: #8c8c8c;
   --hx-red: #f5271a;
   --hx-mono: ui-monospace, "DejaVu Sans Mono", "SFMono-Regular", Menlo, Consolas, monospace;
-  --hx-rail: 44px;
+  --hx-rail: 6%;
   --hx-row-top: 96px;
   --hx-row-word: 380px;
   --hx-row-mid: 220px;
   --hx-row-bottom: 190px;
   /* how far the column lines climb into the masthead (to just under its rule) */
   --hx-reach: 29px;
+  /* size of the small boxes that live in the rails */
+  --hx-railbox: 44px;
 
   position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
+  width: 100%;
   display: grid;
   gap: 1px;
   background: var(--hx-ink);
   color: var(--hx-ink);
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) var(--hx-rail);
+  grid-template-columns: var(--hx-rail) repeat(4, minmax(0, 1fr)) var(--hx-rail);
   grid-template-rows: var(--hx-row-top) var(--hx-row-word) minmax(var(--hx-row-mid), auto) var(
       --hx-row-bottom
     );
   grid-template-areas:
-    "tileA tileB tileC rail1"
-    "word  word  word  rail2"
-    "tag   mid   cta   rail3"
-    "botL  botM  botR  botR";
+    "lrail t1   t2   t3   t4   rrail"
+    "lrail word word word word rrail"
+    "lrail tag  tag  mid  cta  rrail"
+    "lrail b1   b2   b3   b4   rrail";
 }
 
 .box {
@@ -52,23 +62,23 @@
   overflow: hidden;
 }
 
-.tileA {
-  grid-area: tileA;
+.lrail {
+  grid-area: lrail;
 }
-.tileB {
-  grid-area: tileB;
+.rrail {
+  grid-area: rrail;
 }
-.tileC {
-  grid-area: tileC;
+.t1 {
+  grid-area: t1;
 }
-.rail1 {
-  grid-area: rail1;
+.t2 {
+  grid-area: t2;
 }
-.rail2 {
-  grid-area: rail2;
+.t3 {
+  grid-area: t3;
 }
-.rail3 {
-  grid-area: rail3;
+.t4 {
+  grid-area: t4;
 }
 .word {
   grid-area: word;
@@ -82,14 +92,17 @@
 .cta {
   grid-area: cta;
 }
-.botL {
-  grid-area: botL;
+.b1 {
+  grid-area: b1;
 }
-.botM {
-  grid-area: botM;
+.b2 {
+  grid-area: b2;
 }
-.botR {
-  grid-area: botR;
+.b3 {
+  grid-area: b3;
+}
+.b4 {
+  grid-area: b4;
 }
 
 /* ---------- small type ---------- */
@@ -106,17 +119,105 @@
   white-space: nowrap;
 }
 
-/* ---------- top strip: lines climb into the masthead ---------- */
+/* ---------- rails ---------- */
 
-.tileA,
-.tileB,
-.tileC {
+.lrail,
+.rrail {
   overflow: visible;
 }
 
-.tileA::after,
-.tileB::after,
-.tileC::after {
+/* the "◎" box: a fully enclosed white square hugging the rail's inner edge,
+   sitting right under the top strip's line */
+.targetBox {
+  position: absolute;
+  right: 0;
+  top: calc(var(--hx-row-top) + 1px);
+  width: var(--hx-railbox);
+  height: var(--hx-railbox);
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--hx-ink);
+  background: var(--hx-white);
+}
+
+.targetBox svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* the white box beside the upper part of the bottom row, also enclosed */
+.whiteBox {
+  position: absolute;
+  right: 0;
+  top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) + 1px + var(--hx-row-mid) + 1px);
+  width: var(--hx-railbox);
+  height: calc(var(--hx-row-bottom) * 0.55);
+  box-sizing: border-box;
+  border: 1px solid var(--hx-ink);
+  background: var(--hx-white);
+}
+
+/* the top strip's bottom line runs on through the right rail */
+.rrail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--hx-row-top);
+  height: 1px;
+  background: var(--hx-ink);
+}
+
+/* the small outlined square with a rounded-corner glyph, sitting on that line */
+.railMark {
+  position: absolute;
+  left: 0;
+  top: calc(var(--hx-row-top) - var(--hx-railbox) + 1px);
+  width: var(--hx-railbox);
+  height: var(--hx-railbox);
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--hx-ink);
+  border-left: 0;
+}
+
+.railMark svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* the checker block straddles the rail's line just above the wordmark's bottom edge */
+.checker {
+  position: absolute;
+  left: -9px;
+  top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) - 44px);
+  width: 40px;
+  height: 44px;
+  background-color: var(--hx-paper);
+  background-image:
+    linear-gradient(45deg, var(--hx-ink) 25%, transparent 25%, transparent 75%, var(--hx-ink) 75%),
+    linear-gradient(45deg, var(--hx-ink) 25%, transparent 25%, transparent 75%, var(--hx-ink) 75%);
+  background-size: 10px 10px;
+  background-position:
+    0 0,
+    5px 5px;
+}
+
+/* ---------- top strip: four boxes whose lines climb into the masthead ---------- */
+
+.t1,
+.t2,
+.t3,
+.t4 {
+  overflow: visible;
+}
+
+.t1::after,
+.t2::after,
+.t3::after,
+.t4::after {
   content: "";
   position: absolute;
   top: calc(-1 * var(--hx-reach));
@@ -126,53 +227,16 @@
   background: var(--hx-ink);
 }
 
-/* "HUMAN NEURON" sits right of the (absent) image, low in the tile */
-.tileA .caption {
-  left: 52%;
+/* "HUMAN NEURON": low in the second box, near its left edge */
+.t2 .caption {
+  left: 12px;
   bottom: 12px;
 }
 
-/* "2001 A SPACE ODYSSEY" sits top-left of the right tile */
-.tileC .caption {
+/* "2001 A SPACE ODYSSEY": top-left of the fourth box */
+.t4 .caption {
   left: 13%;
   top: 12px;
-}
-
-/* the small outlined square in the rail with a rounded-corner glyph */
-.railMark {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--hx-ink);
-}
-
-.railMark svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* the "◎" box hangs off the sheet's left edge, right under the top strip */
-.targetBox {
-  position: absolute;
-  left: calc(-1 * var(--hx-page-rail, 58px));
-  top: calc(var(--hx-row-top) + 1px);
-  width: var(--hx-page-rail, 58px);
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-top: 1px solid var(--hx-ink);
-  border-bottom: 1px solid var(--hx-ink);
-  border-left: 1px solid var(--hx-ink);
-  background: var(--hx-paper);
-}
-
-.targetBox svg {
-  width: 26px;
-  height: 26px;
 }
 
 /* ---------- wordmark box ---------- */
@@ -199,7 +263,7 @@
   color: var(--hx-ink);
 }
 
-.label .star,
+.star,
 .asterisk {
   color: var(--hx-red);
   font-size: 20px;
@@ -224,28 +288,7 @@
   overflow-wrap: anywhere;
 }
 
-/* the checker block straddles the rail just above the wordmark's bottom line */
-.rail2 {
-  overflow: visible;
-}
-
-.checker {
-  position: absolute;
-  left: -8px;
-  bottom: 0;
-  width: 40px;
-  height: 44px;
-  background-color: var(--hx-paper);
-  background-image:
-    linear-gradient(45deg, var(--hx-ink) 25%, transparent 25%, transparent 75%, var(--hx-ink) 75%),
-    linear-gradient(45deg, var(--hx-ink) 25%, transparent 25%, transparent 75%, var(--hx-ink) 75%);
-  background-size: 10px 10px;
-  background-position:
-    0 0,
-    5px 5px;
-}
-
-/* ---------- row three: tagline, split tile, accent panel ---------- */
+/* ---------- row three: tagline, split box, accent panel ---------- */
 
 .tag {
   padding: 26px 32px 26px 4%;
@@ -280,7 +323,7 @@
   color: var(--hx-ink-soft);
 }
 
-/* the middle tile is cut by one horizontal line a little past halfway */
+/* the middle box is cut by one horizontal line a little past halfway */
 .mid::after {
   content: "";
   position: absolute;
@@ -354,23 +397,12 @@
 
 /* ---------- bottom row ---------- */
 
-/* a vertical line halfway across, the full row height */
-.botL::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1px;
-  background: var(--hx-ink);
-}
-
-/* the fine grid box fills the lower-left quarter, under its own top line */
+/* the fine grid box fills the lower part of the first box, under its own line */
 .miniGrid {
   position: absolute;
   left: 0;
+  right: 0;
   bottom: 0;
-  width: 50%;
   height: 45%;
   border-top: 1px solid var(--hx-ink);
   background-image:
@@ -380,14 +412,13 @@
   background-position: -1px 0;
 }
 
-/* the pixel figure stands on the grid box's top line, flush with the vertical line */
+/* the pixel figure stands on the grid box's line, flush with the box's right edge */
 .pixel {
   position: absolute;
-  left: 50%;
+  right: 0;
   bottom: 45%;
   width: 12px;
   height: 12px;
-  margin-left: -13px;
   background: var(--hx-ink);
   box-shadow:
     -12px 0 var(--hx-ink),
@@ -415,47 +446,57 @@
     -60px -60px var(--hx-ink);
 }
 
-/* "ANCIENT PAINTINGS" sits at the right edge just above the grid box's line */
-.botL .caption {
+/* "ANCIENT PAINTINGS" sits at the right edge of the second box, level with the grid line */
+.b2 .caption {
   right: 10px;
-  top: 47%;
+  top: 50%;
 }
 
-/* the white box hangs off the left edge over the upper part of the bottom row */
-.whiteBox {
-  position: absolute;
-  left: calc(-1 * var(--hx-page-rail, 58px));
-  top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) + 1px + var(--hx-row-mid) + 1px);
-  width: var(--hx-page-rail, 58px);
-  height: 55%;
-  max-height: calc(var(--hx-row-bottom) * 0.55);
-  border-top: 1px solid var(--hx-ink);
-  border-bottom: 1px solid var(--hx-ink);
-  border-left: 1px solid var(--hx-ink);
-  background: #f4f4f4;
-}
-
-.botM {
+.b3 {
   padding: 18px 22px;
 }
 
-.botM .body {
+.b3 .body {
   font-size: 13px;
 }
 
-/* the top line of the right box bends down into the rail at its far end */
-.botR {
+/* the fourth box's top-right corner is chamfered: the top line stops short,
+   a 45° cut joins it to the right line, and the right line carries on down */
+.b4 {
   overflow: visible;
+}
+
+.b4::before,
+.b4::after {
+  content: "";
+  position: absolute;
+  background: var(--hx-paper);
+}
+
+/* hide the last stretch of the top line and the first stretch of the right line */
+.b4::before {
+  top: -1px;
+  right: -1px;
+  width: 27px;
+  height: 1px;
+}
+
+.b4::after {
+  top: -1px;
+  right: -1px;
+  width: 1px;
+  height: 27px;
 }
 
 .chamfer {
   position: absolute;
   top: -1px;
-  right: 0;
-  width: 72px;
+  right: -1px;
+  width: 27px;
   height: 27px;
   display: block;
   overflow: visible;
+  z-index: 1;
 }
 
 /* ---------- responsive ---------- */
@@ -486,23 +527,22 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: var(--hx-row-top) var(--hx-row-word) auto auto var(--hx-row-bottom);
     grid-template-areas:
-      "tileA tileC"
-      "word  word"
-      "tag   tag"
-      "cta   cta"
-      "botL  botM";
+      "t2   t4"
+      "word word"
+      "tag  tag"
+      "cta  cta"
+      "b1   b3";
   }
 
-  .tileB,
-  .rail1,
-  .rail2,
-  .rail3,
+  .lrail,
+  .rrail,
+  .t1,
+  .t3,
   .mid,
-  .botR,
-  .targetBox,
-  .whiteBox,
-  .tileA::after,
-  .tileC::after {
+  .b2,
+  .b4,
+  .t2::after,
+  .t4::after {
     display: none;
   }
 
@@ -524,15 +564,15 @@
     --hx-row-bottom: 130px;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "tileA"
+      "t2"
       "word"
       "tag"
       "cta"
-      "botL";
+      "b1";
   }
 
-  .tileC,
-  .botM {
+  .t4,
+  .b3 {
     display: none;
   }
 
