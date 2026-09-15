@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { type FormEvent, useEffect, useId, useState } from "react"
 import { useAuthModal } from "@/lib/stores/auth-modal"
+import { TechTicker } from "../components/TechTicker"
 import styles from "./HeaderSection.module.css"
 
 // Fallback wordmark face, used until the Flying Landing files are present in public/fonts.
@@ -30,7 +31,8 @@ const navItems = [
 /*
  * The left side of the section row in a 400x106 box: a blurred blue photo
  * parallelogram, the 45° tip of the news bar overlapping its top-right, and
- * the white line art that hangs off the bar's corner.
+ * the white line art that hangs off the bar's corner. The white strip to the
+ * right of the photo, under the news bar, carries the tech ticker.
  */
 function SectionArt() {
   const id = useId()
@@ -190,6 +192,9 @@ export function HeaderSection() {
         </div>
         <div className={styles.underline} aria-hidden="true" />
         <div className={styles.rule} aria-hidden="true" />
+        <div className={styles.ticker}>
+          <TechTicker />
+        </div>
       </div>
     </header>
   )
