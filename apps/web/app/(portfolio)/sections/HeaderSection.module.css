@@ -218,6 +218,18 @@
   background: var(--gc-white);
 }
 
+/* the news bar's top hairline continues left across the art to the page edge */
+.section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #4d78ab;
+  z-index: 1;
+}
+
 /* the photo, the bar's slanted tip and the white lines share one 400x106 drawing */
 .art {
   position: absolute;
