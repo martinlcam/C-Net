@@ -1,12 +1,16 @@
 /*
  * Early-2000s "gamecubicle" masthead. Every edge is a 45° cut, and the two
  * cuts in the top block are deliberately staggered: the steel band's slant
- * lands 53px right of where the navy tab strip's slant starts, leaving a
- * short navy ledge under the band. The section row is a news bar that
- * overlaps a wider photo parallelogram, tied together by white line art.
- * All colors live here because the masthead is one fixed-palette
- * illustration, not a themed surface, so it looks the same on the cream
- * pages and on /bd.
+ * lands 53px right of where the tab strip's slant starts, leaving a short
+ * ledge under the band. The section row is a news bar that overlaps a wider
+ * photo parallelogram, tied together by white line art.
+ *
+ * The palette is black, slate and white to match the hero sheet below it
+ * (slate paper, black lines, white boxes); the three accent colours are
+ * defined here for the page's highlights but the masthead itself stays
+ * neutral. All colors live here because the masthead is one fixed-palette
+ * illustration, not a themed surface, so it looks the same on the cream pages
+ * and on /bd.
  */
 /* wordmark face; the files live in public/fonts, Audiowide (next/font) is the fallback */
 @font-face {
@@ -21,14 +25,24 @@
 }
 
 .header {
-  --gc-paper: #eceef3;
-  --gc-steel: #b9c5d5;
-  --gc-steel-line: #8d9db8;
-  --gc-navy: #1d4b88;
-  --gc-navy-light: #2f5f93;
-  --gc-navy-ink: #172a52;
-  --gc-tab-rule: #c2cde0;
-  --gc-white: #ffffff;
+  --gc-paper: #d6d6d6;
+  --gc-ink: #161616;
+  --gc-white: #f6f6f6;
+  --gc-steel: var(--gc-ink);
+  --gc-steel-line: var(--gc-white);
+  --gc-strip: var(--gc-white);
+  --gc-strip-ink: var(--gc-ink);
+  --gc-strip-hover: var(--gc-ink);
+  --gc-strip-hover-ink: var(--gc-white);
+  --gc-bar: var(--gc-ink);
+  --gc-bar-edge: #3a3a3a;
+  --gc-band-ink: var(--gc-white);
+  --gc-navy-ink: var(--gc-ink);
+  --gc-tab-rule: #8c8c8c;
+  --gc-rule: var(--gc-ink);
+  --gc-accent-pink: #e79fff;
+  --gc-accent-green: #02ff71;
+  --gc-accent-orange: #f55821;
 
   --gc-band-h: 76px;
   --gc-strip-h: 28px;
@@ -40,11 +54,11 @@
   width: 100%;
   color: var(--gc-navy-ink);
   font-family: Verdana, "DejaVu Sans", "Bitstream Vera Sans", Geneva, Tahoma, sans-serif;
-  border-top: 1px solid var(--gc-navy);
-  background: var(--gc-white);
+  border-top: 1px solid var(--gc-ink);
+  background: var(--gc-paper);
 }
 
-/* ---------- top block: logo column, slanted steel band, navy tab strip ---------- */
+/* ---------- top block: logo column, slanted black band, white tab strip ---------- */
 
 .top {
   position: relative;
@@ -111,16 +125,16 @@
 
 .searchLabel {
   font-size: 17px;
-  color: var(--gc-navy-ink);
+  color: var(--gc-band-ink);
 }
 
 .searchInput {
   width: 184px;
   height: 34px;
   padding: 0 6px;
-  border: 2px inset #a9b4c4;
-  background: var(--gc-white);
-  color: var(--gc-navy-ink);
+  border: 2px inset #8c8c8c;
+  background: #ffffff;
+  color: var(--gc-ink);
   font: inherit;
   font-size: 15px;
   border-radius: 0;
@@ -128,7 +142,7 @@
 }
 
 .searchInput:focus-visible {
-  border-color: var(--gc-navy);
+  border-color: var(--gc-ink);
 }
 
 .bracket {
@@ -138,7 +152,7 @@
   font: inherit;
   font-size: 17px;
   text-decoration: none;
-  color: var(--gc-navy-ink);
+  color: var(--gc-band-ink);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -155,7 +169,7 @@
   right: 0;
   left: var(--gc-strip-left);
   height: var(--gc-strip-h);
-  background: var(--gc-navy);
+  background: var(--gc-strip);
   clip-path: polygon(var(--gc-strip-h) 0, 100% 0, 100% 100%, 0 100%);
 }
 
@@ -194,7 +208,7 @@
   display: flex;
   align-items: center;
   padding: 0 34px;
-  color: var(--gc-white);
+  color: var(--gc-strip-ink);
   font-size: 17px;
   text-decoration: none;
   white-space: nowrap;
@@ -206,7 +220,8 @@
 
 .tabLink:hover,
 .tabLink:focus-visible {
-  background: var(--gc-navy-light);
+  background: var(--gc-strip-hover);
+  color: var(--gc-strip-hover-ink);
   outline: none;
 }
 
@@ -215,7 +230,7 @@
 .section {
   position: relative;
   height: 106px;
-  background: var(--gc-white);
+  background: var(--gc-paper);
 }
 
 /* the photo, the bar's slanted tip and the white lines share one 400x106 drawing */
@@ -236,8 +251,8 @@
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  border-top: 1px solid #4d78ab;
-  background: var(--gc-navy-light);
+  border-top: 1px solid var(--gc-bar-edge);
+  background: var(--gc-bar);
 }
 
 .barText {
@@ -264,7 +279,7 @@
   right: 0;
   left: calc(299px * var(--gc-art-scale));
   height: 2px;
-  background: #6f8db8;
+  background: var(--gc-rule);
 }
 
 /* the tech ticker is shrunk into the white strip between the underline and
@@ -275,7 +290,7 @@
   right: 0;
   left: calc(352px * var(--gc-art-scale));
   height: 28px;
-  color: #000000;
+  color: var(--gc-ink);
 }
 
 /* ---------- responsive ---------- */
@@ -319,7 +334,7 @@
     position: static;
     height: auto;
     min-height: var(--gc-strip-h);
-    border-top: 2px solid var(--gc-white);
+    border-top: 2px solid var(--gc-ink);
     clip-path: none;
   }
 
