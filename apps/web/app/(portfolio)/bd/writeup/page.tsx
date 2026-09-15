@@ -17,7 +17,6 @@ export default function BdWriteupPage() {
     <div className="min-h-screen w-full bg-[#faf6f1] text-gray-900">
       <AuthModal />
       <HeaderSection />
-      <div className="h-[65px]" aria-hidden="true" />
 
       <article className="mx-auto max-w-2xl px-6 py-16 md:py-24">
         <Link

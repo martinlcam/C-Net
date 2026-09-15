@@ -1,14 +1,25 @@
 "use client"
 
+import { Audiowide } from "next/font/google"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { signOut, useSession } from "next-auth/react"
-import { useEffect, useRef, useState } from "react"
+import { useSession } from "next-auth/react"
+import { type FormEvent, useEffect, useId, useState } from "react"
 import { useAuthModal } from "@/lib/stores/auth-modal"
-import { Button } from "@/stories/button/button"
+import styles from "./HeaderSection.module.css"
 
-const mobileNavItems = [
-  { title: "Home", href: "/#home" },
+// Fallback wordmark face, used until the Flying Landing files are present in public/fonts.
+const logoFallbackFont = Audiowide({
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+  variable: "--font-gc-logo-fallback",
+})
+
+const SITE_HOST = "martin.cam"
+
+const navItems = [
+  { title: "Home", href: "/" },
   { title: "About", href: "/#about" },
   { title: "Projects", href: "/#projects" },
   { title: "Contact", href: "/#contact" },
@@ -16,296 +27,169 @@ const mobileNavItems = [
   { title: "BD", href: "/bd" },
 ]
 
-const desktopNavItems = [
-  { title: "Home", href: "/#home" },
-  { title: "About", href: "/#about" },
-  { title: "Projects", href: "/#projects" },
-  { title: "Contact", href: "/#contact" },
-  { title: "BFIDA", href: "/bfida" },
-  { title: "BD", href: "/bd" },
-]
+/*
+ * The left side of the section row in a 400x106 box: a blurred blue photo
+ * parallelogram, the 45° tip of the news bar overlapping its top-right, and
+ * the white line art that hangs off the bar's corner.
+ */
+function SectionArt() {
+  const id = useId()
+  const clipId = `${id}-photo`
+  const blurId = `${id}-blur`
+
+  return (
+    <svg className={styles.art} viewBox="0 0 400 106" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <clipPath id={clipId}>
+          <polygon points="0,20 352,20 273,103 0,103" />
+        </clipPath>
+        <filter id={blurId} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
+      </defs>
+      <g clipPath={`url(#${clipId})`}>
+        <rect x="0" y="20" width="352" height="83" fill="#1c3572" />
+        <g filter={`url(#${blurId})`}>
+          <ellipse cx="60" cy="88" rx="70" ry="26" fill="#0b1633" />
+          <ellipse cx="125" cy="50" rx="42" ry="20" fill="#e3ebfb" />
+          <ellipse cx="220" cy="72" rx="75" ry="30" fill="#7e97d0" />
+          <ellipse cx="300" cy="42" rx="45" ry="18" fill="#b9c8ea" />
+          <ellipse cx="330" cy="92" rx="55" ry="22" fill="#101c45" />
+          <ellipse cx="180" cy="100" rx="60" ry="16" fill="#3b5aa0" />
+        </g>
+      </g>
+      <line
+        x1="0"
+        y1="20.5"
+        x2="352"
+        y2="20.5"
+        stroke="#8a9bba"
+        vectorEffect="non-scaling-stroke"
+      />
+      <line
+        x1="0"
+        y1="102.5"
+        x2="273"
+        y2="102.5"
+        stroke="#8a9bba"
+        vectorEffect="non-scaling-stroke"
+      />
+      <polygon points="241,1 241,45 195,45" fill="#2f5f93" />
+      <polyline
+        points="220,20 178,63 0,63"
+        stroke="#ffffff"
+        strokeWidth="2"
+        fill="none"
+        vectorEffect="non-scaling-stroke"
+      />
+      <line
+        x1="0"
+        y1="46"
+        x2="195"
+        y2="46"
+        stroke="#ffffff"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  )
+}
 
 export function HeaderSection() {
   const { data: session, status } = useSession()
   const { openModal } = useAuthModal()
   const pathname = usePathname()
-  const [isAtTop, setIsAtTop] = useState(true)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const mobileMenuRef = useRef<HTMLDivElement>(null)
-
-  const isBd = pathname === "/bd"
-  const isBfida = pathname === "/bfida"
-  const heroRailPage = pathname === "/" || isBfida || isBd
-
-  const isActive = (href: string) => {
-    if (href.startsWith("/#")) return pathname === "/"
-    return pathname === href
-  }
+  const [host, setHost] = useState(SITE_HOST)
+  const [query, setQuery] = useState("")
 
   useEffect(() => {
-    const handleScroll = () => setIsAtTop(window.scrollY === 0)
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+    setHost(window.location.host)
   }, [])
 
-  const closeMobileMenu = () => setIsMobileMenuOpen(false)
-  const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev)
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href)
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(target) &&
-        !(target as Element).closest('button[aria-label="Toggle mobile menu"]')
-      ) {
-        setIsMobileMenuOpen(false)
-      }
-    }
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const term = query.trim()
+    if (!term) return
+    const url = new URL("https://duckduckgo.com/")
+    url.searchParams.set("q", term)
+    url.searchParams.set("sites", host)
+    window.location.assign(url.toString())
+  }
 
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsMobileMenuOpen(false)
-    }
-
-    if (isMobileMenuOpen) {
-      const timeoutId = setTimeout(() => {
-        document.addEventListener("mousedown", handleClickOutside)
-      }, 100)
-      document.addEventListener("keydown", handleEscapeKey)
-      document.body.style.overflow = "hidden"
-
-      return () => {
-        clearTimeout(timeoutId)
-        document.removeEventListener("mousedown", handleClickOutside)
-        document.removeEventListener("keydown", handleEscapeKey)
-        document.body.style.overflow = "unset"
-      }
-    }
-
-    document.body.style.overflow = "unset"
-    return undefined
-  }, [isMobileMenuOpen])
+  const location = pathname === "/" ? host : `${host}${pathname}`
 
   return (
-    <header
-      className={`flex border-b fixed top-0 left-0 right-0 z-50 backdrop-blur-sm md:border-l transition-colors ${
-        isBd ? "bg-[#0d0d0f] border-bd-rule" : "bg-[#faf6f1] border-black"
-      }`}
-    >
-      <div
-        className={`hidden md:flex w-[58px] h-16 items-center justify-center shrink-0 transition-all ${
-          isAtTop && heroRailPage
-            ? isBd
-              ? "border-r border-bd-rule"
-              : "border-r border-black"
-            : ""
-        }`}
-      />
-      <div className="flex-1 flex items-center justify-between px-6">
-        <nav className="hidden md:flex items-center gap-6">
-          {desktopNavItems.map((item) => {
-            const active = isActive(item.href)
-            const isBfidaActive = active && item.title === "BFIDA"
-            const isBdActive = active && item.title === "BD"
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-[24px] font-normal transition-colors ${
-                  isBdActive
-                    ? "text-[#c6ff00] hover:text-[#daff66]"
-                    : isBfidaActive
-                      ? isBd
-                        ? "text-[#ad70eb] hover:text-[#bea9e9]"
-                        : "text-[#ad70eb] hover:text-[#bea9e9]"
-                      : isBd
-                        ? "text-[#faf6f1] hover:text-[#faf6f1]/60"
-                        : "text-black hover:text-gray-600"
-                }`}
-              >
-                {item.title}
-              </Link>
-            )
-          })}
-        </nav>
+    <header className={`${styles.header} ${logoFallbackFont.variable}`}>
+      <div className={styles.top}>
+        <Link href="/" className={styles.logo} aria-label="martin.cam home">
+          <span className={styles.wordmark} aria-hidden="true">
+            martin.cam
+          </span>
+        </Link>
 
-        <div className="md:hidden flex ml-auto pr-2">
-          <button
-            type="button"
-            className={`relative p-3 rounded-[12px] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#bea9e9] focus:ring-offset-2 z-50 border ${
-              isBd
-                ? "bg-[#0d0d0f] hover:bg-bd-panel border-bd-rule"
-                : "bg-[#faf6f1] hover:bg-gray-100 border-black"
-            }`}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleMobileMenu()
-            }}
-            aria-label="Toggle mobile menu"
-            aria-expanded={isMobileMenuOpen}
-          >
-            <div className="relative w-6 h-6 flex items-center justify-center">
-              <span
-                className={`absolute block h-0.5 w-5 transition-all duration-300 ${
-                  isBd ? "bg-bd-cream" : "bg-gray-700"
-                } ${isMobileMenuOpen ? "rotate-45 translate-y-0" : "-translate-y-1.5"}`}
-              />
-              <span
-                className={`absolute block h-0.5 w-5 transition-all duration-300 ${
-                  isBd ? "bg-bd-cream" : "bg-gray-700"
-                } ${isMobileMenuOpen ? "opacity-0" : "opacity-100"}`}
-              />
-              <span
-                className={`absolute block h-0.5 w-5 transition-all duration-300 ${
-                  isBd ? "bg-bd-cream" : "bg-gray-700"
-                } ${isMobileMenuOpen ? "-rotate-45 translate-y-0" : "translate-y-1.5"}`}
-              />
-            </div>
-          </button>
-        </div>
-
-        <div
-          ref={mobileMenuRef}
-          className={`fixed left-1/2 top-24 z-40 w-[calc(100%-3rem)] max-w-lg -translate-x-1/2 rounded-[12px] border shadow-2xl md:hidden transition-all duration-300 ease-out ${
-            isBd ? "border-bd-rule bg-[#0d0d0f]" : "border-black bg-[#faf6f1]"
-          } ${
-            isMobileMenuOpen
-              ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
-              : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
-          }`}
-        >
-          <div className="flex flex-col p-4 space-y-1">
-            {mobileNavItems.map((item) => {
-              const active = isActive(item.href)
-              const isBfidaActive = active && item.title === "BFIDA"
-              const isBdActive = active && item.title === "BD"
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`block px-4 py-3 text-[17px] font-medium rounded-[12px] transition-colors duration-200 ${
-                    isBdActive
-                      ? "text-[#c6ff00] hover:bg-bd-panel"
-                      : isBfidaActive
-                        ? isBd
-                          ? "text-[#ad70eb] hover:bg-bd-panel"
-                          : "text-[#ad70eb] hover:bg-purple-50"
-                        : isBd
-                          ? "text-bd-cream hover:bg-bd-panel"
-                          : "text-black hover:bg-gray-100"
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  {item.title}
-                </Link>
-              )
-            })}
-            {!isBd && (
-              <div className="flex items-center justify-center py-2 pt-4">
-                <div className="h-px w-full bg-black" />
-              </div>
-            )}
-            {isBd ? null : status === "loading" ? (
-              <div className="px-4 py-3">
-                <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-              </div>
+        <div className={styles.band}>
+          <div className={styles.bandInner}>
+            <search>
+              <form className={styles.searchForm} onSubmit={handleSearch}>
+                <label htmlFor="site-search" className={styles.searchLabel}>
+                  search:
+                </label>
+                <input
+                  id="site-search"
+                  name="q"
+                  type="search"
+                  className={styles.searchInput}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  autoComplete="off"
+                />
+              </form>
+            </search>
+            {status === "loading" ? (
+              <span className={styles.bracket} aria-hidden="true">
+                [--]
+              </span>
             ) : session ? (
-              <>
-                <Link
-                  href="/cnet/dashboard"
-                  className="block px-4 py-3 text-[17px] font-medium text-[#ad70eb] rounded-[12px] hover:bg-purple-50 transition-colors duration-200"
-                  onClick={closeMobileMenu}
-                >
-                  C-Net
-                </Link>
-                <div className="px-4 py-2">
-                  <p
-                    className={`text-sm font-medium truncate ${isBd ? "text-bd-cream" : "text-black"}`}
-                  >
-                    {session.user?.name || "User"}
-                  </p>
-                  <p className={`text-xs truncate ${isBd ? "text-bd-cream/50" : "text-gray-600"}`}>
-                    {session.user?.email}
-                  </p>
-                </div>
-                <Link
-                  href="/cnet/dashboard"
-                  className={`block px-4 py-3 text-[17px] font-medium rounded-[12px] transition-colors duration-200 ${
-                    isBd ? "text-bd-cream hover:bg-bd-panel" : "text-black hover:bg-gray-100"
-                  }`}
-                  onClick={closeMobileMenu}
-                >
-                  Dashboard
-                </Link>
-                <button
-                  type="button"
-                  className={`w-full text-left px-4 py-3 text-[17px] font-medium rounded-[12px] transition-colors duration-200 ${
-                    isBd ? "text-bd-cream hover:bg-bd-panel" : "text-black hover:bg-gray-100"
-                  }`}
-                  onClick={() => {
-                    signOut()
-                    closeMobileMenu()
-                  }}
-                >
-                  Sign Out
-                </button>
-              </>
+              <Link href="/cnet/dashboard" className={styles.bracket} title="C-Net dashboard">
+                [--]
+              </Link>
             ) : (
-              <button
-                type="button"
-                className="w-full text-left px-4 py-3 text-[17px] font-medium text-black rounded-[12px] hover:bg-gray-100 transition-colors duration-200"
-                onClick={() => {
-                  openModal()
-                  closeMobileMenu()
-                }}
-              >
-                Sign In
+              <button type="button" className={styles.bracket} title="Sign in" onClick={openModal}>
+                [--]
               </button>
             )}
           </div>
         </div>
 
-        <div
-          className={`fixed inset-0 z-30 bg-black/10 md:hidden transition-opacity duration-300 ${
-            isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-          onClick={closeMobileMenu}
-          aria-hidden="true"
-        />
+        <nav aria-label="Primary" className={styles.nav}>
+          <ul className={styles.tabs}>
+            {navItems.map((item) => {
+              const active = isActive(item.href)
+              return (
+                <li key={item.href} className={styles.tab}>
+                  <Link
+                    href={item.href}
+                    className={styles.tabLink}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+      </div>
 
-        <div className="hidden md:flex items-center gap-4">
-          {isBd ? null : status === "loading" ? (
-            <div
-              className={`h-12 w-24 animate-pulse rounded-xl ${
-                isBd ? "bg-bd-cream/10" : "bg-gray-100"
-              }`}
-            />
-          ) : session ? (
-            <Button
-              asChild
-              variant="outline"
-              className={`rounded-[12px] px-7 py-3.5 h-12 text-lg font-medium ${
-                isBd
-                  ? "border-bd-purple/50 text-bd-purple hover:bg-bd-panel"
-                  : "border-[#ddc9f7] text-[#ad70eb] hover:bg-purple-50"
-              }`}
-            >
-              <Link href="/cnet/dashboard">C-Net</Link>
-            </Button>
-          ) : (
-            <Button
-              onClick={openModal}
-              variant="outline"
-              className={`rounded-[12px] px-7 py-3.5 h-12 text-lg font-medium ${
-                isBd
-                  ? "border-bd-cream/30 text-bd-cream hover:bg-bd-panel"
-                  : "border-black text-black hover:bg-gray-100"
-              }`}
-            >
-              Sign In
-            </Button>
-          )}
+      <div className={styles.section}>
+        <SectionArt />
+        <div className={styles.bar}>
+          <span className={styles.barText}>{location}</span>
         </div>
+        <div className={styles.underline} aria-hidden="true" />
+        <div className={styles.rule} aria-hidden="true" />
       </div>
     </header>
   )

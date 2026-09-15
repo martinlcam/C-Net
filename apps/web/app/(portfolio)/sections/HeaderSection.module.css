@@ -1,0 +1,371 @@
+/*
+ * Early-2000s "gamecubicle" masthead. Every edge is a 45° cut, and the two
+ * cuts in the top block are deliberately staggered: the steel band's slant
+ * lands 53px right of where the navy tab strip's slant starts, leaving a
+ * short navy ledge under the band. The section row is a news bar that
+ * overlaps a wider photo parallelogram, tied together by white line art.
+ * All colors live here because the masthead is one fixed-palette
+ * illustration, not a themed surface, so it looks the same on the cream
+ * pages and on /bd.
+ */
+/* wordmark face; the files live in public/fonts, Audiowide (next/font) is the fallback */
+@font-face {
+  font-family: "Flying Landing";
+  src:
+    url("/fonts/FlyingLanding.woff2") format("woff2"),
+    url("/fonts/FlyingLanding.otf") format("opentype"),
+    url("/fonts/FlyingLanding.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.header {
+  --gc-paper: #eceef3;
+  --gc-steel: #b9c5d5;
+  --gc-steel-line: #8d9db8;
+  --gc-navy: #1d4b88;
+  --gc-navy-light: #2f5f93;
+  --gc-navy-ink: #172a52;
+  --gc-tab-rule: #c2cde0;
+  --gc-white: #ffffff;
+
+  --gc-band-h: 76px;
+  --gc-strip-h: 28px;
+  --gc-band-left: 492px;
+  --gc-strip-left: calc(var(--gc-band-left) - 53px);
+  --gc-art-scale: 1;
+
+  position: relative;
+  width: 100%;
+  color: var(--gc-navy-ink);
+  font-family: Verdana, "DejaVu Sans", "Bitstream Vera Sans", Geneva, Tahoma, sans-serif;
+  border-top: 1px solid var(--gc-navy);
+  background: var(--gc-white);
+}
+
+/* ---------- top block: logo column, slanted steel band, navy tab strip ---------- */
+
+.top {
+  position: relative;
+  height: calc(var(--gc-band-h) + var(--gc-strip-h));
+  background: var(--gc-paper);
+}
+
+/* centered in the paper box left of the band, biased a little away from the slant */
+.logo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--gc-band-left) - 20px);
+  height: calc(var(--gc-band-h) + var(--gc-strip-h));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--gc-navy-ink);
+  line-height: 1;
+  font-family: "Flying Landing", var(--font-gc-logo-fallback), sans-serif;
+}
+
+/* the mark is set wide (stretched ~1.35x); the same-color stroke adds weight to the light face */
+.wordmark {
+  display: block;
+  font-size: 58px;
+  letter-spacing: 0.02em;
+  line-height: 0.8;
+  color: var(--gc-navy-ink);
+  -webkit-text-stroke: 1px currentColor;
+  transform: scaleX(1.35);
+  transform-origin: center;
+}
+
+/* the band's slant equals its height, so the cut is 45° */
+.band {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--gc-band-left);
+  height: var(--gc-band-h);
+  background: var(--gc-steel-line);
+  clip-path: polygon(var(--gc-band-h) 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.bandInner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  padding-right: 34px;
+  background: var(--gc-steel);
+  clip-path: polygon(calc(var(--gc-band-h) + 1.5px) 0, 100% 0, 100% 100%, 1.5px 100%);
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.searchLabel {
+  font-size: 17px;
+  color: var(--gc-navy-ink);
+}
+
+.searchInput {
+  width: 184px;
+  height: 34px;
+  padding: 0 6px;
+  border: 2px inset #a9b4c4;
+  background: var(--gc-white);
+  color: var(--gc-navy-ink);
+  font: inherit;
+  font-size: 15px;
+  border-radius: 0;
+  outline: none;
+}
+
+.searchInput:focus-visible {
+  border-color: var(--gc-navy);
+}
+
+.bracket {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 17px;
+  text-decoration: none;
+  color: var(--gc-navy-ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bracket:hover,
+.bracket:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+.nav {
+  position: absolute;
+  top: var(--gc-band-h);
+  right: 0;
+  left: var(--gc-strip-left);
+  height: var(--gc-strip-h);
+  background: var(--gc-navy);
+  clip-path: polygon(var(--gc-strip-h) 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  margin: 0;
+  padding: 0 0 0 var(--gc-strip-h);
+  list-style: none;
+}
+
+.tab {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+}
+
+.tab::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 5px;
+  bottom: 2px;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--gc-tab-rule) 0,
+    var(--gc-tab-rule) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+.tabLink {
+  display: flex;
+  align-items: center;
+  padding: 0 34px;
+  color: var(--gc-white);
+  font-size: 17px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tab:first-child .tabLink {
+  padding-left: 18px;
+}
+
+.tabLink:hover,
+.tabLink:focus-visible {
+  background: var(--gc-navy-light);
+  outline: none;
+}
+
+/* ---------- section row: photo, news bar with the current url, line art ---------- */
+
+.section {
+  position: relative;
+  height: 106px;
+  background: var(--gc-white);
+}
+
+/* the photo, the bar's slanted tip and the white lines share one 400x106 drawing */
+.art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(400px * var(--gc-art-scale));
+  height: 106px;
+}
+
+.bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: calc(241px * var(--gc-art-scale));
+  height: 45px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  border-top: 1px solid #4d78ab;
+  background: var(--gc-navy-light);
+}
+
+.barText {
+  color: var(--gc-white);
+  font-size: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.underline {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  left: calc(195px * var(--gc-art-scale));
+  height: 2px;
+  background: #a9b8d0;
+}
+
+.rule {
+  position: absolute;
+  top: 75px;
+  right: 0;
+  left: calc(299px * var(--gc-art-scale));
+  height: 2px;
+  background: #6f8db8;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 1279px) {
+  .header {
+    --gc-band-left: 400px;
+  }
+
+  .tabLink {
+    padding: 0 22px;
+    font-size: 15px;
+  }
+}
+
+/* the tab strip becomes its own full-width row under the band */
+@media (max-width: 1023px) {
+  .header {
+    --gc-band-left: 300px;
+  }
+
+  .top {
+    height: auto;
+    padding-top: var(--gc-band-h);
+    background: var(--gc-paper);
+  }
+
+  .logo {
+    height: var(--gc-band-h);
+  }
+
+  .wordmark {
+    font-size: 44px;
+  }
+
+  .bandInner {
+    padding-right: 20px;
+  }
+
+  .nav {
+    position: static;
+    height: auto;
+    min-height: var(--gc-strip-h);
+    border-top: 2px solid var(--gc-white);
+    clip-path: none;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
+    padding: 0;
+  }
+
+  .tab {
+    flex: 1 1 auto;
+    height: var(--gc-strip-h);
+  }
+
+  .tabLink {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .tab:first-child .tabLink {
+    padding-left: 22px;
+  }
+}
+
+@media (max-width: 639px) {
+  .header {
+    --gc-band-left: 190px;
+    --gc-band-h: 64px;
+    --gc-art-scale: 0.62;
+  }
+
+  .wordmark {
+    font-size: 26px;
+  }
+
+  .searchLabel {
+    display: none;
+  }
+
+  .searchInput {
+    width: 120px;
+    height: 28px;
+  }
+
+  .bandInner {
+    gap: 12px;
+    padding-right: 12px;
+  }
+
+  .tabLink {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .tab:first-child .tabLink {
+    padding-left: 12px;
+  }
+
+  .barText {
+    font-size: 14px;
+  }
+}
