@@ -487,13 +487,15 @@
 
 /* ---------- bottom row ---------- */
 
-/* the fine grid box fills the lower part of the first box, under its own line */
+/* the fine grid box fills the lower part of the first box, under its own line;
+   boxes are border-box, so the extra pixel is the line itself, on the same row
+   as the white box's bottom border */
 .miniGrid {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: var(--hx-gridbox);
+  height: calc(var(--hx-gridbox) + 1px);
   border-top: 1px solid var(--hx-ink);
   background-image:
     linear-gradient(var(--hx-grid-line) 1px, transparent 1px),
