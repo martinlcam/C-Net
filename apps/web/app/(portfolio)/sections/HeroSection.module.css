@@ -250,14 +250,19 @@
   height: 20px;
 }
 
-/* the checker block fills the foot of the slate bar, above its bottom border */
+/* the checker block is an outlined box filling the foot of the slate bar: its
+   left edge is the rail's line and its bottom border lies on the bar's */
 .checker {
   position: absolute;
   z-index: 1;
   left: 0;
   top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) - var(--hx-railbox));
   width: var(--hx-railbox);
-  height: var(--hx-railbox);
+  height: calc(var(--hx-railbox) + 1px);
+  box-sizing: border-box;
+  border: 1px solid var(--hx-ink);
+  border-left: 0;
+  background-clip: padding-box;
   background-color: var(--hx-paper);
   background-image:
     linear-gradient(45deg, var(--hx-ink) 25%, transparent 25%, transparent 75%, var(--hx-ink) 75%),
