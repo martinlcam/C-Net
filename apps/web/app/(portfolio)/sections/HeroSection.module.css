@@ -130,8 +130,9 @@
    sitting right under the top strip's line */
 .targetBox {
   position: absolute;
-  right: 0;
-  top: calc(var(--hx-row-top) + 1px);
+  /* its top and right borders lie on the grid's own lines, so no doubling */
+  right: -1px;
+  top: var(--hx-row-top);
   width: var(--hx-railbox);
   height: var(--hx-railbox);
   display: grid;
@@ -149,8 +150,8 @@
 /* the white box beside the upper part of the bottom row, also enclosed */
 .whiteBox {
   position: absolute;
-  right: 0;
-  top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) + 1px + var(--hx-row-mid) + 1px);
+  right: -1px;
+  top: calc(var(--hx-row-top) + 1px + var(--hx-row-word) + 1px + var(--hx-row-mid));
   width: var(--hx-railbox);
   height: calc(var(--hx-row-bottom) * 0.55);
   box-sizing: border-box;
