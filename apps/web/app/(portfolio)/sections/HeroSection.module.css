@@ -200,18 +200,19 @@
   background: var(--hx-white);
 }
 
-/* the slate bar in the rail: exactly as wide as the mark box and sharing its
-   top edge, so the mark sits in its head; its bottom border lies on the
-   wordmark box's line */
+/* the slate bar hugs the rail's line, exactly as wide as the mark box and
+   sharing its top edge, so the mark sits in its head; its left edge is the
+   grid's own line and its bottom border lies on the wordmark box's line */
 .railBar {
   position: absolute;
   z-index: 0;
-  right: 8px;
+  left: 0;
   top: calc(var(--hx-row-top) - var(--hx-railbox) + 1px);
   width: var(--hx-railbox);
   height: calc(var(--hx-railbox) + var(--hx-row-word) + 1px);
   box-sizing: border-box;
   border: 1px solid var(--hx-ink);
+  border-left: 0;
   background: var(--hx-slate);
 }
 
@@ -237,11 +238,11 @@
 }
 
 /* the small outlined square with a rounded-corner glyph, sitting on that line
-   and flush with the slate bar's right edge */
+   at the head of the slate bar */
 .railMark {
   position: absolute;
   z-index: 1;
-  right: 8px;
+  left: 0;
   top: calc(var(--hx-row-top) - var(--hx-railbox) + 1px);
   width: var(--hx-railbox);
   height: var(--hx-railbox);
@@ -249,6 +250,7 @@
   place-items: center;
   box-sizing: border-box;
   border: 1px solid var(--hx-ink);
+  border-left: 0;
 }
 
 .railMark svg {
