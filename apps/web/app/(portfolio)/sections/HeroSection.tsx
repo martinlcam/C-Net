@@ -106,6 +106,7 @@ export function HeroSection() {
             </div>
           </div>
         </div>
+        <div className={`${styles.box} ${styles.rail3}`} aria-hidden="true" />
         <div className={`${styles.box} ${styles.cap}`}>
           <p className={`${styles.caption} ${styles.ctaCaption}`}>Projects / Contact / Work</p>
         </div>
@@ -128,6 +129,7 @@ export function HeroSection() {
         </div>
         <div className={`${styles.box} ${styles.b4top}`} aria-hidden="true" />
         <div className={`${styles.box} ${styles.b4}`} aria-hidden="true" />
+        <div className={`${styles.box} ${styles.rrail2}`} aria-hidden="true" />
       </section>
     </div>
   )
