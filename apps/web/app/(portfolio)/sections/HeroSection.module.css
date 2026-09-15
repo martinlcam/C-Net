@@ -1,5 +1,5 @@
 /*
- * The hero is one sheet of boxes on slate gray, drawn with shared 1px black
+ * The hero is one sheet of boxes on slate gray, drawn with shared hairline black
  * lines: every box is a grid cell and the lines are the grid gap showing
  * through, so neighbours never double up a border. The geometry follows an
  * editorial reference exactly. Two deep rails (6% each) flank four equal
@@ -45,31 +45,35 @@
   --hx-railbox: 44px;
   --hx-panel-h: 150px;
   --hx-cut: 24px;
+  /* one device pixel: every line in the sheet is this thick, so a line is
+     never smeared over two pixels when the browser is zoomed or the display
+     scaled by a fraction. The component sets it from devicePixelRatio */
+  --hx-dp: 1px;
   /* the fine grid box's height, shared with the white box beside it so their
      lines meet; snapped to whole pixels like the tracks */
-  --hx-gridbox: round(calc(var(--hx-row-bottom) * 0.45), 1px);
-  /* every track is snapped to whole pixels so the 1px lines never land on a
-     half pixel and smear; the right rail takes whatever is left over */
-  --hx-railw: round(down, 6cqw, 1px);
-  --hx-colw: round(down, calc((100cqw - 2 * var(--hx-railw) - 5px) / 4), 1px);
+  --hx-gridbox: round(calc(var(--hx-row-bottom) * 0.45), var(--hx-dp));
+  /* every track is snapped to whole device pixels so the lines never land on
+     a fraction and smear; the right rail takes whatever is left over */
+  --hx-railw: round(down, 6cqw, var(--hx-dp));
+  --hx-colw: round(down, calc((100cqw - 2 * var(--hx-railw) - 5 * var(--hx-dp)) / 4), var(--hx-dp));
 
   position: relative;
   width: 100%;
   display: grid;
-  /* columns share 1px gap lines; horizontal lines are explicit 1px rows, so a
-     row boundary only draws a line where no box covers it */
-  gap: 0 1px;
+  /* columns share gap lines; horizontal lines are explicit rows, so a row
+     boundary only draws a line where no box covers it */
+  gap: 0 var(--hx-dp);
   background: var(--hx-ink);
   color: var(--hx-ink);
   grid-template-columns: var(--hx-railw) repeat(4, var(--hx-colw)) auto;
   grid-template-rows:
     var(--hx-row-top)
-    1px
+    var(--hx-dp)
     var(--hx-row-word)
-    1px
+    var(--hx-dp)
     calc(var(--hx-panel-h) - var(--hx-cut))
     minmax(calc(var(--hx-row-mid) - var(--hx-panel-h) + var(--hx-cut)), auto)
-    1px
+    var(--hx-dp)
     var(--hx-cut)
     calc(var(--hx-row-bottom) - var(--hx-cut));
   grid-template-areas:
@@ -172,14 +176,14 @@
 .targetBox {
   position: absolute;
   /* its top and right borders lie on the grid's own lines, so no doubling */
-  right: -1px;
+  right: calc(-1 * var(--hx-dp));
   top: var(--hx-row-top);
   width: var(--hx-railbox);
   height: var(--hx-railbox);
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  border: 1px solid var(--hx-ink);
+  border: var(--hx-dp) solid var(--hx-ink);
   background: var(--hx-white);
 }
 
@@ -191,14 +195,14 @@
 /* the white box beside the upper part of the bottom row, also enclosed */
 .whiteBox {
   position: absolute;
-  right: -1px;
+  right: calc(-1 * var(--hx-dp));
   /* anchored to the bottom row (the third row can grow with its text): its
      bottom border lies on the grid box's line, its top on the row's line */
   bottom: var(--hx-gridbox);
   width: var(--hx-railbox);
-  height: calc(var(--hx-row-bottom) - var(--hx-gridbox) + 1px);
+  height: calc(var(--hx-row-bottom) - var(--hx-gridbox) + var(--hx-dp));
   box-sizing: border-box;
-  border: 1px solid var(--hx-ink);
+  border: var(--hx-dp) solid var(--hx-ink);
   background: var(--hx-white);
 }
 
@@ -209,11 +213,11 @@
   position: absolute;
   z-index: 0;
   left: 0;
-  top: calc(var(--hx-row-top) - var(--hx-railbox) + 1px);
+  top: calc(var(--hx-row-top) - var(--hx-railbox) + var(--hx-dp));
   width: var(--hx-railbox);
-  height: calc(var(--hx-railbox) + var(--hx-row-word) + 1px);
+  height: calc(var(--hx-railbox) + var(--hx-row-word) + var(--hx-dp));
   box-sizing: border-box;
-  border: 1px solid var(--hx-ink);
+  border: var(--hx-dp) solid var(--hx-ink);
   border-left: 0;
   background: var(--hx-slate);
 }
@@ -227,13 +231,13 @@
   position: absolute;
   z-index: 1;
   left: 0;
-  top: calc(var(--hx-row-top) - var(--hx-railbox) + 1px);
+  top: calc(var(--hx-row-top) - var(--hx-railbox) + var(--hx-dp));
   width: var(--hx-railbox);
   height: var(--hx-railbox);
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  border: 1px solid var(--hx-ink);
+  border: var(--hx-dp) solid var(--hx-ink);
   border-left: 0;
 }
 
@@ -259,8 +263,8 @@
   content: "";
   position: absolute;
   top: calc(-1 * var(--hx-reach));
-  right: -1px;
-  width: 1px;
+  right: calc(-1 * var(--hx-dp));
+  width: var(--hx-dp);
   height: var(--hx-reach);
   background: var(--hx-ink);
 }
@@ -374,7 +378,7 @@
   top: 55%;
   left: 0;
   right: 0;
-  height: 1px;
+  height: var(--hx-dp);
   background: var(--hx-ink);
 }
 
@@ -401,7 +405,7 @@
   content: "";
   position: absolute;
   z-index: 1;
-  height: 1px;
+  height: var(--hx-dp);
   background: var(--hx-ink);
 }
 
@@ -413,7 +417,7 @@
 
 .panelWrap::after {
   right: 0;
-  bottom: calc(var(--hx-cut) - 0.5px);
+  bottom: calc(var(--hx-cut) - var(--hx-dp) / 2);
   width: calc(var(--hx-cut) * 1.4142);
   /* anchored at its right end, swung down-left along the cut */
   transform-origin: 100% 50%;
@@ -495,15 +499,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(var(--hx-gridbox) + 1px);
-  border-top: 1px solid var(--hx-ink);
+  height: calc(var(--hx-gridbox) + var(--hx-dp));
+  border-top: var(--hx-dp) solid var(--hx-ink);
   background-image:
-    linear-gradient(var(--hx-grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--hx-grid-line) 1px, transparent 1px);
+    linear-gradient(var(--hx-grid-line) var(--hx-dp), transparent var(--hx-dp)),
+    linear-gradient(90deg, var(--hx-grid-line) var(--hx-dp), transparent var(--hx-dp));
   background-size: 12px 12px;
   /* the pattern starts on the box's own lines, so its first gray row and
      column hide under the black border and the grid's line */
-  background-position: -1px -1px;
+  background-position: calc(-1 * var(--hx-dp)) calc(-1 * var(--hx-dp));
 }
 
 /* the pixel figure stands on the grid box's line, flush with the box's right edge */
@@ -566,7 +570,7 @@
   content: "";
   position: absolute;
   top: 0;
-  height: 1px;
+  height: var(--hx-dp);
   background: var(--hx-ink);
 }
 
@@ -606,7 +610,7 @@
     --hx-row-top: 64px;
     --hx-row-word: 260px;
     --hx-row-bottom: 150px;
-    gap: 1px;
+    gap: var(--hx-dp);
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: var(--hx-row-top) var(--hx-row-word) auto auto var(--hx-row-bottom);
     grid-template-areas:
