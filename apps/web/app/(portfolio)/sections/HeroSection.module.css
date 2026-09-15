@@ -46,7 +46,10 @@
   gap: 1px;
   background: var(--hx-ink);
   color: var(--hx-ink);
-  grid-template-columns: var(--hx-rail) repeat(4, minmax(0, 1fr)) var(--hx-rail);
+  /* every track is snapped to whole pixels so the 1px lines never land on a
+     half pixel and smear; the right rail takes whatever is left over */
+  --hx-col: round(down, calc((100% - 2 * var(--hx-rail) - 5px) / 4), 1px);
+  grid-template-columns: round(down, var(--hx-rail), 1px) repeat(4, var(--hx-col)) minmax(0, 1fr);
   grid-template-rows: var(--hx-row-top) var(--hx-row-word) minmax(var(--hx-row-mid), auto) var(
       --hx-row-bottom
     );
@@ -350,11 +353,11 @@
   overflow: visible;
 }
 
-/* the right grid line stops at the panel's bottom; below it the box is open */
+/* the right grid line ends where the chamfer begins; below it the box is open */
 .cta::after {
   content: "";
   position: absolute;
-  top: var(--hx-panel-h);
+  top: calc(var(--hx-panel-h) - var(--hx-cut));
   bottom: 0;
   right: -1px;
   width: 1px;
