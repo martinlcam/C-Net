@@ -7,7 +7,6 @@ import { FooterSection } from "./sections/FooterSection"
 import { HeaderSection } from "./sections/HeaderSection"
 import { HeroSection } from "./sections/HeroSection"
 import { ProjectsSection } from "./sections/ProjectsSection"
-import { TechStripSection } from "./sections/TechStripSection"
 
 export default function HomePage() {
   return (
@@ -15,7 +14,6 @@ export default function HomePage() {
       <AuthModal />
       <HeaderSection />
       <HeroSection />
-      <TechStripSection />
       <div>
         <AboutSection />
         <ProjectsSection />

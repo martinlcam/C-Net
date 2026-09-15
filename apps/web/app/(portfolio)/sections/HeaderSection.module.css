@@ -210,7 +210,7 @@
   outline: none;
 }
 
-/* ---------- section row: photo, news bar with the current url, line art ---------- */
+/* ---------- section row: photo, news bar with the current url, line art, tech ticker ---------- */
 
 .section {
   position: relative;
@@ -264,6 +264,17 @@
   left: calc(299px * var(--gc-art-scale));
   height: 2px;
   background: #6f8db8;
+}
+
+/* the tech ticker is shrunk into the white strip between the underline and
+   the rule; it starts right of the photo's slanted edge (x≈326 at y=47) */
+.ticker {
+  position: absolute;
+  top: 47px;
+  right: 0;
+  left: calc(352px * var(--gc-art-scale));
+  height: 28px;
+  color: #000000;
 }
 
 /* ---------- responsive ---------- */
