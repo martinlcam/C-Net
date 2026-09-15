@@ -16,15 +16,15 @@
  * right, so only lines right of the photo get the extension; that is intended.
  */
 .shell {
-  background: #d6d6d6;
+  background: #ffffff;
   border-bottom: 1px solid #161616;
   /* lets the sheet size its tracks in cqw, so every box knows the column width */
   container-type: inline-size;
 }
 
 .sheet {
-  --hx-paper: #d6d6d6;
-  --hx-white: #f6f6f6;
+  --hx-paper: #ffffff;
+  --hx-white: #ececec;
   --hx-ink: #161616;
   --hx-ink-soft: #3a3a3a;
   --hx-grid-line: #8c8c8c;
