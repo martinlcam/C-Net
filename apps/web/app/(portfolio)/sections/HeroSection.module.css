@@ -45,6 +45,9 @@
   --hx-railbox: 44px;
   --hx-panel-h: 150px;
   --hx-cut: 24px;
+  /* the fine grid box's height, shared with the white box beside it so their
+     lines meet; snapped to whole pixels like the tracks */
+  --hx-gridbox: round(calc(var(--hx-row-bottom) * 0.45), 1px);
   /* every track is snapped to whole pixels so the 1px lines never land on a
      half pixel and smear; the right rail takes whatever is left over */
   --hx-railw: round(down, 6cqw, 1px);
@@ -191,9 +194,9 @@
   right: -1px;
   /* anchored to the bottom row (the third row can grow with its text): its
      bottom border lies on the grid box's line, its top on the row's line */
-  bottom: calc(var(--hx-row-bottom) * 0.45);
+  bottom: var(--hx-gridbox);
   width: var(--hx-railbox);
-  height: calc(var(--hx-row-bottom) * 0.55 + 1px);
+  height: calc(var(--hx-row-bottom) - var(--hx-gridbox) + 1px);
   box-sizing: border-box;
   border: 1px solid var(--hx-ink);
   background: var(--hx-white);
@@ -490,20 +493,22 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 45%;
+  height: var(--hx-gridbox);
   border-top: 1px solid var(--hx-ink);
   background-image:
     linear-gradient(var(--hx-grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--hx-grid-line) 1px, transparent 1px);
   background-size: 12px 12px;
-  background-position: -1px 0;
+  /* the pattern starts on the box's own lines, so its first gray row and
+     column hide under the black border and the grid's line */
+  background-position: -1px -1px;
 }
 
 /* the pixel figure stands on the grid box's line, flush with the box's right edge */
 .pixel {
   position: absolute;
   right: 0;
-  bottom: 45%;
+  bottom: var(--hx-gridbox);
   width: 12px;
   height: 12px;
   background: var(--hx-ink);
