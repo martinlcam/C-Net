@@ -1,7 +1,6 @@
 "use client"
 
 import { Text } from "@radix-ui/themes"
-import { PortfolioHeroFrame } from "../components/PortfolioHeroFrame"
 import styles from "./HeroSection.module.css"
 
 function Target() {
@@ -30,26 +29,30 @@ function CornerMark() {
 
 export function HeroSection() {
   return (
-    <PortfolioHeroFrame className="bg-[#d6d6d6]">
+    <div className={styles.shell}>
       <section id="home" className={styles.sheet} aria-labelledby="hero-name">
-        {/* boxes that hang off the sheet's left edge into the page rail */}
-        <span className={styles.targetBox} aria-hidden="true">
-          <Target />
-        </span>
-        <span className={styles.whiteBox} aria-hidden="true" />
-
-        {/* top strip */}
-        <div className={`${styles.box} ${styles.tileA}`}>
-          <p className={styles.caption}>Forward Deployed Engineer</p>
+        {/* rails */}
+        <div className={`${styles.box} ${styles.lrail}`} aria-hidden="true">
+          <span className={styles.targetBox}>
+            <Target />
+          </span>
+          <span className={styles.whiteBox} />
         </div>
-        <div className={`${styles.box} ${styles.tileB}`} />
-        <div className={`${styles.box} ${styles.tileC}`}>
-          <p className={styles.caption}>Vancouver, Canada</p>
-        </div>
-        <div className={`${styles.box} ${styles.rail1}`} aria-hidden="true">
+        <div className={`${styles.box} ${styles.rrail}`} aria-hidden="true">
           <span className={styles.railMark}>
             <CornerMark />
           </span>
+          <span className={styles.checker} />
+        </div>
+
+        {/* top strip: four boxes */}
+        <div className={`${styles.box} ${styles.t1}`} />
+        <div className={`${styles.box} ${styles.t2}`}>
+          <p className={styles.caption}>Forward Deployed Engineer</p>
+        </div>
+        <div className={`${styles.box} ${styles.t3}`} />
+        <div className={`${styles.box} ${styles.t4}`}>
+          <p className={styles.caption}>Vancouver, Canada</p>
         </div>
 
         {/* wordmark */}
@@ -67,11 +70,8 @@ export function HeroSection() {
             Martin Cam
           </h1>
         </div>
-        <div className={`${styles.box} ${styles.rail2}`} aria-hidden="true">
-          <span className={styles.checker} />
-        </div>
 
-        {/* tagline, split tile, accent panel */}
+        {/* tagline, split box, accent panel */}
         <div className={`${styles.box} ${styles.tag}`}>
           <p className={styles.lede}>
             Building and shipping production software across the full stack.
@@ -104,15 +104,16 @@ export function HeroSection() {
           </div>
           <p className={`${styles.caption} ${styles.ctaCaption}`}>Projects / Contact / Work</p>
         </div>
-        <div className={`${styles.box} ${styles.rail3}`} aria-hidden="true" />
 
-        {/* bottom row */}
-        <div className={`${styles.box} ${styles.botL}`}>
-          <span className={styles.miniGrid} aria-hidden="true" />
-          <span className={styles.pixel} aria-hidden="true" />
+        {/* bottom row: four boxes */}
+        <div className={`${styles.box} ${styles.b1}`} aria-hidden="true">
+          <span className={styles.miniGrid} />
+          <span className={styles.pixel} />
+        </div>
+        <div className={`${styles.box} ${styles.b2}`}>
           <p className={styles.caption}>Ancient Paintings</p>
         </div>
-        <div className={`${styles.box} ${styles.botM}`}>
+        <div className={`${styles.box} ${styles.b3}`}>
           <p className={styles.body}>
             I spend much of my time writing production code end-to-end, building scalable features,
             interfaces, and backend systems that power AI-driven products. I primarily work with
@@ -120,13 +121,12 @@ export function HeroSection() {
             Drizzle ORM, PostgreSQL, and Docker.
           </p>
         </div>
-        <div className={`${styles.box} ${styles.botR}`} aria-hidden="true">
-          <svg className={styles.chamfer} viewBox="0 0 72 27" fill="none" aria-hidden="true">
-            <rect x="0" y="0" width="72" height="1" fill="#d6d6d6" />
-            <polyline points="0,0.5 26,26.5 72,26.5" stroke="#161616" strokeWidth="1" />
+        <div className={`${styles.box} ${styles.b4}`} aria-hidden="true">
+          <svg className={styles.chamfer} viewBox="0 0 27 27" fill="none" aria-hidden="true">
+            <line x1="0" y1="0.5" x2="26.5" y2="27" stroke="#161616" strokeWidth="1" />
           </svg>
         </div>
       </section>
-    </PortfolioHeroFrame>
+    </div>
   )
 }
