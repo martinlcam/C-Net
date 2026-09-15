@@ -33,8 +33,10 @@
   --hx-row-word: 380px;
   --hx-row-mid: 220px;
   --hx-row-bottom: 190px;
-  /* how far the column lines climb into the masthead (to just under its rule) */
+  /* how far the column lines climb into the masthead (to just under its rule),
+     and how far the left rail's line climbs (to the photo's bottom edge only) */
   --hx-reach: 29px;
+  --hx-reach-left: 3px;
   /* size of the small boxes that live in the rails */
   --hx-railbox: 44px;
 
@@ -227,6 +229,12 @@
   width: 1px;
   height: var(--hx-reach);
   background: var(--hx-ink);
+}
+
+/* the left rail's line only meets the photo, it never crosses it */
+.lrail::after {
+  top: calc(-1 * var(--hx-reach-left));
+  height: var(--hx-reach-left);
 }
 
 /* "HUMAN NEURON": low in the second box, near its left edge */
