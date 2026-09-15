@@ -7,8 +7,8 @@
  * third row splits 2:1:1 with the middle box cut by a horizontal line, and
  * the bottom row is four boxes again with a fine-grid sub-box and pixel
  * figure at the left and a chamfered top-right corner at the right. The left
- * rail carries a fully enclosed white target box under the top strip and a
- * white box beside the bottom row; the right rail carries a slate bar as
+ * rail carries a fully enclosed green target box under the top strip and a
+ * white box beside the bottom row; the right rail carries a violet bar as
  * wide as the small outlined mark, running from that mark's top down to the
  * wordmark's bottom line.
  *
@@ -26,7 +26,8 @@
 .sheet {
   --hx-paper: #ffffff;
   --hx-white: #ececec;
-  --hx-slate: #d6d6d6;
+  --hx-green: #02ff71;
+  --hx-violet: #e79fff;
   --hx-ink: #161616;
   --hx-ink-soft: #3a3a3a;
   --hx-grid-line: #8c8c8c;
@@ -171,7 +172,7 @@
   overflow: visible;
 }
 
-/* the "◎" box: a fully enclosed white square hugging the rail's inner edge,
+/* the "◎" box: a fully enclosed green square hugging the rail's inner edge,
    sitting right under the top strip's line */
 .targetBox {
   position: absolute;
@@ -184,7 +185,7 @@
   place-items: center;
   box-sizing: border-box;
   border: var(--hx-dp) solid var(--hx-ink);
-  background: var(--hx-white);
+  background: var(--hx-green);
 }
 
 .targetBox svg {
@@ -206,7 +207,7 @@
   background: var(--hx-white);
 }
 
-/* the slate bar hugs the rail's line, exactly as wide as the mark box and
+/* the violet bar hugs the rail's line, exactly as wide as the mark box and
    sharing its top edge, so the mark sits in its head; its left edge is the
    grid's own line and its bottom border lies on the wordmark box's line */
 .railBar {
@@ -219,11 +220,11 @@
   box-sizing: border-box;
   border: var(--hx-dp) solid var(--hx-ink);
   border-left: 0;
-  background: var(--hx-slate);
+  background: var(--hx-violet);
 }
 
 /* the small outlined square with a rounded-corner glyph at the head of the
-   slate bar. The right rail covers the two line rows beside it, so neither
+   violet bar. The right rail covers the two line rows beside it, so neither
    the top strip's line nor the wordmark's runs on across the rail: the mark's
    bottom border carries the first and the bar's bottom border the second,
    both only as wide as the bar */
