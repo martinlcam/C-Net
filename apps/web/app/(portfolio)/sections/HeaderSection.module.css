@@ -248,13 +248,14 @@
   text-overflow: ellipsis;
 }
 
+/* continues the white line from the art in the same white all the way across */
 .underline {
   position: absolute;
   top: 45px;
   right: 0;
   left: calc(195px * var(--gc-art-scale));
   height: 2px;
-  background: #a9b8d0;
+  background: var(--gc-white);
 }
 
 .rule {
