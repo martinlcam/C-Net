@@ -8,8 +8,9 @@
  * the bottom row is four boxes again with a fine-grid sub-box and pixel
  * figure at the left and a chamfered top-right corner at the right. The left
  * rail carries a fully enclosed white target box under the top strip and a
- * white box beside the bottom row; the right rail carries a small outlined
- * mark at the top and a checker block straddling its line.
+ * white box beside the bottom row; the right rail is one unbroken outlined
+ * bar from the top of the sheet to its bottom, carrying a small outlined mark
+ * at the top and a checker block straddling its line above the panel.
  *
  * The column lines also reach up through the masthead's white strip to its
  * lower rule. The masthead sits lower on the left (photo) and higher on the
@@ -72,11 +73,11 @@
     "lrail .     .     .     .     rrail"
     "lrail word  word  word  word  rrail"
     "lrail .     .     .     .     rrail"
-    "lrail tag   tag   mid   cta   rail3"
-    "lrail tag   tag   mid   cap   cap"
-    "lrail .     .     .     b4top b4top"
-    "lrail b1    b2    b3    b4top b4top"
-    "lrail b1    b2    b3    b4    rrail2";
+    "lrail tag   tag   mid   cta   rrail"
+    "lrail tag   tag   mid   cap   rrail"
+    "lrail .     .     .     b4top rrail"
+    "lrail b1    b2    b3    b4top rrail"
+    "lrail b1    b2    b3    b4    rrail";
 }
 
 .box {
@@ -91,12 +92,6 @@
 }
 .rrail {
   grid-area: rrail;
-}
-.rail3 {
-  grid-area: rail3;
-}
-.rrail2 {
-  grid-area: rrail2;
 }
 .t1 {
   grid-area: t1;
@@ -390,8 +385,8 @@
 }
 
 /* the panel box is only as tall as the straight part of the panel's right
-   edge, so the grid line beside it ends exactly where the chamfer begins.
-   The panel itself is drawn 24px taller and spills over the caption box. */
+   edge; the panel itself is drawn 24px taller and spills over the caption box,
+   and the rail's line runs on past its chamfer. */
 .cta {
   overflow: visible;
 }
@@ -485,8 +480,7 @@
   outline: none;
 }
 
-/* "HUMAN / EXPRESSION / INTEGRATION" sits under the panel, indented like it;
-   it lives in the caption box, which runs on into the rail with no line between */
+/* "HUMAN / EXPRESSION / INTEGRATION" sits under the panel, indented like it */
 .cap {
   overflow: visible;
 }
@@ -562,8 +556,8 @@
 }
 
 /* the fourth box's top-right corner is chamfered: its top 24px is a box that
-   also spans the rail (so no line can run beside it) and draws its own top line
-   and 45° cut; the grid line to its right only begins below, beside .b4 */
+   covers the row's line and draws its own top line and 45° cut, which meets
+   the rail's line at the box's right edge */
 .b4top {
   overflow: visible;
 }
@@ -626,8 +620,6 @@
 
   .lrail,
   .rrail,
-  .rail3,
-  .rrail2,
   .t1,
   .t3,
   .mid,
