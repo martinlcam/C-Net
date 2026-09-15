@@ -4,7 +4,7 @@
  * lands 53px right of where the navy tab strip's slant starts, leaving a
  * short navy ledge under the band. The section row is a news bar that
  * overlaps a wider photo parallelogram, tied together by white line art.
- * White and CD-label teal. All colors live here because the masthead is one fixed-palette
+ * All colors live here because the masthead is one fixed-palette
  * illustration, not a themed surface, so it looks the same on the cream
  * pages and on /bd.
  */
@@ -21,13 +21,13 @@
 }
 
 .header {
-  --gc-paper: #ffffff;
-  --gc-steel: #d4efec;
-  --gc-steel-line: #35b0a4;
-  --gc-navy: #35b0a4;
-  --gc-navy-light: #2a9a8f;
-  --gc-navy-ink: #1f8479;
-  --gc-tab-rule: #ffffff;
+  --gc-paper: #eceef3;
+  --gc-steel: #b9c5d5;
+  --gc-steel-line: #8d9db8;
+  --gc-navy: #1d4b88;
+  --gc-navy-light: #2f5f93;
+  --gc-navy-ink: #172a52;
+  --gc-tab-rule: #c2cde0;
   --gc-white: #ffffff;
 
   --gc-band-h: 76px;
@@ -118,7 +118,7 @@
   width: 184px;
   height: 34px;
   padding: 0 6px;
-  border: 2px inset #9fd8d2;
+  border: 2px inset #a9b4c4;
   background: var(--gc-white);
   color: var(--gc-navy-ink);
   font: inherit;
@@ -236,7 +236,7 @@
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  border-top: 1px solid #5fc3b9;
+  border-top: 1px solid #4d78ab;
   background: var(--gc-navy-light);
 }
 
@@ -254,7 +254,7 @@
   right: 0;
   left: calc(195px * var(--gc-art-scale));
   height: 2px;
-  background: #b9e5e0;
+  background: #a9b8d0;
 }
 
 .rule {
@@ -263,7 +263,7 @@
   right: 0;
   left: calc(299px * var(--gc-art-scale));
   height: 2px;
-  background: #35b0a4;
+  background: #6f8db8;
 }
 
 /* ---------- responsive ---------- */
