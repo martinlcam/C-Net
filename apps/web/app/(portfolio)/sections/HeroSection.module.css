@@ -8,7 +8,7 @@
  * the bottom row is four boxes again with a fine-grid sub-box and pixel
  * figure at the left and a chamfered top-right corner at the right. The left
  * rail carries a fully enclosed green target box under the top strip and a
- * white box beside the bottom row; the right rail carries a violet bar as
+ * orange box beside the bottom row; the right rail carries a violet bar as
  * wide as the small outlined mark, running from that mark's top down to the
  * wordmark's bottom line.
  *
@@ -25,7 +25,7 @@
 
 .sheet {
   --hx-paper: #ffffff;
-  --hx-white: #ececec;
+  --hx-orange: #f55821;
   --hx-green: #02ff71;
   --hx-violet: #e79fff;
   --hx-ink: #161616;
@@ -193,7 +193,7 @@
   height: 26px;
 }
 
-/* the white box beside the upper part of the bottom row, also enclosed */
+/* the orange box beside the upper part of the bottom row, also enclosed */
 .whiteBox {
   position: absolute;
   right: calc(-1 * var(--hx-dp));
@@ -204,7 +204,7 @@
   height: calc(var(--hx-row-bottom) - var(--hx-gridbox) + var(--hx-dp));
   box-sizing: border-box;
   border: var(--hx-dp) solid var(--hx-ink);
-  background: var(--hx-white);
+  background: var(--hx-orange);
 }
 
 /* the violet bar hugs the rail's line, exactly as wide as the mark box and
