@@ -316,11 +316,22 @@
   stroke-opacity: 0;
 }
 
+/* the mark's glyph draws in too; it is strokes already */
+.railMark path,
+.railMark rect {
+  stroke-opacity: 0;
+}
+
 /* whole from the start when nothing will draw them in */
 @media (prefers-reduced-motion: reduce), (scripting: none) {
   .symbols path {
     fill-opacity: 1;
     stroke: none;
+  }
+
+  .railMark path,
+  .railMark rect {
+    stroke-opacity: 1;
   }
 }
 
