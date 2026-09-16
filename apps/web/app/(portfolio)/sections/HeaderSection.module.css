@@ -198,12 +198,13 @@
   display: flex;
 }
 
+/* the dotted divider is centred in the strip, 4px in from each edge */
 .tab::after {
   content: "";
   position: absolute;
   right: 0;
-  top: 5px;
-  bottom: 2px;
+  top: 4px;
+  bottom: 4px;
   width: var(--gc-dp);
   background: repeating-linear-gradient(
     to bottom,
