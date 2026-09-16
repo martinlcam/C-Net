@@ -63,7 +63,7 @@ function SectionArt() {
           y="-286"
           width="680"
           height="680"
-          transform="translate(338 0) scale(-1 1)"
+          transform="translate(278 0) scale(-1 1)"
           filter={`url(#${blurId})`}
         />
       </g>
