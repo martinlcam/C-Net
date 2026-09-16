@@ -63,15 +63,6 @@ export function HeroSection() {
 
         {/* wordmark */}
         <div className={`${styles.box} ${styles.word}`}>
-          <p className={styles.label}>
-            <span className={styles.star} aria-hidden="true">
-              ✳
-            </span>
-            Hey there, I’m
-          </p>
-          <span className={styles.asterisk} aria-hidden="true">
-            ✳
-          </span>
           <h1 id="hero-name" className="sr-only">
             Martin Cam
           </h1>

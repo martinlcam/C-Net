@@ -292,47 +292,16 @@
 .word {
   display: flex;
   align-items: center;
-  padding: 0 4.5% 0 2%;
-}
-
-.label {
-  position: absolute;
-  top: 24%;
-  left: 4.5%;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--hx-mono);
-  font-size: 13px;
-  line-height: 1;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--hx-ink);
-}
-
-.star,
-.asterisk {
-  color: var(--hx-orange);
-  font-size: 20px;
-  line-height: 1;
-}
-
-.asterisk {
-  position: absolute;
-  top: 24%;
-  right: 5.5%;
-  transform: translateY(-4px);
+  padding: 0 4%;
 }
 
 /* the Cognition and Consciousness symbols stand where the name was, one at
-   each end of the box, as tall as a big headline; the name stays for readers */
+   each end of the box and centred in its height; the name stays for readers */
 .symbols {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 5%;
 }
 
 .symbols svg {
