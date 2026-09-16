@@ -214,17 +214,15 @@
   padding-left: 18px;
 }
 
+/* the current page's tab, and any tab under the pointer, is only marked by a
+   hairline under its word */
 .tabLink:hover,
-.tabLink:focus-visible {
-  background: var(--gc-white);
-  color: var(--gc-ink);
-  outline: none;
-}
-
-/* the current page's tab is only marked by underlining its word */
+.tabLink:focus-visible,
 .tabLink[aria-current="page"] {
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+  outline: none;
 }
 
 /* ---------- section row: photo, news bar with the current url, line art, tech ticker ---------- */
