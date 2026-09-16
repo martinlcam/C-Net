@@ -27,6 +27,7 @@ const navItems = [
   { title: "Contact", href: "/#contact" },
   { title: "BFIDA", href: "/bfida" },
   { title: "BD", href: "/bd" },
+  { title: "Attributions", href: "/attributions" },
 ]
 
 /*
