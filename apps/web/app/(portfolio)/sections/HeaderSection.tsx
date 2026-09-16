@@ -29,16 +29,20 @@ const navItems = [
 ]
 
 /*
- * The left side of the section row in a 400x106 box: a navy photo
- * parallelogram with the cat sticker sitting in its left half, the 45° tip of
- * the news bar overlapping its top-right, and the hairline art that hangs off
- * the bar's corner. The white strip to the right of the photo, under the news
- * bar, carries the tech ticker. The line art and the tip take their colors
- * from the stylesheet; the photo is an image and keeps its own.
+ * The left side of the section row in a 400x106 box: a photo parallelogram
+ * made of the cat sticker, blown up and blurred to fill the field with the
+ * sharp cat sitting on it, the 45° tip of the news bar overlapping its
+ * top-right, and the hairline art that hangs off the bar's corner over it
+ * all. The white strip to the right of the photo, under the news bar, carries
+ * the tech ticker. The line art and the tip take their colors from the
+ * stylesheet; the photo is an image and keeps its own.
  */
+const CAT = "/images/masthead-cat.webp"
+
 function SectionArt() {
   const id = useId()
   const clipId = `${id}-photo`
+  const blurId = `${id}-blur`
 
   return (
     <svg className={styles.art} viewBox="0 0 400 106" preserveAspectRatio="none" aria-hidden="true">
@@ -46,9 +50,16 @@ function SectionArt() {
         <clipPath id={clipId}>
           <polygon points="0,20 352,20 273,103 0,103" />
         </clipPath>
+        <filter id={blurId} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="14" />
+        </filter>
       </defs>
       <g clipPath={`url(#${clipId})`}>
-        <rect x="0" y="20" width="352" height="83" fill="#1c3572" />
+        {/* the sticker is square with the cat in its middle: enlarged until
+            the cat's body covers the whole field, then blurred into a backdrop */}
+        <image href={CAT} x="-171" y="-286" width="680" height="680" filter={`url(#${blurId})`} />
+        {/* the sharp cat, a little taller than the field, left of the bar's tip */}
+        <image href={CAT} x="15" y="-61" width="240" height="240" />
       </g>
       <line
         className={styles.artLine}
@@ -80,12 +91,6 @@ function SectionArt() {
         y2="45.5"
         vectorEffect="non-scaling-stroke"
       />
-      {/* the sticker is square with the cat in its middle; sized so the cat
-          fills the field's height, centred left of the bar's tip, and drawn
-          over the line art so the lines pass behind it */}
-      <g clipPath={`url(#${clipId})`}>
-        <image href="/images/masthead-cat.webp" x="23" y="-26" width="175" height="175" />
-      </g>
     </svg>
   )
 }
