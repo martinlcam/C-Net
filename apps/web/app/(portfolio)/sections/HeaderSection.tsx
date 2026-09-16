@@ -29,15 +29,17 @@ const navItems = [
 ]
 
 /*
- * The left side of the section row in a 400x106 box: a flat orange photo
- * parallelogram, the 45° tip of the news bar overlapping its top-right, and
- * the black line art that hangs off the bar's corner. The white strip to the
- * right of the photo, under the news bar, carries the tech ticker. The colors
- * come from the stylesheet so the whole masthead's palette lives in one place.
+ * The left side of the section row in a 400x106 box: an orange photo
+ * parallelogram whose blur survives as white and black smears, the 45° tip of
+ * the news bar overlapping its top-right, and the hairline art that hangs off
+ * the bar's corner. The white strip to the right of the photo, under the news
+ * bar, carries the tech ticker. The colors come from the stylesheet so the
+ * whole masthead's palette lives in one place.
  */
 function SectionArt() {
   const id = useId()
   const clipId = `${id}-photo`
+  const blurId = `${id}-blur`
 
   return (
     <svg className={styles.art} viewBox="0 0 400 106" preserveAspectRatio="none" aria-hidden="true">
@@ -45,15 +47,35 @@ function SectionArt() {
         <clipPath id={clipId}>
           <polygon points="0,20 352,20 273,103 0,103" />
         </clipPath>
+        <filter id={blurId} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
       </defs>
-      <rect
-        className={styles.artPhoto}
-        clipPath={`url(#${clipId})`}
-        x="0"
-        y="20"
-        width="352"
-        height="83"
-      />
+      <g clipPath={`url(#${clipId})`}>
+        <rect className={styles.artPhoto} x="0" y="20" width="352" height="83" />
+        <g filter={`url(#${blurId})`}>
+          <ellipse className={styles.artDark} cx="60" cy="88" rx="70" ry="26" fillOpacity="0.55" />
+          <ellipse
+            className={styles.artLight}
+            cx="125"
+            cy="50"
+            rx="42"
+            ry="20"
+            fillOpacity="0.75"
+          />
+          <ellipse className={styles.artLight} cx="220" cy="72" rx="75" ry="30" fillOpacity="0.3" />
+          <ellipse
+            className={styles.artLight}
+            cx="300"
+            cy="42"
+            rx="45"
+            ry="18"
+            fillOpacity="0.55"
+          />
+          <ellipse className={styles.artDark} cx="330" cy="92" rx="55" ry="22" fillOpacity="0.5" />
+          <ellipse className={styles.artDark} cx="180" cy="100" rx="60" ry="16" fillOpacity="0.2" />
+        </g>
+      </g>
       <line
         className={styles.artLine}
         x1="0"
@@ -73,17 +95,15 @@ function SectionArt() {
       <polygon className={styles.artTip} points="241,1 241,45 195,45" />
       <polyline
         className={styles.artLine}
-        points="220,20 178,63 0,63"
-        strokeWidth="2"
+        points="220,20.5 178,63.5 0,63.5"
         vectorEffect="non-scaling-stroke"
       />
       <line
         className={styles.artLine}
         x1="0"
-        y1="46"
+        y1="45.5"
         x2="195"
-        y2="46"
-        strokeWidth="2"
+        y2="45.5"
         vectorEffect="non-scaling-stroke"
       />
     </svg>

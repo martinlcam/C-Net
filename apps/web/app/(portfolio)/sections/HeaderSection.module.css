@@ -7,8 +7,8 @@
  *
  * The palette is the hero sheet's: white paper, black hairlines and text,
  * and its three accents, one per block. The search band is violet, the
- * photo is a flat orange field and the news bar is green, with the tab strip
- * in black between them. All colors live here (the art's too, by class)
+ * photo is orange with its blur kept as light and dark smears, and the news
+ * bar is green, with the tab strip in black between them. All colors live here (the art's too, by class)
  * because the masthead is one fixed-palette illustration, not a themed
  * surface, so it looks the same on the cream pages and on /bd.
  */
@@ -261,12 +261,22 @@
   fill: var(--gc-photo);
 }
 
+/* the blurred photo's highlights and shadows, laid over the orange */
+.artLight {
+  fill: var(--gc-white);
+}
+
+.artDark {
+  fill: var(--gc-ink);
+}
+
 .artTip {
   fill: var(--gc-bar);
 }
 
 .artLine {
   stroke: var(--gc-line);
+  stroke-width: 1;
   fill: none;
 }
 
@@ -297,7 +307,7 @@
   top: 45px;
   right: 0;
   left: calc(195px * var(--gc-art-scale));
-  height: 2px;
+  height: 1px;
   background: var(--gc-line);
 }
 
@@ -306,7 +316,7 @@
   top: 75px;
   right: 0;
   left: calc(299px * var(--gc-art-scale));
-  height: 2px;
+  height: 1px;
   background: var(--gc-line);
 }
 
