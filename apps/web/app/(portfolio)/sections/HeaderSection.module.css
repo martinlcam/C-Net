@@ -7,7 +7,8 @@
  *
  * The palette is the hero sheet's: white paper, black hairlines and text,
  * and two of its accents. The search band is violet and the news bar green,
- * with the tab strip in black between them; the photo keeps its own blue.
+ * with the tab strip in black between them (the current page's tab is just
+ * underlined); the photo keeps its own blue.
  * All colors live here (the line art's too, by class) because the masthead
  * is one fixed-palette illustration, not a themed surface, so it looks the
  * same on the cream pages and on /bd.
@@ -220,10 +221,10 @@
   outline: none;
 }
 
-/* the current page's tab is the strip's one green cell */
+/* the current page's tab is only marked by underlining its word */
 .tabLink[aria-current="page"] {
-  background: var(--gc-bar);
-  color: var(--gc-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* ---------- section row: photo, news bar with the current url, line art, tech ticker ---------- */
