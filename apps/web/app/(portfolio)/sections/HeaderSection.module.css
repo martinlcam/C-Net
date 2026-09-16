@@ -6,11 +6,11 @@
  * photo parallelogram, tied together by black line art.
  *
  * The palette is the hero sheet's: white paper, black hairlines and text,
- * and its three accents, one per block. The search band is violet, the
- * photo is orange with its blur kept as light and dark smears, and the news
- * bar is green, with the tab strip in black between them. All colors live here (the art's too, by class)
- * because the masthead is one fixed-palette illustration, not a themed
- * surface, so it looks the same on the cream pages and on /bd.
+ * and two of its accents. The search band is violet and the news bar green,
+ * with the tab strip in black between them; the photo keeps its own blue.
+ * All colors live here (the line art's too, by class) because the masthead
+ * is one fixed-palette illustration, not a themed surface, so it looks the
+ * same on the cream pages and on /bd.
  */
 /* wordmark face; the files live in public/fonts, Audiowide (next/font) is the fallback */
 @font-face {
@@ -29,7 +29,6 @@
   --gc-white: #ffffff;
   --gc-green: #02ff71;
   --gc-violet: #e79fff;
-  --gc-orange: #f55821;
 
   --gc-paper: var(--gc-white);
   --gc-line: var(--gc-ink);
@@ -38,7 +37,6 @@
   --gc-strip-ink: var(--gc-white);
   --gc-tab-rule: var(--gc-white);
   --gc-bar: var(--gc-green);
-  --gc-photo: var(--gc-orange);
 
   --gc-band-h: 76px;
   --gc-strip-h: 28px;
@@ -248,26 +246,14 @@
   z-index: 1;
 }
 
-/* the photo, the bar's slanted tip and the black lines share one 400x106 drawing */
+/* the photo, the bar's slanted tip and the black lines share one 400x106
+   drawing; the photo's own colours stay in the drawing, it is an image */
 .art {
   position: absolute;
   left: 0;
   top: 0;
   width: calc(400px * var(--gc-art-scale));
   height: 106px;
-}
-
-.artPhoto {
-  fill: var(--gc-photo);
-}
-
-/* the blurred photo's highlights and shadows, laid over the orange */
-.artLight {
-  fill: var(--gc-white);
-}
-
-.artDark {
-  fill: var(--gc-ink);
 }
 
 .artTip {
