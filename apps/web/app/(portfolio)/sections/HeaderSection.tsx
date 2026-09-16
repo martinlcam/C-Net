@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react"
 import { type FormEvent, useEffect, useId, useRef, useState } from "react"
 import { useAuthModal } from "@/lib/stores/auth-modal"
 import { useDevicePixel } from "@/lib/use-device-pixel"
+import { useDrawIn } from "@/lib/use-draw-in"
 import { TechTicker } from "../components/TechTicker"
 import styles from "./HeaderSection.module.css"
 
@@ -123,7 +124,10 @@ export function HeaderSection() {
   const [host, setHost] = useState(SITE_HOST)
   const [query, setQuery] = useState("")
   const root = useRef<HTMLElement>(null)
+  const art = useRef<HTMLDivElement>(null)
   useDevicePixel(root, "--gc-dp")
+  /* the art's hairlines draw themselves in (see useDrawIn) */
+  useDrawIn(art, { selector: "line", duration: 1400, gap: 150 })
 
   useEffect(() => {
     setHost(window.location.host)
@@ -206,7 +210,7 @@ export function HeaderSection() {
         </nav>
       </div>
 
-      <div className={styles.section}>
+      <div ref={art} className={styles.section}>
         <SectionArt />
         <div className={styles.bar}>
           <span className={styles.barText}>{location}</span>

@@ -267,12 +267,21 @@
 }
 
 /* flat lines are snapped to device pixels, like the html hairlines; the
-   slanted ones stay anti-aliased so they do not stair-step */
+   slanted ones stay anti-aliased so they do not stair-step. They are hidden
+   until the script draws them in (see useDrawIn) */
 .artLine,
 .artSlant {
   stroke: var(--gc-line);
   stroke-width: var(--gc-dp);
+  stroke-opacity: 0;
   fill: none;
+}
+
+@media (prefers-reduced-motion: reduce), (scripting: none) {
+  .artLine,
+  .artSlant {
+    stroke-opacity: 1;
+  }
 }
 
 .artLine {
