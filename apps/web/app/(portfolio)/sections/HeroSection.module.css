@@ -325,15 +325,19 @@
   transform: translateY(-4px);
 }
 
-.name {
-  margin: 0;
+/* the Cognition and Consciousness symbols stand where the name was, one at
+   each end of the box, as tall as a big headline; the name stays for readers */
+.symbols {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding-top: 5%;
-  font-weight: 700;
-  font-size: clamp(56px, 9.6vw, 150px);
-  line-height: 0.9;
-  letter-spacing: -0.045em;
-  color: var(--hx-ink);
-  overflow-wrap: anywhere;
+}
+
+.symbols svg {
+  width: auto;
+  height: clamp(120px, 15vw, 230px);
 }
 
 /* ---------- row three: tagline, split box, accent panel ---------- */
