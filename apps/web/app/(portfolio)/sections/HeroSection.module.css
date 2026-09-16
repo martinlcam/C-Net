@@ -1,5 +1,5 @@
 /*
- * The hero is one sheet of boxes on slate gray, drawn with shared hairline black
+ * The hero is one sheet of white boxes drawn with shared hairline black
  * lines: every box is a grid cell and the lines are the grid gap showing
  * through, so neighbours never double up a border. The geometry follows an
  * editorial reference exactly. Two deep rails (6% each) flank four equal
@@ -7,7 +7,7 @@
  * third row splits 2:1:1 with the middle box cut by a horizontal line, and
  * the bottom row is four boxes again with a fine-grid sub-box and pixel
  * figure at the left and a chamfered top-right corner at the right. The left
- * rail carries a fully enclosed green target box under the top strip and a
+ * rail carries a fully enclosed green target box under the top strip and an
  * orange box beside the bottom row; the right rail carries a violet bar as
  * wide as the small outlined mark, running from that mark's top down to the
  * wordmark's bottom line.
@@ -16,10 +16,8 @@
  * lower rule. The masthead sits lower on the left (photo) and higher on the
  * right, so only lines right of the photo get the extension; that is intended.
  */
+/* lets the sheet size its tracks in cqw, so every box knows the column width */
 .shell {
-  background: #ffffff;
-  border-bottom: 1px solid #161616;
-  /* lets the sheet size its tracks in cqw, so every box knows the column width */
   container-type: inline-size;
 }
 
@@ -32,7 +30,6 @@
   --hx-ink-soft: #3a3a3a;
   --hx-grid-line: #8c8c8c;
   --hx-mono: ui-monospace, "DejaVu Sans Mono", "SFMono-Regular", Menlo, Consolas, monospace;
-  --hx-rail: 6%;
   --hx-row-top: 96px;
   --hx-row-word: 380px;
   --hx-row-mid: 220px;
@@ -58,12 +55,12 @@
   --hx-colw: round(down, calc((100cqw - 2 * var(--hx-railw) - 5 * var(--hx-dp)) / 4), var(--hx-dp));
 
   position: relative;
-  width: 100%;
   display: grid;
   /* columns share gap lines; horizontal lines are explicit rows, so a row
      boundary only draws a line where no box covers it */
   gap: 0 var(--hx-dp);
   background: var(--hx-ink);
+  border-bottom: var(--hx-dp) solid var(--hx-ink);
   color: var(--hx-ink);
   grid-template-columns: var(--hx-railw) repeat(4, var(--hx-colw)) auto;
   grid-template-rows:
@@ -193,7 +190,7 @@
 }
 
 /* the orange box beside the upper part of the bottom row, also enclosed */
-.whiteBox {
+.lowerBox {
   position: absolute;
   right: calc(-1 * var(--hx-dp));
   /* anchored to the bottom row (the third row can grow with its text): its
@@ -309,6 +306,24 @@
   height: clamp(120px, 15vw, 230px);
 }
 
+/* hidden until the script draws them in (see useDrawIn): the ink is traced as
+   an outline first, so the stroke is set here and the fill starts clear. The
+   paths are stored at 10x, so a stroke of 10 is one unit of the drawing */
+.symbols path {
+  fill-opacity: 0;
+  stroke: currentColor;
+  stroke-width: 10;
+  stroke-opacity: 0;
+}
+
+/* whole from the start when nothing will draw them in */
+@media (prefers-reduced-motion: reduce), (scripting: none) {
+  .symbols path {
+    fill-opacity: 1;
+    stroke: none;
+  }
+}
+
 /* ---------- row three: tagline, split box, accent panel ---------- */
 
 .tag {
@@ -421,13 +436,13 @@
   justify-content: center;
   height: 40px;
   padding: 0 20px;
-  border: 1px solid #ffffff;
+  border: 1px solid var(--hx-paper);
   border-radius: 0;
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.01em;
   text-decoration: none;
-  color: #ffffff;
+  color: var(--hx-paper);
   background: transparent;
   transition:
     background-color 120ms linear,
@@ -435,7 +450,7 @@
 }
 
 .btnSolid {
-  background: #ffffff;
+  background: var(--hx-paper);
   color: var(--hx-ink);
 }
 
