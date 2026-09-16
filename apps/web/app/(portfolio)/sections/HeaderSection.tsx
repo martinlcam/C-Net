@@ -84,12 +84,13 @@ function SectionArt() {
       />
       {/* the photo's slanted right edge is closed by its own hairline */}
       <line className={styles.artSlant} x1="352" y1="20" x2="273" y2="103" />
-      <polygon className={styles.artTip} points="241,1 241,45 195,45" />
-      <line className={styles.artSlant} x1="241" y1="1" x2="195" y2="45" />
-      <line className={styles.artSlant} x1="220" y1="20.5" x2="178" y2="63.5" />
+      {/* one 45° hairline runs from the bar's corner down its tip's slant and on
+          to the loop's flat part, so the tip's edge and the loop share a line */}
+      <polygon className={styles.artTip} points="241,1 241,45 197,45" />
+      <line className={styles.artSlant} x1="241" y1="1" x2="178.5" y2="63.5" />
       <line
         className={styles.artLine}
-        x1="178"
+        x1="178.5"
         y1="63.5"
         x2="0"
         y2="63.5"
