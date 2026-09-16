@@ -31,13 +31,11 @@
   --gc-green: #02ff71;
   --gc-violet: #e79fff;
 
-  --gc-paper: var(--gc-white);
-  --gc-line: var(--gc-ink);
-  --gc-band: var(--gc-violet);
-  --gc-strip: var(--gc-ink);
-  --gc-strip-ink: var(--gc-white);
-  --gc-tab-rule: var(--gc-white);
+  /* the news bar's green also fills its tip in the art */
   --gc-bar: var(--gc-green);
+  --gc-line: var(--gc-ink);
+  /* the search box's inset bevel, inner ring; the outer is its border */
+  --gc-bevel: inset 1px 1px 0 #7a7a7a, inset -1px -1px 0 #d6d6d6;
 
   /* one device pixel, set by the component from devicePixelRatio: every
      hairline is this thick so none smears over two pixels at a fractional zoom */
@@ -49,8 +47,6 @@
   --gc-strip-left: calc(var(--gc-band-left) - 53px);
   --gc-art-scale: 1;
 
-  position: relative;
-  width: 100%;
   color: var(--gc-ink);
   font-family: Verdana, "DejaVu Sans", "Bitstream Vera Sans", Geneva, Tahoma, sans-serif;
   border-top: var(--gc-dp) solid var(--gc-line);
@@ -62,7 +58,7 @@
 .top {
   position: relative;
   height: calc(var(--gc-band-h) + var(--gc-strip-h));
-  background: var(--gc-paper);
+  background: var(--gc-white);
 }
 
 /* centered in the paper box left of the band, biased a little away from the slant */
@@ -87,7 +83,6 @@
   font-size: 58px;
   letter-spacing: 0.02em;
   line-height: 0.8;
-  color: var(--gc-ink);
   -webkit-text-stroke: 1px currentColor;
   transform: scaleX(1.35);
   transform-origin: center;
@@ -113,7 +108,7 @@
   justify-content: flex-end;
   gap: 18px;
   padding-right: 34px;
-  background: var(--gc-band);
+  background: var(--gc-violet);
   clip-path: polygon(calc(var(--gc-band-h) + 1.5px) 0, 100% 0, 100% 100%, 1.5px 100%);
 }
 
@@ -137,9 +132,7 @@
      bottom and right, so the box reads as sunk into the band */
   border: 1px solid;
   border-color: var(--gc-ink) var(--gc-white) var(--gc-white) var(--gc-ink);
-  box-shadow:
-    inset 1px 1px 0 #7a7a7a,
-    inset -1px -1px 0 #d6d6d6;
+  box-shadow: var(--gc-bevel);
   background: var(--gc-white);
   color: var(--gc-ink);
   font: inherit;
@@ -150,8 +143,7 @@
 
 .searchInput:focus-visible {
   box-shadow:
-    inset 1px 1px 0 #7a7a7a,
-    inset -1px -1px 0 #d6d6d6,
+    var(--gc-bevel),
     0 0 0 2px var(--gc-green);
 }
 
@@ -179,7 +171,7 @@
   right: 0;
   left: var(--gc-strip-left);
   height: var(--gc-strip-h);
-  background: var(--gc-strip);
+  background: var(--gc-ink);
   clip-path: polygon(var(--gc-strip-h) 0, 100% 0, 100% 100%, 0 100%);
 }
 
@@ -208,8 +200,8 @@
   width: var(--gc-dp);
   background: repeating-linear-gradient(
     to bottom,
-    var(--gc-tab-rule) 0,
-    var(--gc-tab-rule) var(--gc-dp),
+    var(--gc-white) 0,
+    var(--gc-white) var(--gc-dp),
     transparent var(--gc-dp),
     transparent calc(2 * var(--gc-dp))
   );
@@ -219,7 +211,7 @@
   display: flex;
   align-items: center;
   padding: 0 34px;
-  color: var(--gc-strip-ink);
+  color: var(--gc-white);
   font-size: 17px;
   text-decoration: none;
   white-space: nowrap;
@@ -371,7 +363,6 @@
   .top {
     height: auto;
     padding-top: var(--gc-band-h);
-    background: var(--gc-paper);
   }
 
   .logo {

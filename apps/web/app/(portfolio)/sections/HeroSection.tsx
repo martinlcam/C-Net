@@ -1,10 +1,36 @@
 "use client"
 
 import { Text } from "@radix-ui/themes"
-import { useRef } from "react"
+import { createTimeline, stagger, svg } from "animejs"
+import { type RefObject, useEffect, useRef } from "react"
 import { useDevicePixel } from "@/lib/use-device-pixel"
 import { Cognition, Consciousness } from "../components/symbols"
 import styles from "./HeroSection.module.css"
+
+/* the symbols draw themselves in: each outline is traced along its length,
+   then the ink fills and the outline fades. The stylesheet hides both until
+   this runs, and shows the symbols whole for readers who prefer less motion */
+function useDrawIn(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const root = ref.current
+    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+
+    const paths = Array.from(root.querySelectorAll("path"))
+    const timeline = createTimeline()
+      .add(paths, { strokeOpacity: 1, duration: 0 })
+      .add(svg.createDrawable(paths), {
+        draw: ["0 0", "0 1"],
+        ease: "inOutQuad",
+        duration: 2200,
+        delay: stagger(250),
+      })
+      .add(paths, { fillOpacity: 1, strokeOpacity: 0, ease: "linear", duration: 700 }, "-=300")
+
+    return () => {
+      timeline.revert()
+    }
+  }, [ref])
+}
 
 function Target() {
   return (
@@ -32,7 +58,9 @@ function CornerMark() {
 
 export function HeroSection() {
   const sheet = useRef<HTMLElement>(null)
+  const symbols = useRef<HTMLDivElement>(null)
   useDevicePixel(sheet, "--hx-dp")
+  useDrawIn(symbols)
 
   return (
     <div className={styles.shell}>
@@ -42,7 +70,7 @@ export function HeroSection() {
           <span className={styles.targetBox}>
             <Target />
           </span>
-          <span className={styles.whiteBox} />
+          <span className={styles.lowerBox} />
         </div>
         <div className={`${styles.box} ${styles.rrail}`} aria-hidden="true">
           <span className={styles.railBar} />
@@ -66,7 +94,7 @@ export function HeroSection() {
           <h1 id="hero-name" className="sr-only">
             Martin Cam
           </h1>
-          <div className={styles.symbols} aria-hidden="true">
+          <div ref={symbols} className={styles.symbols} aria-hidden="true">
             <Cognition />
             <Consciousness />
           </div>
