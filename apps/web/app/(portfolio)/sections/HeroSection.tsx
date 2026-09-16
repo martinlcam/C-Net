@@ -1,11 +1,138 @@
 "use client"
 
 import { Text } from "@radix-ui/themes"
-import { useRef } from "react"
+import { animate, stagger, svg } from "animejs"
+import { type RefObject, useEffect, useRef } from "react"
 import { useDevicePixel } from "@/lib/use-device-pixel"
 import { useDrawIn } from "@/lib/use-draw-in"
 import { Cognition, Consciousness } from "../components/symbols"
 import styles from "./HeroSection.module.css"
+
+const SVG = "http://www.w3.org/2000/svg"
+
+/*
+ * The sheet draws itself in. Its lines are css (grid gaps, borders and
+ * pseudo-elements), so they are measured from the boxes and traced on an svg
+ * overlay while the real lines are held clear by the drawing class; when the
+ * trace ends the real lines take over and the overlay is emptied. Readers who
+ * prefer less motion get the sheet whole.
+ */
+function useDrawSheet(
+  sheet: RefObject<HTMLElement | null>,
+  overlay: RefObject<SVGSVGElement | null>
+) {
+  useEffect(() => {
+    const root = sheet.current
+    const canvas = overlay.current
+    if (!root || !canvas) return
+
+    const settle = () => {
+      root.classList.remove(styles.drawing)
+      canvas.replaceChildren()
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      settle()
+      return
+    }
+
+    const style = getComputedStyle(root)
+    const px = (name: string) => Number.parseFloat(style.getPropertyValue(name)) || 0
+    const dp = px("--hx-dp") || 1
+    const half = dp / 2
+    const origin = root.getBoundingClientRect()
+    const shapes: SVGGeometryElement[] = []
+
+    const rectOf = (el: Element) => {
+      const r = el.getBoundingClientRect()
+      return {
+        l: r.left - origin.left,
+        t: r.top - origin.top,
+        r: r.right - origin.left,
+        b: r.bottom - origin.top,
+      }
+    }
+    const add = (tag: "rect" | "line" | "polyline", attrs: Record<string, number | string>) => {
+      const shape = document.createElementNS(SVG, tag)
+      for (const [key, value] of Object.entries(attrs)) shape.setAttribute(key, String(value))
+      canvas.append(shape)
+      shapes.push(shape as SVGGeometryElement)
+    }
+    const box = (l: number, t: number, r: number, b: number) =>
+      add("rect", { x: l, y: t, width: r - l, height: b - t })
+    const line = (x1: number, y1: number, x2: number, y2: number, slant = false) =>
+      add(
+        "line",
+        slant ? { x1, y1, x2, y2, "shape-rendering": "geometricPrecision" } : { x1, y1, x2, y2 }
+      )
+    const boxes = (name: string) =>
+      Array.from(root.querySelectorAll(`.${name}`))
+        .map(rectOf)
+        .filter((r) => r.r > r.l && r.b > r.t)
+    const one = (name: string) => boxes(name)[0]
+
+    // grid boxes: the lines are the gaps around them, one device pixel outside
+    for (const r of boxes(styles.box)) box(r.l - half, r.t - half, r.r + half, r.b + half)
+
+    // the rail's enclosed boxes: their borders lie inside their edges
+    for (const name of [styles.targetBox, styles.lowerBox]) {
+      const r = one(name)
+      if (r) box(r.l + half, r.t + half, r.r - half, r.b - half)
+    }
+    // the bar and the mark have no left border; the rail's own line is theirs
+    for (const name of [styles.railBar, styles.railMark]) {
+      const r = one(name)
+      if (r)
+        add("polyline", {
+          points: `${r.l - half},${r.t + half} ${r.r - half},${r.t + half} ${r.r - half},${r.b - half} ${r.l - half},${r.b - half}`,
+        })
+    }
+
+    // the loose hairlines: the middle box's cut, the fine grid's top, the
+    // panel's bottom and chamfer, the fourth box's top and chamfer
+    const cut = px("--hx-cut")
+    const mid = one(styles.mid)
+    if (mid) {
+      const y = mid.t + (mid.b - mid.t) * 0.55 + half
+      line(mid.l, y, mid.r, y)
+    }
+    const grid = one(styles.miniGrid)
+    if (grid) line(grid.l, grid.t + half, grid.r, grid.t + half)
+    const panel = one(styles.panelWrap)
+    if (panel) {
+      line(panel.l, panel.b - half, panel.r - cut, panel.b - half)
+      line(panel.r - cut, panel.b, panel.r, panel.b - cut, true)
+    }
+    const b4 = one(styles.b4)
+    const b4top = one(styles.b4top)
+    if (b4 && b4top) {
+      const w = b4.r - b4.l
+      line(b4top.l, b4top.t + half, b4top.l + w - cut, b4top.t + half)
+      line(b4top.l + w - cut, b4top.t, b4top.l + w, b4top.t + cut, true)
+    }
+
+    // the column lines' reach up into the masthead
+    const reach = px("--hx-reach")
+    for (const name of [styles.t1, styles.t2, styles.t3, styles.t4]) {
+      const r = one(name)
+      if (r && reach) line(r.r + half, r.t - reach, r.r + half, r.t)
+    }
+    const rail = one(styles.lrail)
+    const reachLeft = px("--hx-reach-left")
+    if (rail && reachLeft) line(rail.r + half, rail.t - reachLeft, rail.r + half, rail.t)
+
+    const drawing = animate(svg.createDrawable(shapes), {
+      draw: ["0 0", "0 1"],
+      ease: "inOutQuad",
+      duration: 900,
+      delay: stagger(45),
+      onComplete: settle,
+    })
+
+    return () => {
+      drawing.revert()
+    }
+  }, [sheet, overlay])
+}
 
 function Target() {
   return (
@@ -33,16 +160,20 @@ function CornerMark() {
 
 export function HeroSection() {
   const sheet = useRef<HTMLElement>(null)
+  const lines = useRef<SVGSVGElement>(null)
   const symbols = useRef<HTMLDivElement>(null)
-  const mark = useRef<HTMLSpanElement>(null)
   useDevicePixel(sheet, "--hx-dp")
-  /* the symbols and the mark draw themselves in (see useDrawIn) */
+  useDrawSheet(sheet, lines)
   useDrawIn(symbols, { fill: true })
-  useDrawIn(mark, { duration: 1200, gap: 400 })
 
   return (
     <div className={styles.shell}>
-      <section id="home" ref={sheet} className={styles.sheet} aria-labelledby="hero-name">
+      <section
+        id="home"
+        ref={sheet}
+        className={`${styles.sheet} ${styles.drawing}`}
+        aria-labelledby="hero-name"
+      >
         {/* rails */}
         <div className={`${styles.box} ${styles.lrail}`} aria-hidden="true">
           <span className={styles.targetBox}>
@@ -52,7 +183,7 @@ export function HeroSection() {
         </div>
         <div className={`${styles.box} ${styles.rrail}`} aria-hidden="true">
           <span className={styles.railBar} />
-          <span ref={mark} className={styles.railMark}>
+          <span className={styles.railMark}>
             <CornerMark />
           </span>
         </div>
@@ -136,6 +267,9 @@ export function HeroSection() {
         <div className={`${styles.box} ${styles.b4top}`} aria-hidden="true" />
         <div className={`${styles.box} ${styles.b4}`} aria-hidden="true" />
         <div className={`${styles.box} ${styles.rrail2}`} aria-hidden="true" />
+
+        {/* the overlay the sheet draws itself in on */}
+        <svg ref={lines} className={styles.lines} aria-hidden="true" />
       </section>
     </div>
   )
