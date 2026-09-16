@@ -30,15 +30,12 @@ const navItems = [
 
 /*
  * The left side of the section row in a 400x106 box: a photo parallelogram
- * made of the cat sticker, blown up and blurred to fill the field with the
- * sharp cat sitting on it, the 45° tip of the news bar overlapping its
- * top-right, and the hairline art that hangs off the bar's corner over it
- * all. The white strip to the right of the photo, under the news bar, carries
+ * made of the cat sticker blown up and blurred to fill the field, the 45° tip
+ * of the news bar overlapping its top-right, and the hairline art that hangs
+ * off the bar's corner over it. The white strip to the right of the photo, under the news bar, carries
  * the tech ticker. The line art and the tip take their colors from the
  * stylesheet; the photo is an image and keeps its own.
  */
-const CAT = "/images/masthead-cat.webp"
-
 function SectionArt() {
   const id = useId()
   const clipId = `${id}-photo`
@@ -57,9 +54,14 @@ function SectionArt() {
       <g clipPath={`url(#${clipId})`}>
         {/* the sticker is square with the cat in its middle: enlarged until
             the cat's body covers the whole field, then blurred into a backdrop */}
-        <image href={CAT} x="-171" y="-286" width="680" height="680" filter={`url(#${blurId})`} />
-        {/* the sharp cat, a little taller than the field, left of the bar's tip */}
-        <image href={CAT} x="15" y="-61" width="240" height="240" />
+        <image
+          href="/images/masthead-cat.webp"
+          x="-171"
+          y="-286"
+          width="680"
+          height="680"
+          filter={`url(#${blurId})`}
+        />
       </g>
       <line
         className={styles.artLine}
