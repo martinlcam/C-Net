@@ -3,6 +3,7 @@
 import { Text } from "@radix-ui/themes"
 import { useRef } from "react"
 import { useDevicePixel } from "@/lib/use-device-pixel"
+import { Cognition, Consciousness } from "../components/symbols"
 import styles from "./HeroSection.module.css"
 
 function Target() {
@@ -71,9 +72,13 @@ export function HeroSection() {
           <span className={styles.asterisk} aria-hidden="true">
             ✳
           </span>
-          <h1 id="hero-name" className={styles.name}>
+          <h1 id="hero-name" className="sr-only">
             Martin Cam
           </h1>
+          <div className={styles.symbols} aria-hidden="true">
+            <Cognition />
+            <Consciousness />
+          </div>
         </div>
 
         {/* tagline, split box, accent panel, caption box */}
