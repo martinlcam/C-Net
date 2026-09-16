@@ -31,7 +31,6 @@
   --hx-ink: #161616;
   --hx-ink-soft: #3a3a3a;
   --hx-grid-line: #8c8c8c;
-  --hx-red: #f5271a;
   --hx-mono: ui-monospace, "DejaVu Sans Mono", "SFMono-Regular", Menlo, Consolas, monospace;
   --hx-rail: 6%;
   --hx-row-top: 96px;
@@ -314,7 +313,7 @@
 
 .star,
 .asterisk {
-  color: var(--hx-red);
+  color: var(--hx-orange);
   font-size: 20px;
   line-height: 1;
 }
@@ -433,7 +432,7 @@
   align-content: center;
   gap: 10px;
   padding: 16px 28px 16px 8%;
-  background: var(--hx-red);
+  background: var(--hx-orange);
   clip-path: polygon(
     0 0,
     100% 0,
