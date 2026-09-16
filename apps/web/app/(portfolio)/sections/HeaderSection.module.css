@@ -132,7 +132,14 @@
   width: 184px;
   height: 34px;
   padding: 0 6px;
-  border: var(--gc-dp) solid var(--gc-line);
+  /* the old inset bevel in the palette, two rings so all four edges show:
+     black then gray down the top and left, light gray then white up the
+     bottom and right, so the box reads as sunk into the band */
+  border: 1px solid;
+  border-color: var(--gc-ink) var(--gc-white) var(--gc-white) var(--gc-ink);
+  box-shadow:
+    inset 1px 1px 0 #7a7a7a,
+    inset -1px -1px 0 #d6d6d6;
   background: var(--gc-white);
   color: var(--gc-ink);
   font: inherit;
@@ -142,7 +149,10 @@
 }
 
 .searchInput:focus-visible {
-  box-shadow: 0 0 0 2px var(--gc-green);
+  box-shadow:
+    inset 1px 1px 0 #7a7a7a,
+    inset -1px -1px 0 #d6d6d6,
+    0 0 0 2px var(--gc-green);
 }
 
 .bracket {
