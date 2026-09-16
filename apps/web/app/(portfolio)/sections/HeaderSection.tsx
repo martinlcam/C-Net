@@ -33,7 +33,8 @@ const navItems = [
  * The left side of the section row in a 400x106 box: a photo parallelogram
  * made of the cat sticker blown up and blurred to fill the field, the 45° tip
  * of the news bar overlapping its top-right, both closed by hairlines along
- * their slants, and the hairline art that hangs off the bar's corner over it. The white strip to the right of the photo, under the news bar, carries
+ * their slants, and the white loop of hairlines that hangs off the bar's
+ * corner over it. The white strip to the right of the photo, under the news bar, carries
  * the tech ticker. The line art and the tip take their colors from the
  * stylesheet; the photo is an image and keeps its own.
  */
@@ -87,9 +88,15 @@ function SectionArt() {
       {/* one 45° hairline runs from the bar's corner down its tip's slant and on
           to the loop's flat part, so the tip's edge and the loop share a line */}
       <polygon className={styles.artTip} points="241,1 241,45 197,45" />
-      <line className={styles.artSlant} x1="241" y1="1" x2="178.5" y2="63.5" />
       <line
-        className={styles.artLine}
+        className={`${styles.artSlant} ${styles.artLoop}`}
+        x1="241"
+        y1="1"
+        x2="178.5"
+        y2="63.5"
+      />
+      <line
+        className={`${styles.artLine} ${styles.artLoop}`}
         x1="178.5"
         y1="63.5"
         x2="0"
@@ -97,7 +104,7 @@ function SectionArt() {
         vectorEffect="non-scaling-stroke"
       />
       <line
-        className={styles.artLine}
+        className={`${styles.artLine} ${styles.artLoop}`}
         x1="0"
         y1="45.5"
         x2="195"

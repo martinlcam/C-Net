@@ -3,7 +3,7 @@
  * cuts in the top block are deliberately staggered: the band's slant lands
  * 53px right of where the tab strip's slant starts, leaving a short black
  * ledge under the band. The section row is a news bar that overlaps a wider
- * photo parallelogram, tied together by black line art.
+ * photo parallelogram, tied together by white line art.
  *
  * The palette is the hero sheet's: white paper, black hairlines and text,
  * and two of its accents. The search band is violet and the news bar green,
@@ -280,6 +280,12 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* the loop under the news bar is white: its slant along the bar's tip, its
+   two flat lines through the photo, and the underline continuing it */
+.artLoop {
+  stroke: var(--gc-white);
+}
+
 .bar {
   position: absolute;
   top: 0;
@@ -301,14 +307,15 @@
   text-overflow: ellipsis;
 }
 
-/* continues the line from the art all the way across, under the news bar */
+/* continues the loop's white line from the art all the way across, under the
+   news bar */
 .underline {
   position: absolute;
   top: 45px;
   right: 0;
   left: calc(195px * var(--gc-art-scale));
   height: var(--gc-dp);
-  background: var(--gc-line);
+  background: var(--gc-white);
 }
 
 .rule {
