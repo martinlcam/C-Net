@@ -1,12 +1,16 @@
 /*
  * Early-2000s "gamecubicle" masthead. Every edge is a 45° cut, and the two
- * cuts in the top block are deliberately staggered: the steel band's slant
- * lands 53px right of where the navy tab strip's slant starts, leaving a
- * short navy ledge under the band. The section row is a news bar that
- * overlaps a wider photo parallelogram, tied together by white line art.
- * All colors live here because the masthead is one fixed-palette
- * illustration, not a themed surface, so it looks the same on the cream
- * pages and on /bd.
+ * cuts in the top block are deliberately staggered: the band's slant lands
+ * 53px right of where the tab strip's slant starts, leaving a short black
+ * ledge under the band. The section row is a news bar that overlaps a wider
+ * photo parallelogram, tied together by black line art.
+ *
+ * The palette is the hero sheet's: white paper, black hairlines and text,
+ * and its three accents, one per block. The search band is violet, the
+ * photo is a flat orange field and the news bar is green, with the tab strip
+ * in black between them. All colors live here (the art's too, by class)
+ * because the masthead is one fixed-palette illustration, not a themed
+ * surface, so it looks the same on the cream pages and on /bd.
  */
 /* wordmark face; the files live in public/fonts, Audiowide (next/font) is the fallback */
 @font-face {
@@ -21,14 +25,20 @@
 }
 
 .header {
-  --gc-paper: #eceef3;
-  --gc-steel: #b9c5d5;
-  --gc-steel-line: #8d9db8;
-  --gc-navy: #1d4b88;
-  --gc-navy-light: #2f5f93;
-  --gc-navy-ink: #172a52;
-  --gc-tab-rule: #c2cde0;
+  --gc-ink: #161616;
   --gc-white: #ffffff;
+  --gc-green: #02ff71;
+  --gc-violet: #e79fff;
+  --gc-orange: #f55821;
+
+  --gc-paper: var(--gc-white);
+  --gc-line: var(--gc-ink);
+  --gc-band: var(--gc-violet);
+  --gc-strip: var(--gc-ink);
+  --gc-strip-ink: var(--gc-white);
+  --gc-tab-rule: var(--gc-white);
+  --gc-bar: var(--gc-green);
+  --gc-photo: var(--gc-orange);
 
   --gc-band-h: 76px;
   --gc-strip-h: 28px;
@@ -38,13 +48,13 @@
 
   position: relative;
   width: 100%;
-  color: var(--gc-navy-ink);
+  color: var(--gc-ink);
   font-family: Verdana, "DejaVu Sans", "Bitstream Vera Sans", Geneva, Tahoma, sans-serif;
-  border-top: 1px solid var(--gc-navy);
+  border-top: 1px solid var(--gc-line);
   background: var(--gc-white);
 }
 
-/* ---------- top block: logo column, slanted steel band, navy tab strip ---------- */
+/* ---------- top block: logo column, slanted violet band, black tab strip ---------- */
 
 .top {
   position: relative;
@@ -63,7 +73,7 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  color: var(--gc-navy-ink);
+  color: var(--gc-ink);
   line-height: 1;
   font-family: "Flying Landing", var(--font-gc-logo-fallback), sans-serif;
 }
@@ -74,20 +84,21 @@
   font-size: 58px;
   letter-spacing: 0.02em;
   line-height: 0.8;
-  color: var(--gc-navy-ink);
+  color: var(--gc-ink);
   -webkit-text-stroke: 1px currentColor;
   transform: scaleX(1.35);
   transform-origin: center;
 }
 
-/* the band's slant equals its height, so the cut is 45° */
+/* the band's slant equals its height, so the cut is 45°; the outer box shows
+   through as the hairline along the cut */
 .band {
   position: absolute;
   top: 0;
   right: 0;
   left: var(--gc-band-left);
   height: var(--gc-band-h);
-  background: var(--gc-steel-line);
+  background: var(--gc-line);
   clip-path: polygon(var(--gc-band-h) 0, 100% 0, 100% 100%, 0 100%);
 }
 
@@ -99,7 +110,7 @@
   justify-content: flex-end;
   gap: 18px;
   padding-right: 34px;
-  background: var(--gc-steel);
+  background: var(--gc-band);
   clip-path: polygon(calc(var(--gc-band-h) + 1.5px) 0, 100% 0, 100% 100%, 1.5px 100%);
 }
 
@@ -111,16 +122,16 @@
 
 .searchLabel {
   font-size: 17px;
-  color: var(--gc-navy-ink);
+  color: var(--gc-ink);
 }
 
 .searchInput {
   width: 184px;
   height: 34px;
   padding: 0 6px;
-  border: 2px inset #a9b4c4;
+  border: 1px solid var(--gc-line);
   background: var(--gc-white);
-  color: var(--gc-navy-ink);
+  color: var(--gc-ink);
   font: inherit;
   font-size: 15px;
   border-radius: 0;
@@ -128,7 +139,7 @@
 }
 
 .searchInput:focus-visible {
-  border-color: var(--gc-navy);
+  box-shadow: 0 0 0 2px var(--gc-green);
 }
 
 .bracket {
@@ -138,7 +149,7 @@
   font: inherit;
   font-size: 17px;
   text-decoration: none;
-  color: var(--gc-navy-ink);
+  color: var(--gc-ink);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -155,7 +166,7 @@
   right: 0;
   left: var(--gc-strip-left);
   height: var(--gc-strip-h);
-  background: var(--gc-navy);
+  background: var(--gc-strip);
   clip-path: polygon(var(--gc-strip-h) 0, 100% 0, 100% 100%, 0 100%);
 }
 
@@ -194,7 +205,7 @@
   display: flex;
   align-items: center;
   padding: 0 34px;
-  color: var(--gc-white);
+  color: var(--gc-strip-ink);
   font-size: 17px;
   text-decoration: none;
   white-space: nowrap;
@@ -206,8 +217,15 @@
 
 .tabLink:hover,
 .tabLink:focus-visible {
-  background: var(--gc-navy-light);
+  background: var(--gc-white);
+  color: var(--gc-ink);
   outline: none;
+}
+
+/* the current page's tab is the strip's one green cell */
+.tabLink[aria-current="page"] {
+  background: var(--gc-bar);
+  color: var(--gc-ink);
 }
 
 /* ---------- section row: photo, news bar with the current url, line art, tech ticker ---------- */
@@ -226,17 +244,30 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: #4d78ab;
+  background: var(--gc-line);
   z-index: 1;
 }
 
-/* the photo, the bar's slanted tip and the white lines share one 400x106 drawing */
+/* the photo, the bar's slanted tip and the black lines share one 400x106 drawing */
 .art {
   position: absolute;
   left: 0;
   top: 0;
   width: calc(400px * var(--gc-art-scale));
   height: 106px;
+}
+
+.artPhoto {
+  fill: var(--gc-photo);
+}
+
+.artTip {
+  fill: var(--gc-bar);
+}
+
+.artLine {
+  stroke: var(--gc-line);
+  fill: none;
 }
 
 .bar {
@@ -248,26 +279,26 @@
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  border-top: 1px solid #4d78ab;
-  background: var(--gc-navy-light);
+  border-top: 1px solid var(--gc-line);
+  background: var(--gc-bar);
 }
 
 .barText {
-  color: var(--gc-white);
+  color: var(--gc-ink);
   font-size: 17px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* continues the white line from the art in the same white all the way across */
+/* continues the line from the art all the way across, under the news bar */
 .underline {
   position: absolute;
   top: 45px;
   right: 0;
   left: calc(195px * var(--gc-art-scale));
   height: 2px;
-  background: var(--gc-white);
+  background: var(--gc-line);
 }
 
 .rule {
@@ -276,7 +307,7 @@
   right: 0;
   left: calc(299px * var(--gc-art-scale));
   height: 2px;
-  background: #6f8db8;
+  background: var(--gc-line);
 }
 
 /* the tech ticker is shrunk into the white strip between the underline and
@@ -287,7 +318,7 @@
   right: 0;
   left: calc(352px * var(--gc-art-scale));
   height: 28px;
-  color: #000000;
+  color: var(--gc-ink);
 }
 
 /* ---------- responsive ---------- */

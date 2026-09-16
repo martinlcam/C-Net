@@ -29,15 +29,15 @@ const navItems = [
 ]
 
 /*
- * The left side of the section row in a 400x106 box: a blurred blue photo
+ * The left side of the section row in a 400x106 box: a flat orange photo
  * parallelogram, the 45° tip of the news bar overlapping its top-right, and
- * the white line art that hangs off the bar's corner. The white strip to the
- * right of the photo, under the news bar, carries the tech ticker.
+ * the black line art that hangs off the bar's corner. The white strip to the
+ * right of the photo, under the news bar, carries the tech ticker. The colors
+ * come from the stylesheet so the whole masthead's palette lives in one place.
  */
 function SectionArt() {
   const id = useId()
   const clipId = `${id}-photo`
-  const blurId = `${id}-blur`
 
   return (
     <svg className={styles.art} viewBox="0 0 400 106" preserveAspectRatio="none" aria-hidden="true">
@@ -45,51 +45,44 @@ function SectionArt() {
         <clipPath id={clipId}>
           <polygon points="0,20 352,20 273,103 0,103" />
         </clipPath>
-        <filter id={blurId} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="7" />
-        </filter>
       </defs>
-      <g clipPath={`url(#${clipId})`}>
-        <rect x="0" y="20" width="352" height="83" fill="#1c3572" />
-        <g filter={`url(#${blurId})`}>
-          <ellipse cx="60" cy="88" rx="70" ry="26" fill="#0b1633" />
-          <ellipse cx="125" cy="50" rx="42" ry="20" fill="#e3ebfb" />
-          <ellipse cx="220" cy="72" rx="75" ry="30" fill="#7e97d0" />
-          <ellipse cx="300" cy="42" rx="45" ry="18" fill="#b9c8ea" />
-          <ellipse cx="330" cy="92" rx="55" ry="22" fill="#101c45" />
-          <ellipse cx="180" cy="100" rx="60" ry="16" fill="#3b5aa0" />
-        </g>
-      </g>
+      <rect
+        className={styles.artPhoto}
+        clipPath={`url(#${clipId})`}
+        x="0"
+        y="20"
+        width="352"
+        height="83"
+      />
       <line
+        className={styles.artLine}
         x1="0"
         y1="20.5"
         x2="352"
         y2="20.5"
-        stroke="#8a9bba"
         vectorEffect="non-scaling-stroke"
       />
       <line
+        className={styles.artLine}
         x1="0"
         y1="102.5"
         x2="273"
         y2="102.5"
-        stroke="#8a9bba"
         vectorEffect="non-scaling-stroke"
       />
-      <polygon points="241,1 241,45 195,45" fill="#2f5f93" />
+      <polygon className={styles.artTip} points="241,1 241,45 195,45" />
       <polyline
+        className={styles.artLine}
         points="220,20 178,63 0,63"
-        stroke="#ffffff"
         strokeWidth="2"
-        fill="none"
         vectorEffect="non-scaling-stroke"
       />
       <line
+        className={styles.artLine}
         x1="0"
         y1="46"
         x2="195"
         y2="46"
-        stroke="#ffffff"
         strokeWidth="2"
         vectorEffect="non-scaling-stroke"
       />
