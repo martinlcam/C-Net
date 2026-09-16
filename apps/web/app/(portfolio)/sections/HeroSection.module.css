@@ -222,7 +222,7 @@
   background: var(--hx-violet);
 }
 
-/* the small outlined square with the Cognition symbol at the head of the
+/* the small outlined square with a rounded-corner glyph at the head of the
    violet bar. The right rail covers the two line rows beside it, so neither
    the top strip's line nor the wordmark's runs on across the rail: the mark's
    bottom border carries the first and the bar's bottom border the second,
@@ -242,8 +242,8 @@
 }
 
 .railMark svg {
-  width: auto;
-  height: 30px;
+  width: 20px;
+  height: 20px;
 }
 
 /* ---------- top strip: four boxes whose lines climb into the masthead ---------- */
