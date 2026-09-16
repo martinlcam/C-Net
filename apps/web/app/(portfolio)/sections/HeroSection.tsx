@@ -1,30 +1,9 @@
 "use client"
 
 import { Text } from "@radix-ui/themes"
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
+import { useDevicePixel } from "@/lib/use-device-pixel"
 import styles from "./HeroSection.module.css"
-
-/* the sheet's lines are one device pixel thick, so at a fractional zoom or
-   display scale they never smear over two. Chrome lays out in 1/64 css px, so
-   the value is rounded up to that; the line stays at least a whole pixel */
-function useDevicePixel(ref: React.RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    let media: MediaQueryList | undefined
-
-    const apply = () => {
-      const dpr = window.devicePixelRatio || 1
-      ref.current?.style.setProperty("--hx-dp", `${Math.ceil(64 / dpr) / 64}px`)
-
-      // the query stops matching when the zoom or the display changes
-      media?.removeEventListener("change", apply)
-      media = window.matchMedia(`(resolution: ${dpr}dppx)`)
-      media.addEventListener("change", apply)
-    }
-
-    apply()
-    return () => media?.removeEventListener("change", apply)
-  }, [ref])
-}
 
 function Target() {
   return (
@@ -52,7 +31,7 @@ function CornerMark() {
 
 export function HeroSection() {
   const sheet = useRef<HTMLElement>(null)
-  useDevicePixel(sheet)
+  useDevicePixel(sheet, "--hx-dp")
 
   return (
     <div className={styles.shell}>

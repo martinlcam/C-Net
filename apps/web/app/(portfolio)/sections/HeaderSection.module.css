@@ -39,6 +39,10 @@
   --gc-tab-rule: var(--gc-white);
   --gc-bar: var(--gc-green);
 
+  /* one device pixel, set by the component from devicePixelRatio: every
+     hairline is this thick so none smears over two pixels at a fractional zoom */
+  --gc-dp: 1px;
+
   --gc-band-h: 76px;
   --gc-strip-h: 28px;
   --gc-band-left: 492px;
@@ -49,7 +53,7 @@
   width: 100%;
   color: var(--gc-ink);
   font-family: Verdana, "DejaVu Sans", "Bitstream Vera Sans", Geneva, Tahoma, sans-serif;
-  border-top: 1px solid var(--gc-line);
+  border-top: var(--gc-dp) solid var(--gc-line);
   background: var(--gc-white);
 }
 
@@ -128,7 +132,7 @@
   width: 184px;
   height: 34px;
   padding: 0 6px;
-  border: 1px solid var(--gc-line);
+  border: var(--gc-dp) solid var(--gc-line);
   background: var(--gc-white);
   color: var(--gc-ink);
   font: inherit;
@@ -190,13 +194,13 @@
   right: 0;
   top: 5px;
   bottom: 2px;
-  width: 1px;
+  width: var(--gc-dp);
   background: repeating-linear-gradient(
     to bottom,
     var(--gc-tab-rule) 0,
-    var(--gc-tab-rule) 1px,
-    transparent 1px,
-    transparent 2px
+    var(--gc-tab-rule) var(--gc-dp),
+    transparent var(--gc-dp),
+    transparent calc(2 * var(--gc-dp))
   );
 }
 
@@ -220,7 +224,7 @@
 .tabLink:focus-visible,
 .tabLink[aria-current="page"] {
   text-decoration: underline;
-  text-decoration-thickness: 1px;
+  text-decoration-thickness: var(--gc-dp);
   text-underline-offset: 3px;
   outline: none;
 }
@@ -240,7 +244,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
+  height: var(--gc-dp);
   background: var(--gc-line);
   z-index: 1;
 }
@@ -259,10 +263,21 @@
   fill: var(--gc-bar);
 }
 
-.artLine {
+/* flat lines are snapped to device pixels, like the html hairlines; the
+   slanted ones stay anti-aliased so they do not stair-step */
+.artLine,
+.artSlant {
   stroke: var(--gc-line);
-  stroke-width: 1;
+  stroke-width: var(--gc-dp);
   fill: none;
+}
+
+.artLine {
+  shape-rendering: crispEdges;
+}
+
+.artSlant {
+  vector-effect: non-scaling-stroke;
 }
 
 .bar {
@@ -274,7 +289,7 @@
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  border-top: 1px solid var(--gc-line);
+  border-top: var(--gc-dp) solid var(--gc-line);
   background: var(--gc-bar);
 }
 
@@ -292,7 +307,7 @@
   top: 45px;
   right: 0;
   left: calc(195px * var(--gc-art-scale));
-  height: 1px;
+  height: var(--gc-dp);
   background: var(--gc-line);
 }
 
@@ -301,7 +316,7 @@
   top: 75px;
   right: 0;
   left: calc(299px * var(--gc-art-scale));
-  height: 1px;
+  height: var(--gc-dp);
   background: var(--gc-line);
 }
 

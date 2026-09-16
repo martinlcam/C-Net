@@ -4,8 +4,9 @@ import { Audiowide } from "next/font/google"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { type FormEvent, useEffect, useId, useState } from "react"
+import { type FormEvent, useEffect, useId, useRef, useState } from "react"
 import { useAuthModal } from "@/lib/stores/auth-modal"
+import { useDevicePixel } from "@/lib/use-device-pixel"
 import { TechTicker } from "../components/TechTicker"
 import styles from "./HeaderSection.module.css"
 
@@ -31,8 +32,8 @@ const navItems = [
 /*
  * The left side of the section row in a 400x106 box: a photo parallelogram
  * made of the cat sticker blown up and blurred to fill the field, the 45° tip
- * of the news bar overlapping its top-right, and the hairline art that hangs
- * off the bar's corner over it. The white strip to the right of the photo, under the news bar, carries
+ * of the news bar overlapping its top-right, both closed by hairlines along
+ * their slants, and the hairline art that hangs off the bar's corner over it. The white strip to the right of the photo, under the news bar, carries
  * the tech ticker. The line art and the tip take their colors from the
  * stylesheet; the photo is an image and keeps its own.
  */
@@ -48,18 +49,20 @@ function SectionArt() {
           <polygon points="0,20 352,20 273,103 0,103" />
         </clipPath>
         <filter id={blurId} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="14" />
+          <feGaussianBlur stdDeviation="9" />
         </filter>
       </defs>
       <g clipPath={`url(#${clipId})`}>
-        {/* the sticker is square with the cat in its middle: enlarged until
-            the cat's body covers the whole field, then blurred into a backdrop */}
+        {/* the sticker is square with the cat in its middle: enlarged until the
+            cat's body covers the whole field, mirrored so it faces the bar, and
+            blurred into a backdrop */}
         <image
           href="/images/masthead-cat.webp"
           x="-171"
           y="-286"
           width="680"
           height="680"
+          transform="translate(338 0) scale(-1 1)"
           filter={`url(#${blurId})`}
         />
       </g>
@@ -79,10 +82,17 @@ function SectionArt() {
         y2="102.5"
         vectorEffect="non-scaling-stroke"
       />
+      {/* the photo's slanted right edge is closed by its own hairline */}
+      <line className={styles.artSlant} x1="352" y1="20" x2="273" y2="103" />
       <polygon className={styles.artTip} points="241,1 241,45 195,45" />
-      <polyline
+      <line className={styles.artSlant} x1="241" y1="1" x2="195" y2="45" />
+      <line className={styles.artSlant} x1="220" y1="20.5" x2="178" y2="63.5" />
+      <line
         className={styles.artLine}
-        points="220,20.5 178,63.5 0,63.5"
+        x1="178"
+        y1="63.5"
+        x2="0"
+        y2="63.5"
         vectorEffect="non-scaling-stroke"
       />
       <line
@@ -103,6 +113,8 @@ export function HeaderSection() {
   const pathname = usePathname()
   const [host, setHost] = useState(SITE_HOST)
   const [query, setQuery] = useState("")
+  const root = useRef<HTMLElement>(null)
+  useDevicePixel(root, "--gc-dp")
 
   useEffect(() => {
     setHost(window.location.host)
@@ -123,7 +135,7 @@ export function HeaderSection() {
   const location = pathname === "/" ? host : `${host}${pathname}`
 
   return (
-    <header className={`${styles.header} ${logoFallbackFont.variable}`}>
+    <header ref={root} className={`${styles.header} ${logoFallbackFont.variable}`}>
       <div className={styles.top}>
         <Link href="/" className={styles.logo} aria-label="martin.cam home">
           <span className={styles.wordmark} aria-hidden="true">
