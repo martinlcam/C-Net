@@ -1,8 +1,8 @@
 /*
  * The graph fills the hero's bottom-left box. Its type and hairline width
  * come from the sheet's custom properties, with plain fallbacks for a bare
- * page; the blocks are one orange in four steps, light to dark, validated
- * against white, with a pale gray for an empty day.
+ * page; the blocks are the sheet's violet in four steps, light to dark,
+ * validated against white, with a pale gray for an empty day.
  */
 .root {
   --gh-dp: var(--hx-dp, 1px);
@@ -11,10 +11,10 @@
   --gh-paper: var(--hx-paper, #fff);
   --gh-mono: var(--hx-mono, ui-monospace, monospace);
   --gh-l0: #ebebeb;
-  --gh-l1: #f4986c;
-  --gh-l2: #f3733a;
-  --gh-l3: #e04918;
-  --gh-l4: #992d0a;
+  --gh-l1: #dc93f6;
+  --gh-l2: #c96aec;
+  --gh-l3: #a53fcb;
+  --gh-l4: #682385;
 
   position: absolute;
   inset: 0;
