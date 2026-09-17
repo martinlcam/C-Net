@@ -1,0 +1,58 @@
+/* the fact starts just past the strip's right edge and runs until its end
+   clears the left edge; the strip is a container so the run can count its
+   own width */
+.strip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  container-type: inline-size;
+  mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+}
+
+.text {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-family: var(--hx-mono, ui-monospace, monospace);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--gc-ink, #161616);
+}
+
+/* the run starts only once its length has been measured: an animation with
+   no duration yet would end at once and hand the strip straight back */
+.running {
+  animation: run linear forwards;
+}
+
+@keyframes run {
+  to {
+    transform: translate(calc(-100% - 100cqw), -50%);
+  }
+}
+
+.still {
+  left: 32px;
+  right: 32px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: none;
+}
+
+.tag {
+  display: inline-block;
+  margin-right: 12px;
+  padding: 2px 6px;
+  background: var(--gc-ink, #161616);
+  color: #fff;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.source {
+  color: #6b6b6b;
+}

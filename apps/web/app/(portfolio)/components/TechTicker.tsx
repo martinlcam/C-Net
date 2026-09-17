@@ -15,6 +15,8 @@ import {
 } from "react-icons/si"
 import { TbDatabase } from "react-icons/tb"
 import LogoLoop from "@/components/LogoLoop"
+import { clearFact, useFactTicker } from "@/lib/fact-ticker"
+import { FactTicker } from "./FactTicker"
 
 const techLogos = [
   { node: <SiReact />, title: "React", href: "https://react.dev" },
@@ -41,21 +43,29 @@ type Props = {
 /**
  * The scrolling tech-stack ticker. Icons inherit `currentColor`, so the
  * wrapper pins them to solid black regardless of where the ticker is mounted.
+ * When the hero's target box has asked for a fact, the fact runs across the
+ * strip once in the logos' place, and the logos return after it.
  */
 export function TechTicker({ logoHeight = 18, fadeOutColor = "#ffffff" }: Props) {
+  const { fact } = useFactTicker()
+
   return (
     <div className="h-full w-full flex items-center text-black [&_svg]:text-black [&_svg]:fill-current">
-      <LogoLoop
-        logos={techLogos}
-        speed={70}
-        direction="left"
-        logoHeight={logoHeight}
-        gap={30}
-        hoverSpeed={0}
-        fadeOut
-        fadeOutColor={fadeOutColor}
-        ariaLabel="Technologies used"
-      />
+      {fact ? (
+        <FactTicker key={fact.text} fact={fact} onDone={clearFact} />
+      ) : (
+        <LogoLoop
+          logos={techLogos}
+          speed={70}
+          direction="left"
+          logoHeight={logoHeight}
+          gap={30}
+          hoverSpeed={0}
+          fadeOut
+          fadeOutColor={fadeOutColor}
+          ariaLabel="Technologies used"
+        />
+      )}
     </div>
   )
 }

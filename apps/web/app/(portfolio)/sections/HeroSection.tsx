@@ -3,6 +3,7 @@
 import { Text } from "@radix-ui/themes"
 import { createTimeline, stagger, svg } from "animejs"
 import { type RefObject, useEffect, useRef } from "react"
+import { requestFact, useFactTicker } from "@/lib/fact-ticker"
 import { useDevicePixel } from "@/lib/use-device-pixel"
 import { ContributionsGraph } from "../components/ContributionsGraph"
 import { Cognition, Consciousness } from "../components/symbols"
@@ -62,16 +63,25 @@ export function HeroSection() {
   const symbols = useRef<HTMLDivElement>(null)
   useDevicePixel(sheet, "--hx-dp")
   useDrawIn(symbols)
+  const { loading, fact } = useFactTicker()
 
   return (
     <div className={styles.shell}>
       <section id="home" ref={sheet} className={styles.sheet} aria-labelledby="hero-name">
         {/* rails */}
-        <div className={`${styles.box} ${styles.lrail}`} aria-hidden="true">
-          <span className={styles.targetBox}>
+        <div className={`${styles.box} ${styles.lrail}`}>
+          {/* the target box sends a random fact across the masthead's ticker */}
+          <button
+            type="button"
+            className={styles.targetBox}
+            data-busy={loading || fact !== null || undefined}
+            onClick={requestFact}
+            aria-label="Run a random fact across the ticker"
+            title="Random fact"
+          >
             <Target />
-          </span>
-          <span className={styles.lowerBox} />
+          </button>
+          <span className={styles.lowerBox} aria-hidden="true" />
         </div>
         <div className={`${styles.box} ${styles.rrail}`} aria-hidden="true">
           <span className={styles.railBar} />
