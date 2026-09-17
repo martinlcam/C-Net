@@ -167,15 +167,15 @@
 }
 
 /* the "◎" box: a fully enclosed green square hugging the rail's inner edge,
-   sitting right under the top strip's line. It is a button: a click runs a
-   random fact across the masthead's ticker */
+   sitting right under the top strip's line. It is a button that looks no
+   different for it: a click drops a random fact into the masthead's ticker */
 .targetBox {
   position: absolute;
   padding: 0;
   margin: 0;
   color: var(--hx-ink);
   cursor: pointer;
-  transition: background-color 150ms ease;
+  outline: none;
   /* its top and right borders lie on the grid's own lines, so no doubling */
   right: calc(-1 * var(--hx-dp));
   top: var(--hx-row-top);
@@ -199,17 +199,7 @@
   transform: rotate(90deg);
 }
 
-.targetBox:focus-visible {
-  outline: var(--hx-dp) solid var(--hx-ink);
-  outline-offset: 2px;
-}
-
-/* while a fact is loading or running, the box goes pale and spins its target */
-.targetBox[data-busy] {
-  background: #b8ffd8;
-  cursor: progress;
-}
-
+/* while a fact is being fetched, the target spins */
 .targetBox[data-busy] svg {
   animation: targetSpin 1.6s linear infinite;
 }

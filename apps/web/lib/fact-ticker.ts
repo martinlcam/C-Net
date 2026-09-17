@@ -4,22 +4,26 @@ import { useSyncExternalStore } from "react"
 import type { Fact } from "@/app/api/facts/random/route"
 
 /*
- * The hero's target box asks for a fact and the masthead's ticker shows it:
- * they are in different sections, so this small store sits between them.
- * At most one fact runs at a time; a click while one is loading or
- * scrolling is ignored.
+ * The hero's target box asks for a fact and the masthead's ticker streams
+ * it: they are in different sections, so this small store sits between them.
+ * Fetched facts wait in a queue until the ticker takes them, one at a time,
+ * as the next thing to enter its stream. A few may wait at once; clicks
+ * beyond that are ignored.
  */
 
+const MAX_WAITING = 3
+
 type State = {
-  fact: Fact | null
-  loading: boolean
+  loading: number
+  waiting: number
 }
 
-let state: State = { fact: null, loading: false }
+const queue: string[] = []
+let state: State = { loading: 0, waiting: 0 }
 const listeners = new Set<() => void>()
 
-function set(next: State) {
-  state = next
+function set(loading: number) {
+  state = { loading, waiting: queue.length }
   for (const listener of listeners) listener()
 }
 
@@ -30,29 +34,28 @@ function subscribe(listener: () => void) {
   }
 }
 
+const snapshot = () => state
+
 export function useFactTicker() {
-  return useSyncExternalStore(
-    subscribe,
-    () => state,
-    () => state
-  )
+  return useSyncExternalStore(subscribe, snapshot, snapshot)
 }
 
 export async function requestFact() {
-  if (state.loading || state.fact) return
-  set({ fact: null, loading: true })
+  if (state.loading + queue.length >= MAX_WAITING) return
+  set(state.loading + 1)
   try {
     const res = await fetch("/api/facts/random")
     if (!res.ok) throw new Error(`facts ${res.status}`)
-    set({ fact: (await res.json()) as Fact, loading: false })
+    queue.push(((await res.json()) as Fact).text)
   } catch {
-    set({
-      fact: { text: "The fact machine is asleep. Try again in a moment.", source: "" },
-      loading: false,
-    })
+    queue.push("The fact machine is asleep. Try again in a moment.")
   }
+  set(state.loading - 1)
 }
 
-export function clearFact() {
-  set({ fact: null, loading: false })
+/* the next waiting fact, if any; the ticker calls this as it spawns items */
+export function takeFact() {
+  const text = queue.shift()
+  if (text !== undefined) set(state.loading)
+  return text
 }

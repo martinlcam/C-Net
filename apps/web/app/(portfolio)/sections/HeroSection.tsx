@@ -63,18 +63,18 @@ export function HeroSection() {
   const symbols = useRef<HTMLDivElement>(null)
   useDevicePixel(sheet, "--hx-dp")
   useDrawIn(symbols)
-  const { loading, fact } = useFactTicker()
+  const { loading } = useFactTicker()
 
   return (
     <div className={styles.shell}>
       <section id="home" ref={sheet} className={styles.sheet} aria-labelledby="hero-name">
         {/* rails */}
         <div className={`${styles.box} ${styles.lrail}`}>
-          {/* the target box sends a random fact across the masthead's ticker */}
+          {/* the target box drops a random fact into the masthead's ticker */}
           <button
             type="button"
             className={styles.targetBox}
-            data-busy={loading || fact !== null || undefined}
+            data-busy={loading > 0 || undefined}
             onClick={requestFact}
             aria-label="Run a random fact across the ticker"
             title="Random fact"
