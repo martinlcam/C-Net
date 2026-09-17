@@ -102,16 +102,6 @@
   section[id] {
     scroll-margin-top: 16px;
   }
-
-  /* Front-facing (portfolio) pages hide the window scrollbar entirely.
-     PortfolioChrome adds this class to <html> (the viewport scroll container);
-     content still scrolls, just no visible track. */
-  html.portfolio-no-scrollbar {
-    scrollbar-width: none; /* Firefox */
-  }
-  html.portfolio-no-scrollbar::-webkit-scrollbar {
-    display: none; /* WebKit / Chromium */
-  }
 }
 
 /* =========================================================================
