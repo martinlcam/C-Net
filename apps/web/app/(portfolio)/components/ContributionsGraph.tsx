@@ -18,7 +18,7 @@ import styles from "./ContributionsGraph.module.css"
 
 const REFRESH_MS = 10 * 60 * 1000
 const MAX_WEEKS = 53
-const MAX_UNIT = 14
+const MAX_UNIT = 22
 const MIN_UNIT = 9
 const LABEL_HEIGHT = 16
 const DAY_LABEL_WIDTH = 26
@@ -111,8 +111,8 @@ export function ContributionsGraph() {
 
   const { cells, weeks } = useMemo(() => toCells(data?.days ?? []), [data])
 
-  // a block plus its gap is one unit; the rows fill the frame's height and
-  // as many of the newest weeks as fit fill its width
+  // a block plus its gap is one unit; the seven rows fill the frame's height
+  // and as many of the newest weeks as fit at that size fill its width
   const unit = Math.max(MIN_UNIT, Math.min(MAX_UNIT, Math.floor((height - LABEL_HEIGHT) / 7)))
   const margin = unit >= 12 ? 3 : 2
   const block = unit - margin
