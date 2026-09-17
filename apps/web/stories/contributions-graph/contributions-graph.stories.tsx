@@ -49,7 +49,6 @@ const meta: Meta<typeof ContributionsGraph> = {
   title: "Portfolio/ContributionsGraph",
   component: ContributionsGraph,
   parameters: { layout: "centered" },
-  args: { title: "Ancient Paintings" },
 }
 
 export default meta
