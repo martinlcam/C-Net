@@ -7,7 +7,6 @@ import { NextResponse } from "next/server"
 
 export type Fact = {
   text: string
-  source: string
 }
 
 export async function GET() {
@@ -17,10 +16,10 @@ export async function GET() {
       cache: "no-store",
     })
     if (!res.ok) throw new Error(`uselessfacts responded ${res.status}`)
-    const fact = (await res.json()) as { text?: string; source?: string }
+    const fact = (await res.json()) as { text?: string }
     if (!fact.text) throw new Error("uselessfacts returned no text")
 
-    const body: Fact = { text: fact.text.trim(), source: fact.source ?? "" }
+    const body: Fact = { text: fact.text.trim() }
     return NextResponse.json(body, { headers: { "Cache-Control": "no-store" } })
   } catch (error) {
     console.error("[facts/random]", error)
