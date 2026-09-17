@@ -8,7 +8,7 @@ import styles from "./ContributionsGraph.module.css"
 
 /*
  * A GitHub-style contributions calendar filling the hero's bottom-left box:
- * a caption above, an SVG of rounded day blocks with month labels over the
+ * an SVG of rounded day blocks with month labels over the
  * columns and weekday labels beside the rows, and a footer with the year's
  * tally and the scale. The blocks are sized to the box, with as many of the
  * newest weeks as fit across it. The data comes from
@@ -94,11 +94,7 @@ function useSize(ref: React.RefObject<HTMLElement | null>) {
   return size
 }
 
-type Props = {
-  title: string
-}
-
-export function ContributionsGraph({ title }: Props) {
+export function ContributionsGraph() {
   const { data, isError } = useQuery({
     queryKey: ["github", "contributions"],
     queryFn: fetchContributions,
@@ -142,8 +138,8 @@ export function ContributionsGraph({ title }: Props) {
       opacity: [0, 1],
       scale: [0, 1],
       ease: "outBack",
-      duration: 500,
-      delay: stagger(5, { from: newest, reversed: true }),
+      duration: 360,
+      delay: stagger(2.5, { from: newest, reversed: true }),
       onComplete: () => setPending(false),
     })
     return () => {
@@ -168,58 +164,58 @@ export function ContributionsGraph({ title }: Props) {
 
   return (
     <div className={styles.root}>
-      <p className={styles.title}>{title}</p>
-
-      <div ref={frame} className={styles.frame} onPointerLeave={() => setActive(null)}>
+      <div ref={frame} className={styles.frame}>
         {ready && (
-          <svg
-            ref={svg}
-            className={`${styles.calendar} ${pending ? styles.pending : ""}`}
-            width={DAY_LABEL_WIDTH + cols * unit - margin}
-            height={LABEL_HEIGHT + 7 * unit - margin}
-            aria-label={`GitHub contributions, ${data?.total.toLocaleString()} in the last year`}
-            onPointerMove={track}
-          >
-            <title>GitHub contributions</title>
-            <g className={styles.labels}>
-              {months.map((month) => (
-                <text key={month.col} x={DAY_LABEL_WIDTH + month.col * unit} y={0}>
-                  {month.name}
-                </text>
+          <div className={styles.calendar} onPointerLeave={() => setActive(null)}>
+            <svg
+              ref={svg}
+              className={pending ? styles.pending : undefined}
+              width={DAY_LABEL_WIDTH + cols * unit - margin}
+              height={LABEL_HEIGHT + 7 * unit - margin}
+              aria-label={`GitHub contributions, ${data?.total.toLocaleString()} in the last year`}
+              onPointerMove={track}
+            >
+              <title>GitHub contributions</title>
+              <g className={styles.labels}>
+                {months.map((month) => (
+                  <text key={month.col} x={DAY_LABEL_WIDTH + month.col * unit} y={0}>
+                    {month.name}
+                  </text>
+                ))}
+                {[1, 3, 5].map((row) => (
+                  <text key={row} x={0} y={LABEL_HEIGHT + row * unit + block / 2 + 3}>
+                    {WEEKDAYS[row]}
+                  </text>
+                ))}
+              </g>
+              {shown.map((cell) => (
+                <rect
+                  key={cell.date}
+                  className={styles.block}
+                  data-level={cell.level}
+                  data-active={cell === active || undefined}
+                  x={DAY_LABEL_WIDTH + (cell.col - firstCol) * unit}
+                  y={LABEL_HEIGHT + cell.row * unit}
+                  width={block}
+                  height={block}
+                  rx={2}
+                  ry={2}
+                >
+                  <title>{`${describe(cell).what} on ${describe(cell).when}`}</title>
+                </rect>
               ))}
-              {[1, 3, 5].map((row) => (
-                <text key={row} x={0} y={LABEL_HEIGHT + row * unit + block / 2 + 3}>
-                  {WEEKDAYS[row]}
-                </text>
-              ))}
-            </g>
-            {shown.map((cell) => (
-              <rect
-                key={cell.date}
-                className={styles.block}
-                data-level={cell.level}
-                data-active={cell === active || undefined}
-                x={DAY_LABEL_WIDTH + (cell.col - firstCol) * unit}
-                y={LABEL_HEIGHT + cell.row * unit}
-                width={block}
-                height={block}
-                rx={2}
-                ry={2}
+            </svg>
+            {active && tip && (
+              <div
+                className={styles.tip}
+                data-below={tipBelow || undefined}
+                role="tooltip"
+                style={{ left: tipX, top: tipBelow ? tipY + block + 6 : tipY - 6 }}
               >
-                <title>{`${describe(cell).what} on ${describe(cell).when}`}</title>
-              </rect>
-            ))}
-          </svg>
-        )}
-        {active && tip && (
-          <div
-            className={styles.tip}
-            data-below={tipBelow || undefined}
-            role="tooltip"
-            style={{ left: tipX, top: tipBelow ? tipY + block + 6 : tipY - 6 }}
-          >
-            <strong>{tip.what}</strong>
-            <span>{tip.when}</span>
+                <strong>{tip.what}</strong>
+                <span>{tip.when}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

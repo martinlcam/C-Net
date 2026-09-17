@@ -35,20 +35,19 @@
   margin: 0;
 }
 
-.title {
-  flex: none;
-  font-size: 10px;
-  color: var(--gh-ink);
-}
-
-/* the calendar takes whatever height the caption and footer leave */
+/* the calendar sits in the middle of whatever height the footer leaves */
 .frame {
-  position: relative;
   flex: 1;
   min-height: 0;
+  display: flex;
+  align-items: center;
 }
 
 .calendar {
+  position: relative;
+}
+
+.calendar svg {
   display: block;
   overflow: visible;
 }
@@ -151,7 +150,6 @@
   .root {
     padding: 12px 14px 10px;
   }
-  .title,
   .legend {
     display: none;
   }

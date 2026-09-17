@@ -142,7 +142,7 @@ export function HeroSection() {
 
         {/* bottom row: four boxes */}
         <div className={`${styles.box} ${styles.b1}`}>
-          <ContributionsGraph title="Ancient Paintings" />
+          <ContributionsGraph />
         </div>
         <div className={`${styles.box} ${styles.b3}`}>
           <p className={styles.body}>
