@@ -5,8 +5,9 @@
  * editorial reference exactly. Two deep rails (6% each) flank four equal
  * columns; the top strip is four boxes, the wordmark box spans all four, the
  * third row splits 2:1:1 with the middle box cut by a horizontal line, and
- * the bottom row is four boxes again with a fine-grid sub-box and pixel
- * figure at the left and a chamfered top-right corner at the right. The left
+ * the bottom row is three boxes: a double-width one filled by the GitHub
+ * contributions graph, a text box, and one with a chamfered top-right
+ * corner. The left
  * rail carries a fully enclosed green target box under the top strip and an
  * orange box beside the bottom row; the right rail carries a violet bar as
  * wide as the small outlined mark, running from that mark's top down to the
@@ -46,8 +47,8 @@
      never smeared over two pixels when the browser is zoomed or the display
      scaled by a fraction. The component sets it from devicePixelRatio */
   --hx-dp: 1px;
-  /* the fine grid box's height, shared with the white box beside it so their
-     lines meet; snapped to whole pixels like the tracks */
+  /* how far up the bottom row the orange rail box's bottom line sits;
+     snapped to whole pixels like the tracks */
   --hx-gridbox: round(calc(var(--hx-row-bottom) * 0.45), var(--hx-dp));
   /* every track is snapped to whole device pixels so the lines never land on
      a fraction and smear; the right rail takes whatever is left over */
@@ -81,8 +82,8 @@
     "lrail tag   tag   mid   cta   rail3"
     "lrail tag   tag   mid   cap   cap"
     "lrail .     .     .     b4top b4top"
-    "lrail b1    b2    b3    b4top b4top"
-    "lrail b1    b2    b3    b4    rrail2";
+    "lrail b1    b1    b3    b4top b4top"
+    "lrail b1    b1    b3    b4    rrail2";
 }
 
 .box {
@@ -133,9 +134,6 @@
 }
 .b1 {
   grid-area: b1;
-}
-.b2 {
-  grid-area: b2;
 }
 .b3 {
   grid-area: b3;
@@ -479,64 +477,8 @@
 
 /* ---------- bottom row ---------- */
 
-/* the fine grid box fills the lower part of the first box, under its own line;
-   boxes are border-box, so the extra pixel is the line itself, on the same row
-   as the white box's bottom border */
-.miniGrid {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: calc(var(--hx-gridbox) + var(--hx-dp));
-  border-top: var(--hx-dp) solid var(--hx-ink);
-  background-image:
-    linear-gradient(var(--hx-grid-line) var(--hx-dp), transparent var(--hx-dp)),
-    linear-gradient(90deg, var(--hx-grid-line) var(--hx-dp), transparent var(--hx-dp));
-  background-size: 12px 12px;
-  /* the pattern starts on the box's own lines, so its first gray row and
-     column hide under the black border and the grid's line */
-  background-position: calc(-1 * var(--hx-dp)) calc(-1 * var(--hx-dp));
-}
-
-/* the pixel figure stands on the grid box's line, flush with the box's right edge */
-.pixel {
-  position: absolute;
-  right: 0;
-  bottom: var(--hx-gridbox);
-  width: 12px;
-  height: 12px;
-  background: var(--hx-ink);
-  box-shadow:
-    -12px 0 var(--hx-ink),
-    -24px 0 var(--hx-ink),
-    -36px 0 var(--hx-ink),
-    -48px 0 var(--hx-ink),
-    -60px 0 var(--hx-ink),
-    -12px -12px var(--hx-ink),
-    -36px -12px var(--hx-ink),
-    -12px -24px var(--hx-ink),
-    0 -24px var(--hx-ink),
-    -24px -24px var(--hx-ink),
-    -36px -24px var(--hx-ink),
-    -12px -36px var(--hx-ink),
-    -24px -36px var(--hx-ink),
-    -36px -36px var(--hx-ink),
-    -60px -36px var(--hx-ink),
-    -12px -48px var(--hx-ink),
-    -36px -48px var(--hx-ink),
-    -60px -48px var(--hx-ink),
-    -12px -60px var(--hx-ink),
-    -24px -60px var(--hx-ink),
-    -36px -60px var(--hx-ink),
-    -48px -60px var(--hx-ink),
-    -60px -60px var(--hx-ink);
-}
-
-/* "ANCIENT PAINTINGS" sits at the right edge of the second box, level with the grid line */
-.b2 .caption {
-  right: 10px;
-  top: 50%;
-}
+/* the first box spans two columns and is the contributions graph's, see
+   ../components/ContributionsGraph.tsx */
 
 .b3 {
   padding: 18px 22px;
@@ -616,7 +558,6 @@
   .t1,
   .t3,
   .mid,
-  .b2,
   .b4top,
   .b4,
   .t2::after,

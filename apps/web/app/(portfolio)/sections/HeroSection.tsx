@@ -4,6 +4,7 @@ import { Text } from "@radix-ui/themes"
 import { createTimeline, stagger, svg } from "animejs"
 import { type RefObject, useEffect, useRef } from "react"
 import { useDevicePixel } from "@/lib/use-device-pixel"
+import { ContributionsGraph } from "../components/ContributionsGraph"
 import { Cognition, Consciousness } from "../components/symbols"
 import styles from "./HeroSection.module.css"
 
@@ -140,12 +141,8 @@ export function HeroSection() {
         </div>
 
         {/* bottom row: four boxes */}
-        <div className={`${styles.box} ${styles.b1}`} aria-hidden="true">
-          <span className={styles.miniGrid} />
-          <span className={styles.pixel} />
-        </div>
-        <div className={`${styles.box} ${styles.b2}`}>
-          <p className={styles.caption}>Ancient Paintings</p>
+        <div className={`${styles.box} ${styles.b1}`}>
+          <ContributionsGraph title="Ancient Paintings" />
         </div>
         <div className={`${styles.box} ${styles.b3}`}>
           <p className={styles.body}>
