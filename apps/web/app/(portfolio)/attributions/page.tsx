@@ -24,7 +24,6 @@ export default function AttributionsPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-[#faf6f1] text-gray-900">
       <HeaderSection />
-      <div className="h-[65px]" aria-hidden="true" />
 
       {/* Full-bleed horizontal rule below the body separates it from the footer;
           the centered column is framed by a vertical rule on each side, like the leaderboard. */}
