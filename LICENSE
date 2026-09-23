@@ -1,71 +1,61 @@
-C-Net — Proprietary License
+Required Notice: Copyright (c) 2026 Martin Cam (https://github.com/martinlcam)
 
-Copyright (c) 2026 Martin Cam. All rights reserved.
+# PolyForm Strict License 1.0.0
 
-NOTICE: This software, including its source code, object code, documentation,
-designs, assets, and all associated files (collectively, the "Software"), is
-the proprietary property of Martin Cam (the "Owner") and is
-protected by copyright law and international treaties.
+<https://polyformproject.org/licenses/strict/1.0.0>
 
-The Software is made publicly available for viewing only. Except for the
-limited permission expressly granted below, no license or right of any kind,
-express or implied, by estoppel or otherwise, is granted to any person or
-entity.
+## Acceptance
 
-LIMITED PERMISSION — VIEW AND KEEP A COPY
+In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses.
 
-Subject to full compliance with this license, you may:
+## Copyright License
 
-  (a) view and read the Software's source code; and
-  (b) make and keep unmodified copies of the Software solely for your own
-      personal reference, provided every copy retains this license and all
-      copyright notices intact.
+The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose, other than distributing the software or making changes or new works based on the software.
 
-That is the entire extent of the permission. Everything not expressly permitted
-above is prohibited.
+## Patent License
 
-RESTRICTIONS
+The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software.
 
-Without the Owner's prior express written permission, you may NOT:
+## Noncommercial Purposes
 
-  1. Modify, adapt, translate, or create derivative works of the Software, in
-     whole or in part;
-  2. Distribute, publish, sublicense, sell, lease, lend, host, mirror, or
-     otherwise make the Software, or any copy of it, available to any third
-     party;
-  3. Compile, build, deploy, execute, or otherwise use the Software, or any
-     portion of it, for any purpose, commercial or non-commercial;
-  4. Reverse engineer, decompile, or disassemble any part of the Software;
-  5. Copy, extract, or incorporate any portion of the Software (including code
-     snippets, designs, or assets) into any other work;
-  6. Use the Software, or any portion of it, to train, fine-tune, evaluate, or
-     otherwise develop any machine learning or artificial intelligence model,
-     dataset, or system;
-  7. Remove, alter, or obscure any copyright, proprietary, or legal notice.
+Any noncommercial purpose is a permitted purpose.
 
-TERMINATION
+## Personal Uses
 
-Any breach of this license automatically and immediately terminates the
-permission granted above. On termination you must destroy all copies of the
-Software in your possession or control.
+Personal use for research, experiment, and testing for the benefit of public knowledge, personal study, private entertainment, hobby projects, amateur pursuits, or religious observance, without any anticipated commercial application, is use for a permitted purpose.
 
-Any forks, clones, or copies created through the hosting platform's features
-remain subject to this license and confer no rights beyond those required by
-the platform's terms of service.
+## Noncommercial Organizations
 
-Third-party components included in or referenced by the Software remain
-subject to their own respective licenses, and nothing in this license restricts
-rights granted by those licenses.
+Use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding.
 
-Any unauthorized use of the Software is strictly prohibited and may result in
-civil and criminal liability. The Owner reserves the right to pursue all
-available legal remedies, including injunctive relief and damages.
+## Fair Use
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE OWNER BE
-LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OF OR OTHER DEALINGS IN THE SOFTWARE.
+You may have "fair use" rights for the software under the law. These terms do not limit them.
 
-For licensing inquiries, contact: martin.lu.cam@gmail.com
+## No Other Rights
+
+These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else.  These terms do not imply any other licenses.
+
+## Patent Defense
+
+If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company.
+
+## Violations
+
+The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice.  Otherwise, all your licenses end immediately.
+
+## No Liability
+
+***As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim.***
+
+## Definitions
+
+The **licensor** is the individual or entity offering these terms, and the **software** is the software the licensor makes available under these terms.
+
+**You** refers to the individual or entity agreeing to these terms.
+
+**Your company** is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization.  **Control** means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise.  Control can be direct or indirect.
+
+**Your licenses** are all the licenses granted to you for the software under these terms.
+
+**Use** means anything you do with the software requiring one of your licenses.
