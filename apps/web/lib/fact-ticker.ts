@@ -12,6 +12,7 @@ import type { Fact } from "@/app/api/facts/random/route"
  */
 
 const MAX_WAITING = 3
+const ASLEEP = "The fact machine is asleep. Try again in a moment."
 
 type State = {
   loading: number
@@ -48,7 +49,7 @@ export async function requestFact() {
     if (!res.ok) throw new Error(`facts ${res.status}`)
     queue.push(((await res.json()) as Fact).text)
   } catch {
-    queue.push("The fact machine is asleep. Try again in a moment.")
+    queue.push(ASLEEP)
   }
   set(state.loading - 1)
 }
