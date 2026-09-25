@@ -1,0 +1,445 @@
+/*
+ * Early-2000s "gamecubicle" masthead. Every edge is a 45° cut, and the two
+ * cuts in the top block are deliberately staggered: the band's slant lands
+ * 53px right of where the tab strip's slant starts, leaving a short black
+ * ledge under the band. The section row is a news bar that overlaps a wider
+ * photo parallelogram, tied together by white line art.
+ *
+ * The palette is the hero sheet's: white paper, black hairlines and text,
+ * and two of its accents. The search band is violet and the news bar green,
+ * with the tab strip in black between them (the current page's tab is just
+ * underlined); the photo keeps its own blue.
+ * All colors live here (the line art's too, by class) because the masthead
+ * is one fixed-palette illustration, not a themed surface, so it looks the
+ * same on the cream pages and on /bd.
+ */
+/* wordmark face; the files live in public/fonts, Audiowide (next/font) is the fallback */
+@font-face {
+  font-family: "Flying Landing";
+  src:
+    url("/fonts/FlyingLanding.woff2") format("woff2"),
+    url("/fonts/FlyingLanding.otf") format("opentype"),
+    url("/fonts/FlyingLanding.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.header {
+  --gc-ink: #161616;
+  --gc-white: #ffffff;
+  --gc-green: #02ff71;
+  --gc-violet: #e79fff;
+
+  /* the news bar's green also fills its tip in the art */
+  --gc-bar: var(--gc-green);
+  --gc-line: var(--gc-ink);
+  /* the search box's inset bevel, inner ring; the outer is its border */
+  --gc-bevel: inset 1px 1px 0 #7a7a7a, inset -1px -1px 0 #d6d6d6;
+
+  /* one device pixel, set by the component from devicePixelRatio: every
+     hairline is this thick so none smears over two pixels at a fractional zoom */
+  --gc-dp: 1px;
+
+  --gc-band-h: 76px;
+  --gc-strip-h: 28px;
+  --gc-band-left: 492px;
+  --gc-strip-left: calc(var(--gc-band-left) - 53px);
+  --gc-art-scale: 1;
+
+  color: var(--gc-ink);
+  font-family: Verdana, "DejaVu Sans", "Bitstream Vera Sans", Geneva, Tahoma, sans-serif;
+  border-top: var(--gc-dp) solid var(--gc-line);
+  background: var(--gc-white);
+}
+
+/* ---------- top block: logo column, slanted violet band, black tab strip ---------- */
+
+.top {
+  position: relative;
+  height: calc(var(--gc-band-h) + var(--gc-strip-h));
+  background: var(--gc-white);
+}
+
+/* centered in the paper box left of the band, biased a little away from the slant */
+.logo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--gc-band-left) - 20px);
+  height: calc(var(--gc-band-h) + var(--gc-strip-h));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--gc-ink);
+  line-height: 1;
+  font-family: "Flying Landing", var(--font-gc-logo-fallback), sans-serif;
+}
+
+/* the mark is set wide (stretched ~1.35x); the same-color stroke adds weight to the light face */
+.wordmark {
+  display: block;
+  font-size: 58px;
+  letter-spacing: 0.02em;
+  line-height: 0.8;
+  -webkit-text-stroke: 1px currentColor;
+  transform: scaleX(1.35);
+  transform-origin: center;
+}
+
+/* the band's slant equals its height, so the cut is 45°; the outer box shows
+   through as the hairline along the cut */
+.band {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--gc-band-left);
+  height: var(--gc-band-h);
+  background: var(--gc-line);
+  clip-path: polygon(var(--gc-band-h) 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.bandInner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  padding-right: 34px;
+  background: var(--gc-violet);
+  clip-path: polygon(calc(var(--gc-band-h) + 1.5px) 0, 100% 0, 100% 100%, 1.5px 100%);
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.searchLabel {
+  font-size: 17px;
+  color: var(--gc-ink);
+}
+
+.searchInput {
+  width: 184px;
+  height: 34px;
+  padding: 0 6px;
+  /* the old inset bevel in the palette, two rings so all four edges show:
+     black then gray down the top and left, light gray then white up the
+     bottom and right, so the box reads as sunk into the band */
+  border: 1px solid;
+  border-color: var(--gc-ink) var(--gc-white) var(--gc-white) var(--gc-ink);
+  box-shadow: var(--gc-bevel);
+  background: var(--gc-white);
+  color: var(--gc-ink);
+  font: inherit;
+  font-size: 15px;
+  border-radius: 0;
+  outline: none;
+}
+
+.searchInput:focus-visible {
+  box-shadow:
+    var(--gc-bevel),
+    0 0 0 2px var(--gc-green);
+}
+
+.bracket {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 17px;
+  text-decoration: none;
+  color: var(--gc-ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bracket:hover,
+.bracket:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+.nav {
+  position: absolute;
+  top: var(--gc-band-h);
+  right: 0;
+  left: var(--gc-strip-left);
+  height: var(--gc-strip-h);
+  background: var(--gc-ink);
+  clip-path: polygon(var(--gc-strip-h) 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  margin: 0;
+  padding: 0 0 0 var(--gc-strip-h);
+  list-style: none;
+}
+
+.tab {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+}
+
+/* the dotted divider is centred in the strip, 4px in from each edge */
+.tab::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 4px;
+  bottom: 4px;
+  width: var(--gc-dp);
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--gc-white) 0,
+    var(--gc-white) var(--gc-dp),
+    transparent var(--gc-dp),
+    transparent calc(2 * var(--gc-dp))
+  );
+}
+
+.tabLink {
+  display: flex;
+  align-items: center;
+  padding: 0 34px;
+  color: var(--gc-white);
+  font-size: 17px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tab:first-child .tabLink {
+  padding-left: 18px;
+}
+
+/* the current page's tab, and any tab under the pointer, is only marked by a
+   hairline under its word */
+.tabLink:hover,
+.tabLink:focus-visible,
+.tabLink[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-thickness: var(--gc-dp);
+  text-underline-offset: 3px;
+  outline: none;
+}
+
+/* ---------- section row: photo, news bar with the current url, line art, tech ticker ---------- */
+
+.section {
+  position: relative;
+  height: 106px;
+  background: var(--gc-white);
+}
+
+/* the news bar's top hairline continues left across the art to the page edge */
+.section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--gc-dp);
+  background: var(--gc-line);
+  z-index: 1;
+}
+
+/* the photo, the bar's slanted tip and the black lines share one 400x106
+   drawing; the photo's own colours stay in the drawing, it is an image */
+.art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(400px * var(--gc-art-scale));
+  height: 106px;
+}
+
+.artTip {
+  fill: var(--gc-bar);
+}
+
+/* flat lines are snapped to device pixels, like the html hairlines; the
+   slanted ones stay anti-aliased so they do not stair-step */
+.artLine,
+.artSlant {
+  stroke: var(--gc-line);
+  stroke-width: var(--gc-dp);
+  fill: none;
+}
+
+.artLine {
+  shape-rendering: crispEdges;
+}
+
+.artSlant {
+  vector-effect: non-scaling-stroke;
+}
+
+/* the loop under the news bar is white: its slant along the bar's tip, its
+   two flat lines through the photo, and the underline continuing it */
+.artLoop {
+  stroke: var(--gc-white);
+}
+
+.bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: calc(241px * var(--gc-art-scale));
+  height: 45px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  border-top: var(--gc-dp) solid var(--gc-line);
+  background: var(--gc-bar);
+}
+
+.barText {
+  color: var(--gc-ink);
+  font-size: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* continues the loop's white line from the art all the way across, under the
+   news bar */
+.underline {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  left: calc(195px * var(--gc-art-scale));
+  height: var(--gc-dp);
+  background: var(--gc-white);
+}
+
+.rule {
+  position: absolute;
+  top: 75px;
+  right: 0;
+  left: calc(299px * var(--gc-art-scale));
+  height: var(--gc-dp);
+  background: var(--gc-line);
+}
+
+/* the tech ticker is shrunk into the white strip between the underline and
+   the rule; it starts right of the photo's slanted edge (x≈326 at y=47) */
+.ticker {
+  position: absolute;
+  top: 47px;
+  right: 0;
+  left: calc(352px * var(--gc-art-scale));
+  height: 28px;
+  color: var(--gc-ink);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 1279px) {
+  .header {
+    --gc-band-left: 400px;
+  }
+
+  .tabLink {
+    padding: 0 22px;
+    font-size: 15px;
+  }
+}
+
+/* the tab strip becomes its own full-width row under the band */
+@media (max-width: 1023px) {
+  .header {
+    --gc-band-left: 300px;
+  }
+
+  .top {
+    height: auto;
+    padding-top: var(--gc-band-h);
+  }
+
+  .logo {
+    height: var(--gc-band-h);
+  }
+
+  .wordmark {
+    font-size: 44px;
+  }
+
+  .bandInner {
+    padding-right: 20px;
+  }
+
+  .nav {
+    position: static;
+    height: auto;
+    min-height: var(--gc-strip-h);
+    border-top: 2px solid var(--gc-white);
+    clip-path: none;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
+    padding: 0;
+  }
+
+  .tab {
+    flex: 1 1 auto;
+    height: var(--gc-strip-h);
+  }
+
+  .tabLink {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .tab:first-child .tabLink {
+    padding-left: 22px;
+  }
+}
+
+@media (max-width: 639px) {
+  .header {
+    --gc-band-left: 190px;
+    --gc-band-h: 64px;
+    --gc-art-scale: 0.62;
+  }
+
+  .wordmark {
+    font-size: 26px;
+  }
+
+  .searchLabel {
+    display: none;
+  }
+
+  .searchInput {
+    width: 120px;
+    height: 28px;
+  }
+
+  .bandInner {
+    gap: 12px;
+    padding-right: 12px;
+  }
+
+  .tabLink {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .tab:first-child .tabLink {
+    padding-left: 12px;
+  }
+
+  .barText {
+    font-size: 14px;
+  }
+}

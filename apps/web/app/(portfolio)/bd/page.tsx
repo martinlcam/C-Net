@@ -44,7 +44,6 @@ export default function BdPage() {
       <BdVectorField />
       <div className="relative z-[1]">
         <HeaderSection />
-        <div className="h-[65px]" aria-hidden="true" />
         <BdHeroSection status={status} connection={connection} source={source} />
         <BdSignalsSection buffer={buffer} status={status} />
         <BdSpecimenSection status={status} />

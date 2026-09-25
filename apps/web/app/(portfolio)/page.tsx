@@ -7,16 +7,13 @@ import { FooterSection } from "./sections/FooterSection"
 import { HeaderSection } from "./sections/HeaderSection"
 import { HeroSection } from "./sections/HeroSection"
 import { ProjectsSection } from "./sections/ProjectsSection"
-import { TechStripSection } from "./sections/TechStripSection"
 
 export default function HomePage() {
   return (
     <div className="min-h-screen w-full bg-[#faf6f1]">
       <AuthModal />
       <HeaderSection />
-      <div className="h-[65px]" aria-hidden="true" />
       <HeroSection />
-      <TechStripSection />
       <div>
         <AboutSection />
         <ProjectsSection />
