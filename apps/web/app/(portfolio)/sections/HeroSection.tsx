@@ -145,10 +145,9 @@ export function HeroSection() {
         </div>
         <div className={`${styles.box} ${styles.b3}`}>
           <p className={styles.body}>
-            I spend much of my time writing production code end-to-end, building scalable features,
-            interfaces, and backend systems that power AI-driven products. I primarily work with
-            TypeScript, React, Next.js, and Tailwind CSS, and also have experience with Express.js,
-            Drizzle ORM, PostgreSQL, and Docker.
+            Most of my time goes into production code, end to end: features, interfaces, and the
+            backend systems behind AI products. I mostly work in TypeScript, React, Next.js, and
+            Tailwind, with Express, Drizzle, PostgreSQL, and Docker behind them.
           </p>
         </div>
         <div className={`${styles.box} ${styles.b4top}`} aria-hidden="true" />

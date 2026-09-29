@@ -39,23 +39,16 @@ export function AboutSection() {
           <div>
             <h3 className="text-2xl font-semibold text-black mb-4">Personal Bio</h3>
             <p className="text-base text-gray-700 mb-4 leading-relaxed">
-              I came to software through Cognitive Systems (COGS), which studies the mind from
-              psychology, philosophy, linguistics, and computer science at once. The question that
-              stuck with me is the oldest one in the field: how does a few pounds of
-              electrochemistry end up with a point of view?
-            </p>
-            <p className="text-base text-gray-700 mb-4 leading-relaxed">
-              Brain-computer interfaces are where I get to work on that question with my hands.{" "}
-              <Link href="/bd" className="text-black underline underline-offset-2">
-                Braindance
-              </Link>{" "}
-              streams EEG from a Muse headband through a Python bridge and Redis to a live readout
-              in the browser: the first half of a loop I'm building toward, where a brain signal
-              goes in, intent is decoded, and an action comes out.
+              I studied Cognitive Science (COGS), and I'm interested in how the brain gives rise to
+              cognition and consciousness. I think brain-computer interfaces are the future of how
+              we'll work with computers.
             </p>
             <p className="text-base text-gray-700 leading-relaxed">
-              Day to day I'm a full-stack software engineer, and I build everything around that work
-              the same way: end to end, self-hosted, and in the open.
+              I've taken a small first step toward that in my own project,{" "}
+              <Link href="/bd" className="text-black underline underline-offset-2">
+                Braindance
+              </Link>
+              , which streams my EEG live to this site.
             </p>
           </div>
 
