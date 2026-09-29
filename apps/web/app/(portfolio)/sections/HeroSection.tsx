@@ -85,11 +85,11 @@ export function HeroSection() {
         {/* top strip: four boxes */}
         <div className={`${styles.box} ${styles.t1}`} />
         <div className={`${styles.box} ${styles.t2}`}>
-          <p className={styles.caption}>Forward Deployed Engineer</p>
+          <p className={styles.caption}>Full-Stack Software Engineer</p>
         </div>
         <div className={`${styles.box} ${styles.t3}`} />
         <div className={`${styles.box} ${styles.t4}`}>
-          <p className={styles.caption}>Vancouver, Canada</p>
+          <p className={styles.caption}>YVR</p>
         </div>
 
         {/* wordmark */}

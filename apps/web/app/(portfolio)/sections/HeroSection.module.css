@@ -338,15 +338,16 @@
   height: var(--hx-reach-left);
 }
 
-/* "HUMAN NEURON": low in the second box, near its left edge */
+/* the job title: low in the second box, near its left edge */
 .t2 .caption {
   left: 12px;
   bottom: 12px;
 }
 
-/* "2001 A SPACE ODYSSEY": top-left of the fourth box */
+/* "YVR": tucked into the fourth box's top-right corner, as far in as the
+   job title sits from its own corner */
 .t4 .caption {
-  left: 13%;
+  right: 12px;
   top: 12px;
 }
 
