@@ -44,11 +44,12 @@ export function AboutSection() {
               we'll work with computers.
             </p>
             <p className="text-base text-gray-700 leading-relaxed">
-              I've taken a small first step toward that in my own project,{" "}
+              I've taken a small first step toward that in{" "}
               <Link href="/bd" className="text-black underline underline-offset-2">
-                Braindance
+                my own project
               </Link>
-              , which streams my EEG live to this site.
+              , which streams my EEG live to this site. The goal is to control my computer with a
+              brain harness.
             </p>
           </div>
 
