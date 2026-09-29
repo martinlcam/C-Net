@@ -11,7 +11,7 @@
  * underlined); the photo keeps its own blue.
  * All colors live here (the line art's too, by class) because the masthead
  * is one fixed-palette illustration, not a themed surface, so it looks the
- * same on the cream pages and on /bd.
+ * same on the white pages and on /bd.
  */
 /* wordmark face; the files live in public/fonts, Audiowide (next/font) is the fallback */
 @font-face {

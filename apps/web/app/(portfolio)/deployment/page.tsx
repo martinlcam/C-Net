@@ -14,7 +14,7 @@ import { HeaderSection } from "../sections/HeaderSection"
 
 export default function DeploymentWriteupPage() {
   return (
-    <div className="min-h-screen w-full bg-[#faf6f1] text-gray-900">
+    <div className="min-h-screen w-full text-gray-900">
       <AuthModal />
       <HeaderSection />
 

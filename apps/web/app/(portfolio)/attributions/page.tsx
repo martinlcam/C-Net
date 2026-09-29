@@ -22,7 +22,7 @@ const attributions = raw as Attribution[]
 
 export default function AttributionsPage() {
   return (
-    <div className="flex min-h-screen w-full flex-col bg-[#faf6f1] text-gray-900">
+    <div className="flex min-h-screen w-full flex-col text-gray-900">
       <HeaderSection />
 
       {/* Full-bleed horizontal rule below the body separates it from the footer;

@@ -13,7 +13,7 @@ export default function BfidaPage() {
   const [scoreVersion, setScoreVersion] = useState(0)
 
   return (
-    <div className="min-h-screen w-full bg-[#faf6f1]">
+    <div className="min-h-screen w-full">
       <AuthModal />
       <HeaderSection />
       <BfidaHeroSection />
