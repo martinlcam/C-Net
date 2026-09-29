@@ -105,7 +105,7 @@ export function HeroSection() {
             Building and shipping production software across the full stack.
           </p>
           <p className={styles.body}>
-            I’m a Forward Deployed Engineer based in <Text color="indigo">Vancouver, Canada</Text>.{" "}
+            I’m a Full-Stack Software Engineer based in <Text color="indigo">Vancouver, Canada</Text>.{" "}
             <a
               href="https://futurity.work"
               target="_blank"
