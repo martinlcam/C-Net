@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { NetworkTopology } from "@/components/ui/network-topology"
 import {
   TOPOLOGY_EDGES,
@@ -35,17 +36,26 @@ export function AboutSection() {
         {/* One row: personal bio · 4 skill squares · deployment topology (fans out, 4:4:6) */}
         <div className="grid lg:grid-cols-[minmax(220px,4fr)_minmax(260px,4fr)_minmax(360px,6fr)] gap-10 lg:gap-12 items-start">
           {/* Personal bio */}
-          <div className="line-through">
+          <div>
             <h3 className="text-2xl font-semibold text-black mb-4">Personal Bio</h3>
             <p className="text-base text-gray-700 mb-4 leading-relaxed">
-              I'm a full-stack developer passionate about building modern web applications and
-              managing infrastructure. I enjoy working with cutting-edge technologies and solving
-              complex problems.
+              I came to software through Cognitive Systems (COGS), which studies the mind from
+              psychology, philosophy, linguistics, and computer science at once. The question that
+              stuck with me is the oldest one in the field: how does a few pounds of
+              electrochemistry end up with a point of view?
+            </p>
+            <p className="text-base text-gray-700 mb-4 leading-relaxed">
+              Brain-computer interfaces are where I get to work on that question with my hands.{" "}
+              <Link href="/bd" className="text-black underline underline-offset-2">
+                Braindance
+              </Link>{" "}
+              streams EEG from a Muse headband through a Python bridge and Redis to a live readout
+              in the browser: the first half of a loop I'm building toward, where a brain signal
+              goes in, intent is decoded, and an action comes out.
             </p>
             <p className="text-base text-gray-700 leading-relaxed">
-              My expertise spans frontend and backend development, with a focus on creating
-              scalable, maintainable applications. I'm particularly interested in homelab
-              infrastructure management and DevOps practices.
+              Day to day I'm a full-stack software engineer, and I build everything around that work
+              the same way: end to end, self-hosted, and in the open.
             </p>
           </div>
 
