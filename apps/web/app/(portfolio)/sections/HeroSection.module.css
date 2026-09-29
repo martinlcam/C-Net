@@ -313,38 +313,6 @@
   padding: 0 4%;
 }
 
-/* the Cognition and Consciousness symbols stand where the name was, one at
-   each end of the box and centred in its height; the name stays for readers */
-.symbols {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.symbols svg {
-  width: auto;
-  height: clamp(120px, 15vw, 230px);
-}
-
-/* hidden until the script draws them in (see useDrawIn): the ink is traced as
-   an outline first, so the stroke is set here and the fill starts clear. The
-   paths are stored at 10x, so a stroke of 10 is one unit of the drawing */
-.symbols path {
-  fill-opacity: 0;
-  stroke: currentColor;
-  stroke-width: 10;
-  stroke-opacity: 0;
-}
-
-/* whole from the start when nothing will draw them in */
-@media (prefers-reduced-motion: reduce), (scripting: none) {
-  .symbols path {
-    fill-opacity: 1;
-    stroke: none;
-  }
-}
-
 /* ---------- row three: tagline, split box, accent panel ---------- */
 
 .tag {
