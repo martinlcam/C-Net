@@ -1,17 +1,33 @@
 "use client"
 
 import { Text } from "@radix-ui/themes"
-import { useRef } from "react"
+import { type CSSProperties, useRef, useState } from "react"
 import { requestFact, useFactTicker } from "@/lib/fact-ticker"
 import { useDevicePixel } from "@/lib/use-device-pixel"
 import { ContributionsGraph } from "../components/ContributionsGraph"
 import styles from "./HeroSection.module.css"
 
-function Target() {
+/* two arcs around a ring: the arcs part on hover and turn half a revolution
+   per click, and the ring pulses (see .targetBox in the stylesheet) */
+function Target({ turns }: { turns: number }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <circle cx="12" cy="12" r="10.5" />
-      <circle cx="12" cy="12" r="5" />
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <g className={styles.arcs}>
+        <path
+          className={styles.arcLow}
+          d="M12 22.75C6.92003 22.75 2.49003 19.14 1.47003 14.17C1.39003 13.76 1.65003 13.37 2.05003 13.28C2.46003 13.2 2.85003 13.46 2.94003 13.86C3.82003 18.14 7.63003 21.25 12 21.25C16.36 21.25 20.17 18.16 21.06 13.9C21.14 13.49 21.54 13.23 21.95 13.32C22.36 13.4 22.62 13.8 22.53 14.21C21.49 19.15 17.07 22.75 12 22.75Z"
+        />
+        <path
+          className={styles.arcHigh}
+          d="M21.81 10.81C21.46 10.81 21.15 10.56 21.08 10.2C20.23 5.88001 16.41 2.73999 12 2.73999C7.61995 2.73999 3.80996 5.85 2.93996 10.13C2.85996 10.54 2.45996 10.79 2.04996 10.71C1.63996 10.63 1.37996 10.23 1.46996 9.82001C2.48996 4.85001 6.91995 1.23999 12 1.23999C17.13 1.23999 21.56 4.89 22.55 9.91C22.63 10.32 22.36 10.71 21.96 10.79C21.91 10.81 21.86 10.81 21.81 10.81Z"
+        />
+      </g>
+      <path
+        key={turns}
+        className={styles.ring}
+        data-pulse={turns > 0 || undefined}
+        d="M12 14.25C10.76 14.25 9.75 13.24 9.75 12C9.75 10.76 10.76 9.75 12 9.75C13.24 9.75 14.25 10.76 14.25 12C14.25 13.24 13.24 14.25 12 14.25ZM12 11.25C11.59 11.25 11.25 11.59 11.25 12C11.25 12.41 11.59 12.75 12 12.75C12.41 12.75 12.75 12.41 12.75 12C12.75 11.59 12.41 11.25 12 11.25Z"
+      />
     </svg>
   )
 }
@@ -35,6 +51,7 @@ export function HeroSection() {
   const sheet = useRef<HTMLElement>(null)
   useDevicePixel(sheet, "--hx-dp")
   const { loading } = useFactTicker()
+  const [turns, setTurns] = useState(0)
 
   return (
     <div className={styles.shell}>
@@ -46,11 +63,15 @@ export function HeroSection() {
             type="button"
             className={styles.targetBox}
             data-busy={loading > 0 || undefined}
-            onClick={requestFact}
+            style={{ "--turns": turns } as CSSProperties}
+            onClick={() => {
+              setTurns((t) => t + 1)
+              requestFact()
+            }}
             aria-label="Run a random fact across the ticker"
             title="Random fact"
           >
-            <Target />
+            <Target turns={turns} />
           </button>
           <span className={styles.lowerBox} aria-hidden="true" />
         </div>
