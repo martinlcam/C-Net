@@ -1,0 +1,156 @@
+/*
+ * The graph fills the hero's bottom-left box. Its type and hairline width
+ * come from the sheet's custom properties, with plain fallbacks for a bare
+ * page; the blocks are the sheet's violet in four steps, light to dark,
+ * validated against white, with a pale gray for an empty day.
+ */
+.root {
+  --gh-dp: var(--hx-dp, 1px);
+  --gh-ink: var(--hx-ink, #161616);
+  --gh-muted: #6b6b6b;
+  --gh-paper: var(--hx-paper, #fff);
+  --gh-mono: var(--hx-mono, ui-monospace, monospace);
+  --gh-l0: #ebebeb;
+  --gh-l1: #dc93f6;
+  --gh-l2: #c96aec;
+  --gh-l3: #a53fcb;
+  --gh-l4: #682385;
+
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--gh-mono);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gh-muted);
+}
+
+.root p {
+  margin: 0;
+}
+
+/* the calendar sits in the middle of whatever height the footer leaves */
+.frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.calendar {
+  position: relative;
+}
+
+.calendar svg {
+  display: block;
+  overflow: visible;
+}
+
+.labels {
+  fill: var(--gh-muted);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  dominant-baseline: hanging;
+}
+
+.block {
+  fill: var(--gh-l0);
+  outline: none;
+  /* so the draw-in scales each block about its own centre */
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.block[data-level="1"] {
+  fill: var(--gh-l1);
+}
+.block[data-level="2"] {
+  fill: var(--gh-l2);
+}
+.block[data-level="3"] {
+  fill: var(--gh-l3);
+}
+.block[data-level="4"] {
+  fill: var(--gh-l4);
+}
+
+/* the blocks draw in the first time; until then they wait unseen */
+.pending .block {
+  opacity: 0;
+}
+
+.block[data-active],
+.block:focus-visible {
+  stroke: var(--gh-ink);
+  stroke-width: var(--gh-dp);
+}
+
+.tip {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -100%);
+  display: grid;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--gh-ink);
+  color: var(--gh-paper);
+  letter-spacing: 0.08em;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tip[data-below] {
+  transform: translate(-50%, 0);
+}
+
+.tip strong {
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.tip span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.legend span:first-child {
+  margin-right: 3px;
+}
+.legend span:last-child {
+  margin-left: 3px;
+}
+
+@media (max-width: 1023px) {
+  .root {
+    padding: 14px 16px 12px;
+  }
+}
+
+@media (max-width: 639px) {
+  .root {
+    padding: 12px 14px 10px;
+  }
+  .legend {
+    display: none;
+  }
+}

@@ -4,6 +4,8 @@ type Theme = "portfolio" | "bd"
 
 type Props = {
   theme?: Theme
+  /** Extra classes for the outer shell (e.g. a section-specific background). */
+  className?: string
   children: ReactNode
 }
 
@@ -11,12 +13,12 @@ type Props = {
  * Left 58px rail + md:border-l shell so the header's vertical rule continues
  * through the hero at scrollY === 0 (header drops its border-r when scrolled).
  */
-export function PortfolioHeroFrame({ theme = "portfolio", children }: Props) {
+export function PortfolioHeroFrame({ theme = "portfolio", className = "", children }: Props) {
   const border = theme === "bd" ? "border-bd-rule" : "border-black"
   const text = theme === "bd" ? "text-bd-cream font-bd-display" : "text-black"
 
   return (
-    <div className={`border-b ${border} md:border-l`}>
+    <div className={`border-b ${border} md:border-l ${className}`}>
       <div className="flex">
         <div
           className={`hidden md:flex w-[58px] border-r ${border} flex-col items-center shrink-0 ${
