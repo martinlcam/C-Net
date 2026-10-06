@@ -7,13 +7,18 @@ import { fetchInvite, type InviteGuest } from "@/lib/invite-api"
 import { NothingHere } from "../nothing-here"
 import { RsvpDialog } from "./rsvp-dialog"
 
+// The party is in Vancouver, so show Vancouver time to everyone instead of the viewer's clock.
+const PARTY_TIME_ZONE = "America/Vancouver"
+
 function formatWhen(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone: PARTY_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   })
 }
 
