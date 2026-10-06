@@ -81,7 +81,7 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
         <div aria-hidden="true" />
 
         <p className="text-gray-500">You&apos;re invited</p>
-        <h1 className="mt-3 font-bold text-[clamp(2.5rem,11vw,4.5rem)] text-black leading-[0.95] tracking-[-0.03em]">
+        <h1 className="mt-3 font-bold text-[clamp(2.5rem,10vw,4rem)] text-black leading-[0.95] tracking-[-0.03em]">
           {titleHead}{" "}
           {/* The purple dot is the title's full stop. It is glued to the last word so it can
               never wrap onto a line of its own. */}
