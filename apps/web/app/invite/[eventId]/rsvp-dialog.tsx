@@ -1,6 +1,7 @@
 "use client"
 
 import * as Dialog from "@radix-ui/react-dialog"
+import Image from "next/image"
 import { useState } from "react"
 import { InviteApiError, type InviteGuest, isPlausibleBirthday, sendRsvp } from "@/lib/invite-api"
 
@@ -24,12 +25,31 @@ const choiceClass = (active: boolean) =>
 const primaryClass =
   "flex h-14 w-full items-center justify-center rounded-2xl bg-black text-lg text-white transition-opacity disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
 
+/** Martin's response to anyone who picks No. */
+function NoImage() {
+  return (
+    <Image
+      src="/invite-assets/no.jpg"
+      alt=""
+      width={667}
+      height={375}
+      className="mt-5 w-full rounded-2xl"
+      unoptimized
+    />
+  )
+}
+
 function ResultView({ result }: Readonly<{ result: Result }>) {
   if ("duplicate" in result) {
     return <p className="mt-6 text-[17px] text-gray-700">Looks like you already answered.</p>
   }
   if (!result.attending) {
-    return <p className="mt-6 text-[17px] text-gray-700">We&apos;ll miss you.</p>
+    return (
+      <div className="mt-6">
+        <p className="text-[17px] text-gray-700">We&apos;ll miss you.</p>
+        <NoImage />
+      </div>
+    )
   }
   return (
     <div className="mt-6 space-y-5">
@@ -134,6 +154,7 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
                   No
                 </button>
               </div>
+              {attending === false ? <NoImage /> : null}
 
               <label className="mt-6 block">
                 <span className="text-gray-600">Your birthday</span>
