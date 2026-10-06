@@ -14,12 +14,13 @@
   --color-bd-muted: rgba(250, 246, 241, 0.35);
 }
 
-/* Satoshi Font */
+/* Satoshi Font. The ?v=2 busts a Cloudflare edge cache entry that held HTML for these URLs
+   on invite.martin.cam (the host rewrite once swallowed them). */
 @font-face {
   font-family: "Satoshi";
   src:
-    url("/fonts/Satoshi-Variable.woff2") format("woff2"),
-    url("/fonts/Satoshi-Variable.woff") format("woff");
+    url("/fonts/Satoshi-Variable.woff2?v=2") format("woff2"),
+    url("/fonts/Satoshi-Variable.woff?v=2") format("woff");
   font-weight: 100 900;
   font-display: swap;
   font-style: normal;
@@ -28,8 +29,8 @@
 @font-face {
   font-family: "Satoshi";
   src:
-    url("/fonts/Satoshi-Regular.woff2") format("woff2"),
-    url("/fonts/Satoshi-Regular.woff") format("woff");
+    url("/fonts/Satoshi-Regular.woff2?v=2") format("woff2"),
+    url("/fonts/Satoshi-Regular.woff?v=2") format("woff");
   font-weight: 400;
   font-display: swap;
   font-style: normal;
@@ -38,8 +39,8 @@
 @font-face {
   font-family: "Satoshi";
   src:
-    url("/fonts/Satoshi-Medium.woff2") format("woff2"),
-    url("/fonts/Satoshi-Medium.woff") format("woff");
+    url("/fonts/Satoshi-Medium.woff2?v=2") format("woff2"),
+    url("/fonts/Satoshi-Medium.woff?v=2") format("woff");
   font-weight: 500;
   font-display: swap;
   font-style: normal;
@@ -48,8 +49,8 @@
 @font-face {
   font-family: "Satoshi";
   src:
-    url("/fonts/Satoshi-Bold.woff2") format("woff2"),
-    url("/fonts/Satoshi-Bold.woff") format("woff");
+    url("/fonts/Satoshi-Bold.woff2?v=2") format("woff2"),
+    url("/fonts/Satoshi-Bold.woff?v=2") format("woff");
   font-weight: 700;
   font-display: swap;
   font-style: normal;
