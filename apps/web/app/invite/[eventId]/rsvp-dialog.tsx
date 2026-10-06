@@ -55,15 +55,53 @@ function ResultView({ result }: Readonly<{ result: Result }>) {
   return (
     <div className="mt-6 space-y-5">
       <p className="text-[17px] text-gray-700">See you there.</p>
-      {result.groupChatUrl ? (
-        <a
-          href={result.groupChatUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={primaryClass}
+      {result.groupChatUrl ? <GroupChatLink url={result.groupChatUrl} /> : null}
+    </div>
+  )
+}
+
+/** True inside Instagram's or Facebook's in-app browser, where new tabs and app links misbehave. */
+function isInAppBrowser(): boolean {
+  if (typeof navigator === "undefined") return false
+  return /Instagram|FBAN|FBAV/i.test(navigator.userAgent)
+}
+
+function GroupChatLink({ url }: Readonly<{ url: string }>) {
+  const [copied, setCopied] = useState(false)
+  const inApp = isInAppBrowser()
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+    } catch {
+      // Clipboard is unavailable in some in-app browsers; the URL is shown as text below.
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Same-tab navigation on purpose: in-app browsers block or orphan target="_blank",
+          and ig.me needs a normal navigation to hand off to the Instagram app. */}
+      <a href={url} className={primaryClass}>
+        Join the group chat
+      </a>
+      <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <span className="min-w-0 flex-1 truncate text-gray-600 text-sm">{url}</span>
+        <button
+          type="button"
+          onClick={copy}
+          className="shrink-0 text-black text-sm underline underline-offset-4"
         >
-          Join the group chat
-        </a>
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      {inApp ? (
+        <p className="text-gray-500 text-sm">
+          If the button does nothing in here, tap the menu and choose Open in Safari, or copy the
+          link and paste it in the Instagram app.
+        </p>
       ) : null}
     </div>
   )
