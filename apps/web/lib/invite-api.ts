@@ -79,3 +79,56 @@ export function isPlausibleBirthday(raw: string): boolean {
     date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d
   return real && y >= 1900 && raw <= new Date().toISOString().slice(0, 10)
 }
+
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+
+function fourDigitYear(raw: string): number {
+  const n = Number(raw)
+  if (raw.length === 4) return n
+  // Two-digit year: 00..(this year) → 20xx, otherwise 19xx.
+  return n <= new Date().getUTCFullYear() % 100 ? 2000 + n : 1900 + n
+}
+
+function toIso(y: number, m: number, d: number): string {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+}
+
+/**
+ * Lenient birthday parsing for a plain text field, so the native date picker (unreliable
+ * on iOS inside a bottom sheet) is not needed. Accepts 1999-10-31, 31/10/1999, 10/31/1999,
+ * 31.10.99, 19991031, "Oct 31 1999", "31 Oct 1999", "October 31, 1999". Ambiguous numeric
+ * day/month (both <= 12) is read month-first. Returns YYYY-MM-DD or null.
+ */
+export function parseBirthday(raw: string): string | null {
+  const s = raw.trim().toLowerCase().replace(/,/g, " ").replace(/\s+/g, " ")
+  let m: RegExpExecArray | null
+
+  m = /^(\d{4})[-/. ](\d{1,2})[-/. ](\d{1,2})$/.exec(s)
+  if (m) return toIso(Number(m[1]), Number(m[2]), Number(m[3]))
+
+  m = /^(\d{4})(\d{2})(\d{2})$/.exec(s)
+  if (m) return toIso(Number(m[1]), Number(m[2]), Number(m[3]))
+
+  m = /^(\d{1,2})[-/. ](\d{1,2})[-/. ](\d{2}|\d{4})$/.exec(s)
+  if (m) {
+    const a = Number(m[1])
+    const b = Number(m[2])
+    const y = fourDigitYear(m[3])
+    if (a > 12) return toIso(y, b, a)
+    return toIso(y, a, b)
+  }
+
+  m = /^(\d{1,2})(?:st|nd|rd|th)? ([a-z]+)\.? (\d{2}|\d{4})$/.exec(s)
+  if (m) {
+    const month = MONTHS.indexOf(m[2].slice(0, 3)) + 1
+    return month ? toIso(fourDigitYear(m[3]), month, Number(m[1])) : null
+  }
+
+  m = /^([a-z]+)\.? (\d{1,2})(?:st|nd|rd|th)? (\d{2}|\d{4})$/.exec(s)
+  if (m) {
+    const month = MONTHS.indexOf(m[1].slice(0, 3)) + 1
+    return month ? toIso(fourDigitYear(m[3]), month, Number(m[2])) : null
+  }
+
+  return null
+}

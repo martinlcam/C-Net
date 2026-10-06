@@ -3,7 +3,13 @@
 import * as Dialog from "@radix-ui/react-dialog"
 import Image from "next/image"
 import { useState } from "react"
-import { InviteApiError, type InviteGuest, isPlausibleBirthday, sendRsvp } from "@/lib/invite-api"
+import {
+  InviteApiError,
+  type InviteGuest,
+  isPlausibleBirthday,
+  parseBirthday,
+  sendRsvp,
+} from "@/lib/invite-api"
 
 type Props = {
   eventId: string
@@ -80,14 +86,15 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
 
   async function submit() {
     if (!guest || attending === null) return
-    if (!isPlausibleBirthday(birthday)) {
-      setError("Enter your birthday as YYYY-MM-DD.")
+    const iso = parseBirthday(birthday)
+    if (!iso || !isPlausibleBirthday(iso)) {
+      setError("That doesn't look like a birthday. Try something like 31/10/1999.")
       return
     }
     setSending(true)
     setError(null)
     try {
-      const r = await sendRsvp(eventId, { guestId: guest.id, attending, birthday })
+      const r = await sendRsvp(eventId, { guestId: guest.id, attending, birthday: iso })
       setResult(r)
       onAnswered(guest.id)
     } catch (e) {
@@ -102,7 +109,7 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
     }
   }
 
-  const canSend = attending !== null && birthday.length === 10 && !sending
+  const canSend = attending !== null && birthday.trim().length >= 6 && !sending
 
   return (
     <Dialog.Root
@@ -152,13 +159,22 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
 
               <label className="mt-6 block">
                 <span className="text-gray-600">Your birthday</span>
+                {/* Plain text on purpose: the native date picker misbehaves on iOS inside a
+                    fixed bottom sheet. Any common format is accepted and normalised on send. */}
                 <input
-                  type="date"
+                  type="text"
                   value={birthday}
-                  min="1900-01-01"
-                  max={new Date().toISOString().slice(0, 10)}
+                  placeholder="e.g. 31/10/1999"
+                  autoComplete="bday"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="send"
                   onChange={(e) => setBirthday(e.target.value)}
-                  className="mt-2 block h-14 w-full rounded-2xl border border-gray-300 bg-white px-4 text-[17px] text-black focus:border-black focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && canSend) submit()
+                  }}
+                  className="mt-2 block h-14 w-full rounded-2xl border border-gray-300 bg-white px-4 text-[17px] text-black placeholder:text-gray-400 focus:border-black focus:outline-none"
                 />
               </label>
 
