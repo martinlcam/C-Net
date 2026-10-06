@@ -15,28 +15,31 @@ type Props = {
 type Result = { attending: boolean; groupChatUrl: string | null } | { duplicate: true }
 
 const choiceClass = (active: boolean) =>
-  `flex-1 rounded-full border px-4 py-2 text-sm transition-colors ${
+  `flex h-14 flex-1 items-center justify-center rounded-2xl border text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${
     active
       ? "border-black bg-black text-white"
-      : "border-black bg-white text-black hover:bg-gray-100"
+      : "border-gray-300 bg-white text-black hover:border-black"
   }`
+
+const primaryClass =
+  "flex h-14 w-full items-center justify-center rounded-2xl bg-black text-lg text-white transition-opacity disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
 
 function ResultView({ result }: Readonly<{ result: Result }>) {
   if ("duplicate" in result) {
-    return <p className="mt-4 text-gray-700">Looks like you already answered.</p>
+    return <p className="mt-6 text-[17px] text-gray-700">Looks like you already answered.</p>
   }
   if (!result.attending) {
-    return <p className="mt-4 text-gray-700">We&apos;ll miss you.</p>
+    return <p className="mt-6 text-[17px] text-gray-700">We&apos;ll miss you.</p>
   }
   return (
-    <div className="mt-4 space-y-4">
-      <p className="text-gray-700">See you there.</p>
+    <div className="mt-6 space-y-5">
+      <p className="text-[17px] text-gray-700">See you there.</p>
       {result.groupChatUrl ? (
         <a
           href={result.groupChatUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block rounded-full border border-black bg-white px-4 py-2.5 text-center text-black hover:bg-gray-100"
+          className={primaryClass}
         >
           Join the group chat
         </a>
@@ -97,16 +100,25 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40" />
-        <Dialog.Content className="-translate-x-1/2 -translate-y-1/2 fixed top-1/2 left-1/2 w-[calc(100%-2rem)] max-w-md rounded-2xl border border-black bg-white p-6 shadow-xl focus:outline-none">
-          <Dialog.Title className="font-bold text-2xl tracking-tight">{guest?.name}</Dialog.Title>
+        <Dialog.Overlay className="invite-overlay fixed inset-0 bg-black/40" />
+        {/* A bottom sheet on phones, a centred card from the small breakpoint up. */}
+        <Dialog.Content className="invite-sheet fixed inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-satoshi text-black shadow-2xl focus:outline-none sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:p-7">
+          <div
+            className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-gray-200 sm:hidden"
+            aria-hidden="true"
+          />
+
+          <Dialog.Title className="font-bold text-[1.75rem] leading-tight tracking-tight">
+            {guest?.name}
+          </Dialog.Title>
 
           {result === null ? (
             <>
-              <Dialog.Description className="mt-1 text-gray-600 text-sm">
+              <Dialog.Description className="mt-1 text-[17px] text-gray-500">
                 Are you coming?
               </Dialog.Description>
-              <div className="mt-5 flex gap-3">
+
+              <div className="mt-6 flex gap-3">
                 <button
                   type="button"
                   className={choiceClass(attending === true)}
@@ -122,23 +134,26 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
                   No
                 </button>
               </div>
-              <label className="mt-5 block text-gray-600 text-sm">
-                <span>Your birthday</span>
+
+              <label className="mt-6 block">
+                <span className="text-gray-600">Your birthday</span>
                 <input
                   type="date"
                   value={birthday}
                   min="1900-01-01"
                   max={new Date().toISOString().slice(0, 10)}
                   onChange={(e) => setBirthday(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-black"
+                  className="mt-2 block h-14 w-full rounded-2xl border border-gray-300 bg-white px-4 text-[17px] text-black focus:border-black focus:outline-none"
                 />
               </label>
-              {error ? <p className="mt-3 text-red-600 text-sm">{error}</p> : null}
+
+              {error ? <p className="mt-3 text-red-600">{error}</p> : null}
+
               <button
                 type="button"
                 disabled={!canSend}
                 onClick={submit}
-                className="mt-6 w-full rounded-full bg-black px-4 py-2.5 text-white disabled:opacity-40"
+                className={`${primaryClass} mt-7`}
               >
                 {sending ? "Sending…" : "Send"}
               </button>
@@ -147,7 +162,7 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
             <ResultView result={result} />
           )}
 
-          <Dialog.Close className="mt-4 w-full text-center text-gray-500 text-sm hover:text-black">
+          <Dialog.Close className="mt-4 flex h-12 w-full items-center justify-center text-gray-500 transition-colors hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">
             Close
           </Dialog.Close>
         </Dialog.Content>
