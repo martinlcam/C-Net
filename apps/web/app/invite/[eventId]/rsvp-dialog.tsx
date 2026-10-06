@@ -123,6 +123,13 @@ function useKeyboardInset(): number {
 
 export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Props>) {
   const keyboardInset = useKeyboardInset()
+  // While the birthday field has focus the sheet becomes a full-height panel anchored to the
+  // top, so the field sits in the upper half of the screen where no keyboard can cover it.
+  // Needed for in-app browsers (Instagram) that report nothing about the keyboard.
+  const [typing, setTyping] = useState(false)
+  const sheetShape = typing
+    ? "top-0 bottom-0 max-h-none rounded-none pt-6"
+    : "bottom-[var(--kb)] max-h-[calc(100dvh-var(--kb)-1.5rem)] rounded-t-[28px] pt-3"
   const [attending, setAttending] = useState<boolean | null>(null)
   const [birthday, setBirthday] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -135,6 +142,7 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
     setError(null)
     setSending(false)
     setResult(null)
+    setTyping(false)
   }
 
   async function submit() {
@@ -180,10 +188,10 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
         {/* --kb lifts the sheet above the iOS keyboard; it is 0 on desktop and when closed. */}
         <Dialog.Content
           style={{ "--kb": `${keyboardInset}px` } as React.CSSProperties}
-          className="invite-sheet fixed inset-x-0 bottom-[var(--kb)] max-h-[calc(100dvh-var(--kb)-1.5rem)] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-satoshi text-black shadow-2xl focus:outline-none sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:p-7"
+          className={`invite-sheet fixed inset-x-0 ${sheetShape} overflow-y-auto bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-satoshi text-black shadow-2xl focus:outline-none sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:max-h-[90vh] sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:p-7`}
         >
           <div
-            className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-gray-200 sm:hidden"
+            className={`mx-auto mb-5 h-1.5 w-10 rounded-full bg-gray-200 sm:hidden ${typing ? "invisible" : ""}`}
             aria-hidden="true"
           />
 
@@ -227,7 +235,9 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
                   autoCorrect="off"
                   spellCheck={false}
                   enterKeyHint="send"
+                  onBlur={() => setTyping(false)}
                   onFocus={(e) => {
+                    setTyping(true)
                     // Once the keyboard has animated in, make sure the field is in view.
                     const el = e.currentTarget
                     setTimeout(
