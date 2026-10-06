@@ -23,3 +23,21 @@ export type RsvpRequest = {
 
 /** `groupChatUrl` is set only when `attending` is true. */
 export type RsvpResult = { attending: boolean; groupChatUrl: string | null }
+
+export type AdminGuest = {
+  id: string
+  name: string
+  rsvp: "yes" | "no" | null
+  birthday: string | null
+  respondedAt: string | null
+}
+
+export type AdminEvent = {
+  id: string
+  title: string
+  startsAt: string
+  location: string
+  guests: AdminGuest[]
+}
+
+export type AdminOverview = { events: AdminEvent[] }

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
-import { Given, Then, When } from "@cucumber/cucumber"
+import { type DataTable, Given, Then, When } from "@cucumber/cucumber"
+import jwt from "jsonwebtoken"
 import type { InviteWorld } from "../support/world"
 
 type InviteBody = {
@@ -149,4 +150,43 @@ Then("{string} has not answered", async function (this: InviteWorld, name: strin
   assert.equal(row.rsvp, null)
   assert.equal(row.birthday, null)
   assert.equal(row.respondedAt, null)
+})
+
+type OverviewBody = {
+  events: {
+    id: string
+    guests: {
+      name: string
+      rsvp: "yes" | "no" | null
+      birthday: string | null
+      respondedAt: string | null
+    }[]
+  }[]
+}
+
+Given("I am signed in as {string}", function (this: InviteWorld, email: string) {
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
+  if (!secret) throw new Error("AUTH_SECRET missing")
+  this.token = jwt.sign({ id: "bdd-user", sub: "bdd-user", email, name: "BDD" }, secret, {
+    expiresIn: "1h",
+  })
+})
+
+When("I request the responses overview", async function (this: InviteWorld) {
+  await this.get("/invite/admin/overview")
+})
+
+Then("the overview lists my event with:", function (this: InviteWorld, table: DataTable) {
+  const body = this.res.body as OverviewBody
+  const event = body.events.find((e) => e.id === this.eventIds[0])
+  assert.ok(event, "my event is in the overview")
+  const got = event.guests.map((g) => ({
+    name: g.name,
+    rsvp: g.rsvp ?? "",
+    birthday: g.birthday ?? "",
+  }))
+  assert.deepEqual(got, table.hashes())
+  for (const g of event.guests) {
+    assert.equal(typeof g.respondedAt === "string", g.rsvp !== null)
+  }
 })

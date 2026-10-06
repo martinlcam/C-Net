@@ -1,8 +1,9 @@
 import { db } from "@cnet/db"
 import { partyEvents, partyGuests } from "@cnet/db/schema"
-import { and, asc, eq, isNull } from "drizzle-orm"
-import { Body, Controller, Get, Path, Post, Response, Route } from "tsoa"
+import { and, asc, desc, eq, isNull } from "drizzle-orm"
+import { Body, Controller, Get, Path, Post, Response, Route, Security } from "tsoa"
 import {
+  type AdminOverview,
   type InviteError,
   type InvitePublic,
   type RsvpRequest,
@@ -19,6 +20,35 @@ const NOT_FOUND: InviteError = { error: "Not found." }
  */
 @Route("invite")
 export class InviteController extends Controller {
+  /**
+   * GET /invite/admin/overview — every event and every guest's answer. Superuser only.
+   * Declared first: Express matches in registration order, so this static path must be
+   * registered before `{eventId}` or it would be swallowed as an event id.
+   */
+  @Get("admin/overview")
+  @Security("jwt", ["superuser"])
+  public async adminOverview(): Promise<AdminOverview> {
+    const events = await db.select().from(partyEvents).orderBy(desc(partyEvents.startsAt))
+    const guests = await db.select().from(partyGuests).orderBy(asc(partyGuests.name))
+    return {
+      events: events.map((e) => ({
+        id: e.id,
+        title: e.title,
+        startsAt: e.startsAt.toISOString(),
+        location: e.location,
+        guests: guests
+          .filter((g) => g.eventId === e.id)
+          .map((g) => ({
+            id: g.id,
+            name: g.name,
+            rsvp: g.rsvp,
+            birthday: g.birthday,
+            respondedAt: g.respondedAt ? g.respondedAt.toISOString() : null,
+          })),
+      })),
+    }
+  }
+
   /** GET /invite/{eventId} — the party post plus the names that have not answered. */
   @Get("{eventId}")
   @Response<InviteError>(404, "Unknown invite")
