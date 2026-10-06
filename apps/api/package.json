@@ -7,7 +7,8 @@
     "api:generate": "tsoa spec-and-routes",
     "build": "tsoa spec-and-routes && tsc",
     "dev": "bun run src/index.ts --watch",
-    "start": "bun dist/index.js"
+    "start": "bun dist/index.js",
+    "test:bdd": "bun --bun cucumber-js"
   },
   "dependencies": {
     "@cnet/core": "workspace:*",
@@ -24,10 +25,13 @@
     "tsoa": "6.6.0"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "13.3.0",
     "@types/cookie-parser": "1.4.10",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
+    "@types/jsonwebtoken": "9.0.10",
     "@types/pg": "8.16.0",
+    "jsonwebtoken": "9.0.3",
     "typescript": "5.9.3"
   }
 }
