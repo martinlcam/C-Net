@@ -41,6 +41,9 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
 
   const { title, details, startsAt, location, guests } = invite.data
   const remaining = guests.filter((g) => !answered.has(g.id))
+  const titleWords = title.trim().split(/\s+/)
+  const titleLast = titleWords.pop() ?? ""
+  const titleHead = titleWords.join(" ")
   const shown = query.trim() ? remaining.filter((g) => matches(g.name, query)) : remaining
 
   let list: React.ReactNode
@@ -79,12 +82,16 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
 
         <p className="text-gray-500">You&apos;re invited</p>
         <h1 className="mt-3 font-bold text-[clamp(2.5rem,11vw,4.5rem)] text-black leading-[0.95] tracking-[-0.03em]">
-          {title}
-          {/* The purple dot is the sentence's full stop, sitting on the baseline. */}
-          <span
-            className="ml-[0.06em] inline-block size-[0.16em] rounded-full bg-[#bea9e9] align-baseline"
-            aria-hidden="true"
-          />
+          {titleHead}{" "}
+          {/* The purple dot is the title's full stop. It is glued to the last word so it can
+              never wrap onto a line of its own. */}
+          <span className="whitespace-nowrap">
+            {titleLast}
+            <span
+              className="ml-[0.06em] inline-block size-[0.16em] rounded-full bg-[#bea9e9] align-baseline"
+              aria-hidden="true"
+            />
+          </span>
         </h1>
 
         <div className="mt-7 space-y-1 text-[17px] text-black leading-snug">
