@@ -280,3 +280,38 @@ body[data-bd="1"] ::-webkit-scrollbar-thumb:hover {
     mask-image: radial-gradient(ellipse 90% 75% at 50% 42%, black 15%, transparent 78%);
   }
 }
+
+/* Invite RSVP sheet: rises from the bottom on phones, fades in as a card on wider screens. */
+@keyframes invite-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes invite-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.invite-overlay[data-state="open"] {
+  animation: invite-fade-in 180ms ease-out;
+}
+.invite-sheet[data-state="open"] {
+  animation: invite-sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (min-width: 640px) {
+  .invite-sheet[data-state="open"] {
+    animation: invite-fade-in 160ms ease-out;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .invite-overlay[data-state="open"],
+  .invite-sheet[data-state="open"] {
+    animation: none;
+  }
+}
