@@ -44,12 +44,7 @@ function ResultView({ result }: Readonly<{ result: Result }>) {
     return <p className="mt-6 text-[17px] text-gray-700">Looks like you already answered.</p>
   }
   if (!result.attending) {
-    return (
-      <div className="mt-6">
-        <p className="text-[17px] text-gray-700">We&apos;ll miss you.</p>
-        <NoImage />
-      </div>
-    )
+    return <NoImage />
   }
   return (
     <div className="mt-6 space-y-5">
@@ -154,7 +149,6 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
                   No
                 </button>
               </div>
-              {attending === false ? <NoImage /> : null}
 
               <label className="mt-6 block">
                 <span className="text-gray-600">Your birthday</span>
