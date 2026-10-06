@@ -21,7 +21,31 @@ const choiceClass = (active: boolean) =>
       : "border-black bg-white text-black hover:bg-gray-100"
   }`
 
-export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Props) {
+function ResultView({ result }: Readonly<{ result: Result }>) {
+  if ("duplicate" in result) {
+    return <p className="mt-4 text-gray-700">Looks like you already answered.</p>
+  }
+  if (!result.attending) {
+    return <p className="mt-4 text-gray-700">We&apos;ll miss you.</p>
+  }
+  return (
+    <div className="mt-4 space-y-4">
+      <p className="text-gray-700">See you there.</p>
+      {result.groupChatUrl ? (
+        <a
+          href={result.groupChatUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block rounded-full border border-black bg-white px-4 py-2.5 text-center text-black hover:bg-gray-100"
+        >
+          Join the group chat
+        </a>
+      ) : null}
+    </div>
+  )
+}
+
+export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Props>) {
   const [attending, setAttending] = useState<boolean | null>(null)
   const [birthday, setBirthday] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -99,7 +123,7 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Props) {
                 </button>
               </div>
               <label className="mt-5 block text-gray-600 text-sm">
-                Your birthday
+                <span>Your birthday</span>
                 <input
                   type="date"
                   value={birthday}
@@ -119,24 +143,8 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Props) {
                 {sending ? "Sending…" : "Send"}
               </button>
             </>
-          ) : "duplicate" in result ? (
-            <p className="mt-4 text-gray-700">Looks like you already answered.</p>
-          ) : result.attending ? (
-            <div className="mt-4 space-y-4">
-              <p className="text-gray-700">See you there.</p>
-              {result.groupChatUrl ? (
-                <a
-                  href={result.groupChatUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-full border border-black bg-white px-4 py-2.5 text-center text-black hover:bg-gray-100"
-                >
-                  Join the group chat
-                </a>
-              ) : null}
-            </div>
           ) : (
-            <p className="mt-4 text-gray-700">We&apos;ll miss you.</p>
+            <ResultView result={result} />
           )}
 
           <Dialog.Close className="mt-4 w-full text-center text-gray-500 text-sm hover:text-black">

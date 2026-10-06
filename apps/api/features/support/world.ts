@@ -1,7 +1,7 @@
 import { db } from "@cnet/db"
 import { partyEvents, partyGuests } from "@cnet/db/schema"
 import { setWorldConstructor, World } from "@cucumber/cucumber"
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 
 export type HttpResult = { status: number; body: unknown }
 
@@ -59,13 +59,12 @@ export class InviteWorld extends World {
       .returning({ id: partyEvents.id })
     if (!event) throw new Error("event insert returned no row")
     this.eventIds.push(event.id)
-    for (const name of names) {
-      const [g] = await db
+    if (names.length > 0) {
+      const guests = await db
         .insert(partyGuests)
-        .values({ eventId: event.id, name })
-        .returning({ id: partyGuests.id })
-      if (!g) throw new Error("guest insert returned no row")
-      this.guestIds.set(name, g.id)
+        .values(names.map((name) => ({ eventId: event.id, name })))
+        .returning({ id: partyGuests.id, name: partyGuests.name })
+      for (const g of guests) this.guestIds.set(g.name, g.id)
     }
     return event.id
   }
@@ -88,8 +87,8 @@ export class InviteWorld extends World {
   }
 
   async cleanup(): Promise<void> {
-    for (const id of this.eventIds) {
-      await db.delete(partyEvents).where(eq(partyEvents.id, id))
+    if (this.eventIds.length > 0) {
+      await db.delete(partyEvents).where(inArray(partyEvents.id, this.eventIds))
     }
     this.eventIds = []
     this.guestIds.clear()

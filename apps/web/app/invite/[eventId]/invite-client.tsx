@@ -16,7 +16,7 @@ function formatWhen(iso: string): string {
   })
 }
 
-export function InviteClient({ eventId }: { eventId: string }) {
+export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
   const [selected, setSelected] = useState<InviteGuest | null>(null)
   const [answered, setAnswered] = useState<Set<string>>(new Set())
 

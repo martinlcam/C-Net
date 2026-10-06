@@ -5,6 +5,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function InviteLayout({ children }: { children: React.ReactNode }) {
+export default function InviteLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <div className="min-h-screen bg-white text-black">{children}</div>
 }

@@ -52,9 +52,10 @@ Then("I see the details, time and location", function (this: InviteWorld) {
   assert.equal(body.location, "Martin's place")
 })
 
+// The API orders by name and the features list names alphabetically, so order is asserted too.
 Then(/^I see the names (".+")$/, function (this: InviteWorld, list: string) {
   const got = (this.res.body as InviteBody).guests.map((g) => g.name)
-  assert.deepEqual(got, names(list).sort())
+  assert.deepEqual(got, names(list))
 })
 
 Then("I do not see the name {string}", function (this: InviteWorld, name: string) {
@@ -85,7 +86,7 @@ When(
   "{string} answers {string} with birthday {string}",
   async function (this: InviteWorld, name: string, rsvp: string, birthday: string) {
     const guestId = this.guestIds.get(name)
-    const eventId = this.eventIds[this.eventIds.length - 1]
+    const eventId = this.eventIds.at(-1)
     await this.post(`/invite/${eventId}/rsvp`, {
       guestId,
       attending: rsvp === "yes",

@@ -4,6 +4,5 @@ module.exports = {
     paths: ["features/**/*.feature"],
     import: ["features/support/**/*.ts", "features/steps/**/*.ts"],
     format: ["progress"],
-    publishQuiet: true,
   },
 }
