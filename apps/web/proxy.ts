@@ -52,9 +52,24 @@ function isSuperOnlyRoute(pathname: string): boolean {
   return SUPER_ONLY_PREFIXES.some((p) => pathname.startsWith(p))
 }
 
-export default function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl
+const INVITE_HOST_PREFIX = "invite."
 
+/** `invite.martin.cam/<id>` is served by the `/invite/<id>` route; the URL bar stays clean. */
+function inviteRewrite(req: NextRequest): NextResponse | null {
+  const host = req.headers.get("host") ?? ""
+  if (!host.startsWith(INVITE_HOST_PREFIX)) return null
+  const { pathname } = req.nextUrl
+  if (pathname.startsWith("/invite")) return null
+  const target = req.nextUrl.clone()
+  target.pathname = pathname === "/" ? "/invite" : `/invite${pathname}`
+  return NextResponse.rewrite(target)
+}
+
+export default function proxy(req: NextRequest) {
+  const rewritten = inviteRewrite(req)
+  if (rewritten) return rewritten
+
+  const { pathname } = req.nextUrl
   if (readRole(req) === "storage" && isSuperOnlyRoute(pathname)) {
     return NextResponse.redirect(new URL(STORAGE_LANDING, req.url))
   }
