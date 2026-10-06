@@ -80,8 +80,9 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
         <p className="text-gray-500">You&apos;re invited</p>
         <h1 className="mt-3 font-bold text-[clamp(2.5rem,11vw,4.5rem)] text-black leading-[0.95] tracking-[-0.03em]">
           {title}
+          {/* The purple dot is the sentence's full stop, sitting on the baseline. */}
           <span
-            className="-top-[0.55em] relative ml-[0.15em] inline-block size-[0.18em] rounded-full bg-[#bea9e9]"
+            className="ml-[0.06em] inline-block size-[0.16em] rounded-full bg-[#bea9e9] align-baseline"
             aria-hidden="true"
           />
         </h1>
@@ -100,7 +101,14 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
 
         <div className="mt-10 space-y-5 text-[17px] text-gray-700 leading-[1.6]">
           {details.split(/\n\s*\n/).map((para) => (
-            <p key={para}>{para}</p>
+            <p key={para}>
+              {para.split("\n").map((line, i) => (
+                <span key={line}>
+                  {i > 0 ? <br /> : null}
+                  {line}
+                </span>
+              ))}
+            </p>
           ))}
         </div>
       </article>
