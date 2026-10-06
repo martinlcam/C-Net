@@ -1,5 +1,7 @@
+// From @tsoa/runtime, not "tsoa": the generated routes throw the runtime's class, and the
+// "tsoa" re-export resolves to a different copy, so instanceof against it never matched.
+import { ValidateError } from "@tsoa/runtime"
 import type { NextFunction, Request, Response } from "express"
-import { ValidateError } from "tsoa"
 
 export function errorHandler(
   err: unknown,

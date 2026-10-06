@@ -212,3 +212,23 @@ Visit `https://staging.martin.cam` and verify:
 - **Logs:** `journalctl -u cnet-web -f` (or `-api` / `-realtime` / `-workers`), `journalctl -u caddy -f`.
 - **Manual deploy:** `sudo -u cnet /opt/cnet/scripts/deploy.sh main`.
 - **Data backup:** `docker exec cnet-postgres pg_dump -U cnet cnet > backup-$(date +%F).sql` (run on the box).
+
+### invite.martin.cam (party invite)
+
+The invite page is the same Next.js app; `apps/web/proxy.ts` rewrites any `invite.*` host
+to `/invite/*`. Caddy already accepts every hostname, so the subdomain only needs the tunnel.
+
+One-time, inside CT 110:
+
+1. Add to `/etc/cloudflared/config.yml` ingress, above the `http_status:404` fallback:
+   ```yaml
+     - hostname: invite.martin.cam
+       service: http://localhost:80
+   ```
+   then `systemctl restart cloudflared`.
+2. `cloudflared tunnel route dns cnet invite.martin.cam` (creates the proxied CNAME).
+3. Seed the party: copy `scripts/party-seed.example.sql`, edit names, details and the group
+   chat link, then run it with `psql "$DATABASE_URL" -f party-seed.sql` as the `cnet` user
+   (`DATABASE_URL` is in `/opt/cnet/.env`). The event `id` in the file is the invite link:
+   `https://invite.martin.cam/<id>`. Pick a fresh `gen_random_uuid()` for a real party.
+4. Responses: `https://martin.cam/cnet/dashboard/admin/invites` (superuser only).

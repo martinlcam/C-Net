@@ -71,6 +71,13 @@
       "when": 1786182801393,
       "tag": "0009_square_chamber",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791246525071,
+      "tag": "0010_silky_nemesis",
+      "breakpoints": true
     }
   ]
 }

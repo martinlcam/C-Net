@@ -1,6 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import Link from "next/link"
 import { useState } from "react"
 import { adminDeleteFile, adminListDir, adminUsers, vaultUrl } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
@@ -32,7 +33,15 @@ export function AdminVault() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="mb-6 font-bold text-2xl text-neutral-100 md:text-3xl">Vault Admin</h1>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Vault Admin</h1>
+        <Link
+          href="/cnet/dashboard/admin/invites"
+          className="text-neutral-70 text-sm underline-offset-4 hover:text-black hover:underline"
+        >
+          Party invites →
+        </Link>
+      </div>
 
       {usersQuery.error ? (
         <div className="rounded-lg border border-accent-red-30 bg-accent-red-10 p-4 text-accent-red-70">

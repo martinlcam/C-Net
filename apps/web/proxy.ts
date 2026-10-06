@@ -52,9 +52,34 @@ function isSuperOnlyRoute(pathname: string): boolean {
   return SUPER_ONLY_PREFIXES.some((p) => pathname.startsWith(p))
 }
 
-export default function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl
+const INVITE_HOST_PREFIX = "invite."
 
+// Paths the invite host must still serve as themselves: next-auth's session endpoint
+// (SessionProvider fetches it on every page), assets, and the crawler files.
+const INVITE_PASSTHROUGH_PREFIXES = ["/invite", "/api/", "/_next/", "/robots.txt", "/sitemap.xml"]
+
+/**
+ * `invite.martin.cam/<id>` is served by the `/invite/<id>` route; the URL bar stays clean.
+ * Only the root and single-segment paths map onto the feature; anything deeper gets the
+ * same deliberately blank `/invite` page rather than Next's default 404.
+ */
+function inviteRewrite(req: NextRequest): NextResponse | null {
+  const host = req.headers.get("host") ?? ""
+  if (!host.startsWith(INVITE_HOST_PREFIX)) return null
+  const { pathname } = req.nextUrl
+  if (INVITE_PASSTHROUGH_PREFIXES.some((p) => pathname.startsWith(p))) return null
+
+  const segments = pathname.split("/").filter(Boolean)
+  const target = req.nextUrl.clone()
+  target.pathname = segments.length === 1 ? `/invite/${segments[0]}` : "/invite"
+  return NextResponse.rewrite(target)
+}
+
+export default function proxy(req: NextRequest) {
+  const rewritten = inviteRewrite(req)
+  if (rewritten) return rewritten
+
+  const { pathname } = req.nextUrl
   if (readRole(req) === "storage" && isSuperOnlyRoute(pathname)) {
     return NextResponse.redirect(new URL(STORAGE_LANDING, req.url))
   }
