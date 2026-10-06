@@ -28,7 +28,8 @@ function matches(name: string, query: string): boolean {
 
 export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
   const [selected, setSelected] = useState<InviteGuest | null>(null)
-  const [answered, setAnswered] = useState<Set<string>>(new Set())
+  // Answers given in this session, layered over what the server returned.
+  const [answered, setAnswered] = useState<Map<string, "yes" | "no">>(new Map())
   const [query, setQuery] = useState("")
 
   const invite = useQuery({
@@ -45,7 +46,10 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
   }
 
   const { title, details, startsAt, location, guests } = invite.data
-  const remaining = guests.filter((g) => !answered.has(g.id))
+  // A "no" leaves the list; a "yes" stays, tagged. Unanswered names are tappable.
+  const remaining = guests
+    .filter((g) => answered.get(g.id) !== "no")
+    .map((g) => ({ ...g, rsvp: answered.get(g.id) === "yes" ? ("yes" as const) : g.rsvp }))
   const titleWords = title.trim().split(/\s+/)
   const titleLast = titleWords.pop() ?? ""
   const titleHead = titleWords.join(" ")
@@ -65,14 +69,23 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
       <ul className="mt-4 border-black/10 border-t sm:grid sm:grid-cols-2 sm:gap-x-8">
         {shown.map((g) => (
           <li key={g.id} className="border-black/10 border-b">
-            <button
-              type="button"
-              onClick={() => setSelected(g)}
-              className="flex min-h-[52px] w-full items-center justify-between gap-4 py-3 text-left text-[17px] text-black transition-colors hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#faf6f1]"
-            >
-              <span className="min-w-0 truncate">{g.name}</span>
-              <ChevronRight className="size-5 shrink-0 text-gray-400" aria-hidden="true" />
-            </button>
+            {g.rsvp === "yes" ? (
+              <div className="flex min-h-[52px] w-full items-center justify-between gap-4 py-3 text-[17px] text-gray-500">
+                <span className="min-w-0 truncate">{g.name}</span>
+                <span className="shrink-0 rounded-full bg-black px-3 py-1 text-sm text-white">
+                  Yes
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSelected(g)}
+                className="flex min-h-[52px] w-full items-center justify-between gap-4 py-3 text-left text-[17px] text-black transition-colors hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#faf6f1]"
+              >
+                <span className="min-w-0 truncate">{g.name}</span>
+                <ChevronRight className="size-5 shrink-0 text-gray-400" aria-hidden="true" />
+              </button>
+            )}
           </li>
         ))}
       </ul>
@@ -154,7 +167,13 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
         eventId={eventId}
         guest={selected}
         onClose={() => setSelected(null)}
-        onAnswered={(id) => setAnswered((prev) => new Set(prev).add(id))}
+        onAnswered={(id, attending) => {
+          if (attending === null) {
+            invite.refetch()
+            return
+          }
+          setAnswered((prev) => new Map(prev).set(id, attending ? "yes" : "no"))
+        }}
       />
     </main>
   )

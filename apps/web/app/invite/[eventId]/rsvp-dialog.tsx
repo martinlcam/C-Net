@@ -15,8 +15,9 @@ type Props = {
   eventId: string
   guest: InviteGuest | null
   onClose: () => void
-  /** Called once the server has recorded (or refused as duplicate) this guest's answer. */
-  onAnswered: (guestId: string) => void
+  /** Called once the server has recorded this guest's answer; `null` when it was refused as a
+      duplicate and the list should be refetched. */
+  onAnswered: (guestId: string, attending: boolean | null) => void
 }
 
 type Result = { attending: boolean; groupChatUrl: string | null } | { duplicate: true }
@@ -60,15 +61,8 @@ function ResultView({ result }: Readonly<{ result: Result }>) {
   )
 }
 
-/** True inside Instagram's or Facebook's in-app browser, where new tabs and app links misbehave. */
-function isInAppBrowser(): boolean {
-  if (typeof navigator === "undefined") return false
-  return /Instagram|FBAN|FBAV/i.test(navigator.userAgent)
-}
-
 function GroupChatLink({ url }: Readonly<{ url: string }>) {
   const [copied, setCopied] = useState(false)
-  const inApp = isInAppBrowser()
 
   async function copy() {
     try {
@@ -97,12 +91,10 @@ function GroupChatLink({ url }: Readonly<{ url: string }>) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      {inApp ? (
-        <p className="text-gray-500 text-sm">
-          If the button does nothing in here, tap the menu and choose Open in Safari, or copy the
-          link and paste it in the Instagram app.
-        </p>
-      ) : null}
+      <p className="text-gray-500 text-sm">
+        If the button does nothing (Instagram&apos;s built-in browser), tap the menu and choose Open
+        in Safari, or copy the link and paste it in the Instagram app.
+      </p>
     </div>
   )
 }
@@ -134,11 +126,11 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
     try {
       const r = await sendRsvp(eventId, { guestId: guest.id, attending, birthday: iso })
       setResult(r)
-      onAnswered(guest.id)
+      onAnswered(guest.id, attending)
     } catch (e) {
       if (e instanceof InviteApiError && e.status === 409) {
         setResult({ duplicate: true })
-        onAnswered(guest.id)
+        onAnswered(guest.id, null)
       } else {
         setError(e instanceof Error ? e.message : "Something went wrong.")
       }

@@ -1,4 +1,5 @@
-export type InviteGuestPublic = { id: string; name: string }
+/** `rsvp` is "yes" for a guest who is going, null while unanswered; "no" answers are not listed. */
+export type InviteGuestPublic = { id: string; name: string; rsvp: "yes" | null }
 
 /** What a guest sees. Never includes the group chat link or any birthday. */
 export type InvitePublic = {

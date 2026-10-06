@@ -191,3 +191,19 @@ Then("the overview lists my event with:", function (this: InviteWorld, table: Da
     assert.equal(typeof g.respondedAt === "string", g.rsvp !== null)
   }
 })
+
+type InviteGuestRow = { id: string; name: string; rsvp: "yes" | null }
+
+function guestNamed(body: unknown, name: string): InviteGuestRow {
+  const guest = (body as { guests: InviteGuestRow[] }).guests.find((g) => g.name === name)
+  assert.ok(guest, `${name} is listed`)
+  return guest
+}
+
+Then("{string} is shown as going", function (this: InviteWorld, name: string) {
+  assert.equal(guestNamed(this.res.body, name).rsvp, "yes")
+})
+
+Then("{string} is not shown as going", function (this: InviteWorld, name: string) {
+  assert.equal(guestNamed(this.res.body, name).rsvp, null)
+})

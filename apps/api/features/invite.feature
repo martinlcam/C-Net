@@ -11,12 +11,21 @@ Feature: A guest opens the invite
     And I see the names "Ana", "Ben" and "Cy"
     And I do not see the group chat link
 
-  Scenario: a guest who has answered is no longer listed
+  Scenario: a guest who said no is no longer listed
     Given an event with guests "Ana", "Ben" and "Cy"
-    And "Ben" has already answered "yes" with birthday "1998-05-04"
+    And "Ben" has already answered "no" with birthday "1998-05-04"
     When I open the invite
     Then I see the names "Ana" and "Cy"
     And I do not see the name "Ben"
+
+  Scenario: a guest who said yes stays listed as going
+    Given an event with guests "Ana", "Ben" and "Cy"
+    And "Ben" has already answered "yes" with birthday "1998-05-04"
+    When I open the invite
+    Then I see the names "Ana", "Ben" and "Cy"
+    And "Ben" is shown as going
+    And "Ana" is not shown as going
+    And I do not see the group chat link
 
   Scenario: an unknown invite is not found
     When I open the invite "2b4bd45e-5a60-4f6e-9d2d-0a4a1b1d9f11"

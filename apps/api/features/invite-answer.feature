@@ -11,7 +11,7 @@ Feature: A guest answers
     And the response contains the group chat link
     And "Ana" is stored as "yes" with birthday "1999-10-31"
     When I open the invite
-    Then I do not see the name "Ana"
+    Then "Ana" is shown as going
 
   Scenario: answering no
     When "Ben" answers "no" with birthday "2001-01-15"

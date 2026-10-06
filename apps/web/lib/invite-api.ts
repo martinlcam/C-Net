@@ -1,6 +1,6 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
-export type InviteGuest = { id: string; name: string }
+export type InviteGuest = { id: string; name: string; rsvp: "yes" | null }
 
 export type Invite = {
   id: string

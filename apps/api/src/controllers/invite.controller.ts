@@ -1,6 +1,6 @@
 import { db } from "@cnet/db"
 import { partyEvents, partyGuests } from "@cnet/db/schema"
-import { and, asc, desc, eq, isNull } from "drizzle-orm"
+import { and, asc, desc, eq, isNull, or } from "drizzle-orm"
 import { Body, Controller, Get, Path, Post, Response, Route, Security } from "tsoa"
 import {
   type AdminOverview,
@@ -62,11 +62,22 @@ export class InviteController extends Controller {
       this.setStatus(404)
       return NOT_FOUND
     }
-    const guests = await db
-      .select({ id: partyGuests.id, name: partyGuests.name })
+    // Unanswered guests plus those going; a "no" leaves the list.
+    const rows = await db
+      .select({ id: partyGuests.id, name: partyGuests.name, rsvp: partyGuests.rsvp })
       .from(partyGuests)
-      .where(and(eq(partyGuests.eventId, eventId), isNull(partyGuests.rsvp)))
+      .where(
+        and(
+          eq(partyGuests.eventId, eventId),
+          or(isNull(partyGuests.rsvp), eq(partyGuests.rsvp, "yes"))
+        )
+      )
       .orderBy(asc(partyGuests.name))
+    const guests = rows.map((g) => ({
+      id: g.id,
+      name: g.name,
+      rsvp: g.rsvp === "yes" ? ("yes" as const) : null,
+    }))
 
     return {
       id: event.id,
