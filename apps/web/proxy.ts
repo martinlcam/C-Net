@@ -55,8 +55,11 @@ function isSuperOnlyRoute(pathname: string): boolean {
 const INVITE_HOST_PREFIX = "invite."
 
 // Paths the invite host must still serve as themselves: next-auth's session endpoint
-// (SessionProvider fetches it on every page), assets, and the crawler files.
+// (SessionProvider fetches it on every page), Next's own assets, and the crawler files.
 const INVITE_PASSTHROUGH_PREFIXES = ["/invite", "/api/", "/_next/", "/robots.txt", "/sitemap.xml"]
+// Anything with a file extension is a static file from /public (fonts, images). Rewriting
+// those to the invite page silently replaced the Satoshi woff2 with HTML.
+const STATIC_FILE_RE = /\.[a-z0-9]+$/i
 
 /**
  * `invite.martin.cam/<id>` is served by the `/invite/<id>` route; the URL bar stays clean.
@@ -68,6 +71,7 @@ function inviteRewrite(req: NextRequest): NextResponse | null {
   if (!host.startsWith(INVITE_HOST_PREFIX)) return null
   const { pathname } = req.nextUrl
   if (INVITE_PASSTHROUGH_PREFIXES.some((p) => pathname.startsWith(p))) return null
+  if (STATIC_FILE_RE.test(pathname)) return null
 
   const segments = pathname.split("/").filter(Boolean)
   const target = req.nextUrl.clone()

@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Search } from "lucide-react"
 import { useState } from "react"
 import { fetchInvite, type InviteGuest } from "@/lib/invite-api"
 import { NothingHere } from "../nothing-here"
@@ -17,9 +17,14 @@ function formatWhen(iso: string): string {
   })
 }
 
+function matches(name: string, query: string): boolean {
+  return name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+}
+
 export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
   const [selected, setSelected] = useState<InviteGuest | null>(null)
   const [answered, setAnswered] = useState<Set<string>>(new Set())
+  const [query, setQuery] = useState("")
 
   const invite = useQuery({
     queryKey: ["invite", eventId],
@@ -36,6 +41,35 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
 
   const { title, details, startsAt, location, guests } = invite.data
   const remaining = guests.filter((g) => !answered.has(g.id))
+  const shown = query.trim() ? remaining.filter((g) => matches(g.name, query)) : remaining
+
+  let list: React.ReactNode
+  if (remaining.length === 0) {
+    list = <p className="mt-6 text-gray-500">Everyone has answered.</p>
+  } else if (shown.length === 0) {
+    list = (
+      <p className="mt-6 text-gray-500">
+        No one by that name. Check the spelling, or ask Martin to add you.
+      </p>
+    )
+  } else {
+    list = (
+      <ul className="mt-4 border-black/10 border-t sm:grid sm:grid-cols-2 sm:gap-x-8">
+        {shown.map((g) => (
+          <li key={g.id} className="border-black/10 border-b">
+            <button
+              type="button"
+              onClick={() => setSelected(g)}
+              className="flex min-h-[52px] w-full items-center justify-between gap-4 py-3 text-left text-[17px] text-black transition-colors hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#faf6f1]"
+            >
+              <span className="min-w-0 truncate">{g.name}</span>
+              <ChevronRight className="size-5 shrink-0 text-gray-400" aria-hidden="true" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    )
+  }
 
   return (
     <main className="mx-auto w-full max-w-xl px-5 pt-14 pb-[max(3rem,env(safe-area-inset-bottom))] sm:pt-24">
@@ -46,6 +80,10 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
         <p className="text-gray-500">You&apos;re invited</p>
         <h1 className="mt-3 font-bold text-[clamp(2.5rem,11vw,4.5rem)] text-black leading-[0.95] tracking-[-0.03em]">
           {title}
+          <span
+            className="-top-[0.55em] relative ml-[0.15em] inline-block size-[0.18em] rounded-full bg-[#bea9e9]"
+            aria-hidden="true"
+          />
         </h1>
 
         <div className="mt-7 space-y-1 text-[17px] text-black leading-snug">
@@ -55,7 +93,7 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
 
         <a
           href="#names"
-          className="mt-6 inline-block text-black underline decoration-gray-300 underline-offset-[6px] transition-colors hover:decoration-black"
+          className="mt-6 inline-block text-black underline decoration-black/20 underline-offset-[6px] transition-colors hover:decoration-black"
         >
           Find your name
         </a>
@@ -71,24 +109,25 @@ export function InviteClient({ eventId }: Readonly<{ eventId: string }>) {
         <h2 className="font-bold text-2xl text-black tracking-tight">Find your name</h2>
         <p className="mt-1 text-gray-500">Tap yours to answer.</p>
 
-        {remaining.length === 0 ? (
-          <p className="mt-6 text-gray-500">Everyone has answered.</p>
-        ) : (
-          <ul className="mt-5 border-gray-200 border-t sm:grid sm:grid-cols-2 sm:gap-x-8">
-            {remaining.map((g) => (
-              <li key={g.id} className="border-gray-200 border-b">
-                <button
-                  type="button"
-                  onClick={() => setSelected(g)}
-                  className="flex min-h-[52px] w-full items-center justify-between gap-4 py-3 text-left text-[17px] text-black transition-colors hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-                >
-                  <span className="min-w-0 truncate">{g.name}</span>
-                  <ChevronRight className="size-5 shrink-0 text-gray-400" aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        {remaining.length > 0 ? (
+          <label className="relative mt-5 block">
+            <span className="sr-only">Search names</span>
+            <Search
+              className="-translate-y-1/2 absolute top-1/2 left-4 size-5 text-gray-400"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search names"
+              autoComplete="off"
+              className="h-12 w-full rounded-full border border-black/15 bg-white pr-4 pl-12 text-[17px] text-black placeholder:text-gray-400 focus:border-black focus:outline-none"
+            />
+          </label>
+        ) : null}
+
+        {list}
       </section>
 
       <RsvpDialog
