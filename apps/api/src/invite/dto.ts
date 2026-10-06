@@ -13,3 +13,13 @@ export type InvitePublic = {
 export type InviteError = { error: string }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export type RsvpRequest = {
+  guestId: string
+  attending: boolean
+  /** YYYY-MM-DD */
+  birthday: string
+}
+
+/** `groupChatUrl` is set only when `attending` is true. */
+export type RsvpResult = { attending: boolean; groupChatUrl: string | null }

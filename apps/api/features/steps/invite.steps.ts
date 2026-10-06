@@ -65,3 +65,88 @@ Then("I do not see the group chat link", function (this: InviteWorld) {
   assert.ok(!JSON.stringify(this.res.body).includes(this.groupChatUrl))
   assert.ok(!JSON.stringify(this.res.body).includes("birthday"))
 })
+
+type RsvpBody = { attending: boolean; groupChatUrl: string | null }
+
+/** "today" / "tomorrow" → YYYY-MM-DD in UTC; anything else passes through. */
+function resolveBirthday(raw: string): string {
+  if (raw !== "today" && raw !== "tomorrow") return raw
+  const d = new Date()
+  if (raw === "tomorrow") d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+Given(/^a second event with guests (".+")$/, async function (this: InviteWorld, list: string) {
+  await this.createEvent(names(list))
+})
+
+When(
+  "{string} answers {string} with birthday {string}",
+  async function (this: InviteWorld, name: string, rsvp: string, birthday: string) {
+    const guestId = this.guestIds.get(name)
+    const eventId = this.eventIds[this.eventIds.length - 1]
+    await this.post(`/invite/${eventId}/rsvp`, {
+      guestId,
+      attending: rsvp === "yes",
+      birthday: resolveBirthday(birthday),
+    })
+  }
+)
+
+When(
+  "{string} answers {string} with birthday {string} through the first event's link",
+  async function (this: InviteWorld, name: string, rsvp: string, birthday: string) {
+    await this.post(`/invite/${this.eventIds[0]}/rsvp`, {
+      guestId: this.guestIds.get(name),
+      attending: rsvp === "yes",
+      birthday: resolveBirthday(birthday),
+    })
+  }
+)
+
+When(
+  "guest {string} answers {string} with birthday {string}",
+  async function (this: InviteWorld, guestId: string, rsvp: string, birthday: string) {
+    await this.post(`/invite/${this.eventIds[0]}/rsvp`, {
+      guestId,
+      attending: rsvp === "yes",
+      birthday: resolveBirthday(birthday),
+    })
+  }
+)
+
+When(
+  "{string} sends attending {string} with birthday {string}",
+  async function (this: InviteWorld, name: string, attending: string, birthday: string) {
+    await this.post(`/invite/${this.eventIds[0]}/rsvp`, {
+      guestId: this.guestIds.get(name),
+      attending,
+      birthday,
+    })
+  }
+)
+
+Then("the response contains the group chat link", function (this: InviteWorld) {
+  assert.equal((this.res.body as RsvpBody).groupChatUrl, this.groupChatUrl)
+})
+
+Then("the response does not contain the group chat link", function (this: InviteWorld) {
+  assert.equal((this.res.body as RsvpBody).groupChatUrl, null)
+})
+
+Then(
+  "{string} is stored as {string} with birthday {string}",
+  async function (this: InviteWorld, name: string, rsvp: string, birthday: string) {
+    const row = await this.guestRow(name)
+    assert.equal(row.rsvp, rsvp)
+    assert.equal(row.birthday, birthday)
+    assert.ok(row.respondedAt instanceof Date)
+  }
+)
+
+Then("{string} has not answered", async function (this: InviteWorld, name: string) {
+  const row = await this.guestRow(name)
+  assert.equal(row.rsvp, null)
+  assert.equal(row.birthday, null)
+  assert.equal(row.respondedAt, null)
+})
