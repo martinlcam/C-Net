@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog"
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   InviteApiError,
   type InviteGuest,
@@ -99,7 +99,30 @@ function GroupChatLink({ url }: Readonly<{ url: string }>) {
   )
 }
 
+/**
+ * Height of the on-screen keyboard in px (0 when closed). iOS Safari overlays the keyboard
+ * instead of resizing the page, so a sheet pinned to the bottom would sit behind it; the
+ * visual viewport shrinks by the keyboard height, which is what this measures.
+ */
+function useKeyboardInset(): number {
+  const [inset, setInset] = useState(0)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => setInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop))
+    vv.addEventListener("resize", update)
+    vv.addEventListener("scroll", update)
+    update()
+    return () => {
+      vv.removeEventListener("resize", update)
+      vv.removeEventListener("scroll", update)
+    }
+  }, [])
+  return inset
+}
+
 export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Props>) {
+  const keyboardInset = useKeyboardInset()
   const [attending, setAttending] = useState<boolean | null>(null)
   const [birthday, setBirthday] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -154,7 +177,11 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
       <Dialog.Portal>
         <Dialog.Overlay className="invite-overlay fixed inset-0 bg-black/40" />
         {/* A bottom sheet on phones, a centred card from the small breakpoint up. */}
-        <Dialog.Content className="invite-sheet fixed inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-satoshi text-black shadow-2xl focus:outline-none sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:p-7">
+        {/* --kb lifts the sheet above the iOS keyboard; it is 0 on desktop and when closed. */}
+        <Dialog.Content
+          style={{ "--kb": `${keyboardInset}px` } as React.CSSProperties}
+          className="invite-sheet fixed inset-x-0 bottom-[var(--kb)] max-h-[calc(100dvh-var(--kb)-1.5rem)] overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-satoshi text-black shadow-2xl focus:outline-none sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:p-7"
+        >
           <div
             className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-gray-200 sm:hidden"
             aria-hidden="true"
@@ -200,6 +227,14 @@ export function RsvpDialog({ eventId, guest, onClose, onAnswered }: Readonly<Pro
                   autoCorrect="off"
                   spellCheck={false}
                   enterKeyHint="send"
+                  onFocus={(e) => {
+                    // Once the keyboard has animated in, make sure the field is in view.
+                    const el = e.currentTarget
+                    setTimeout(
+                      () => el.scrollIntoView({ block: "center", behavior: "smooth" }),
+                      350
+                    )
+                  }}
                   onChange={(e) => setBirthday(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && canSend) submit()
