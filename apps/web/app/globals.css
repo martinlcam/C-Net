@@ -316,3 +316,53 @@ body[data-bd="1"] ::-webkit-scrollbar-thumb:hover {
     animation: none;
   }
 }
+
+/* Files preview player: transparent native range inputs whose track is drawn by the component. */
+.player-range {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+.player-range:focus-visible {
+  outline: 2px solid rgb(56 189 248);
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+.player-range::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 100%;
+}
+.player-range::-moz-range-track {
+  background: transparent;
+  height: 100%;
+}
+.player-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: calc(50% - 6px);
+  border-radius: 9999px;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.player-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.player-range:hover::-webkit-slider-thumb,
+.player-range:focus-visible::-webkit-slider-thumb,
+.group:hover .player-range::-webkit-slider-thumb {
+  opacity: 1;
+}
+.player-range:hover::-moz-range-thumb,
+.player-range:focus-visible::-moz-range-thumb,
+.group:hover .player-range::-moz-range-thumb {
+  opacity: 1;
+}

@@ -2,11 +2,13 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { ChevronLeft, ChevronRight, CloudAlert, Download, X } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { reprocessFile, type VaultFile, vaultUrl } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
 import { previewKind } from "./file-preview"
 import { formatBytes } from "./format"
+import { MediaPlayer, type SubtitleSource } from "./media-player"
+import { findSubtitleSiblings, subtitleLabel } from "./subtitles"
 import { SyntaxCodePreview } from "./syntax-code-preview"
 
 /** Fetches a text/code file's contents for inline display. */
@@ -374,7 +376,38 @@ function EpubPreview({ url, filename }: { url: string; filename: string }) {
   )
 }
 
-function PreviewBody({ file }: { file: VaultFile }) {
+/** Same-folder .srt/.vtt files that share the media file's name, offered as caption tracks. */
+function MediaPreview({
+  file,
+  kind,
+  siblings,
+}: {
+  file: VaultFile
+  kind: "video" | "audio"
+  siblings: VaultFile[]
+}) {
+  const subtitles = useMemo<SubtitleSource[]>(
+    () =>
+      findSubtitleSiblings(file.filename, siblings).map((s) => ({
+        id: s.id,
+        label: subtitleLabel(file.filename, s.filename),
+        url: vaultUrl(s.previewUrl),
+      })),
+    [file.filename, siblings]
+  )
+
+  return (
+    <MediaPlayer
+      key={file.id}
+      kind={kind}
+      src={vaultUrl(file.previewUrl)}
+      title={file.filename}
+      subtitles={subtitles}
+    />
+  )
+}
+
+function PreviewBody({ file, siblings }: { file: VaultFile; siblings: VaultFile[] }) {
   const url = vaultUrl(file.previewUrl)
   const kind = previewKind(file.contentType, file.filename)
 
@@ -397,19 +430,8 @@ function PreviewBody({ file }: { file: VaultFile }) {
     case "epub":
       return <EpubPreview url={url} filename={file.filename} />
     case "video":
-      return (
-        <div className="flex h-full w-full items-center justify-center bg-black p-2">
-          {/** biome-ignore lint/a11y/useMediaCaption: user-uploaded media has no track */}
-          <video src={url} controls className="max-h-full max-w-full" />
-        </div>
-      )
     case "audio":
-      return (
-        <div className="flex h-full w-full items-center justify-center p-6">
-          {/** biome-ignore lint/a11y/useMediaCaption: user-uploaded media has no track */}
-          <audio src={url} controls className="w-full max-w-lg" />
-        </div>
-      )
+      return <MediaPreview file={file} kind={kind} siblings={siblings} />
     case "html":
       return <HtmlPreview url={url} filename={file.filename} />
     case "code":
@@ -429,9 +451,12 @@ function PreviewBody({ file }: { file: VaultFile }) {
 
 export function FilePreviewModal({
   file,
+  siblings = [],
   onClose,
 }: {
   file: VaultFile | null
+  /** Other files in the same listing — used to find sidecar subtitles for media. */
+  siblings?: VaultFile[]
   onClose: () => void
 }) {
   return (
@@ -465,7 +490,7 @@ export function FilePreviewModal({
                 </div>
               </div>
               <div className="min-h-0 flex-1 overflow-hidden bg-neutral-10">
-                <PreviewBody file={file} />
+                <PreviewBody file={file} siblings={siblings} />
               </div>
             </>
           ) : null}

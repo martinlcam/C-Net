@@ -255,7 +255,7 @@ export function FileGrid({
 
   return (
     <div className="space-y-6">
-      <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
+      <FilePreviewModal file={previewFile} siblings={files} onClose={() => setPreviewFile(null)} />
       {directories.length > 0 && folderActions ? (
         <div>
           <p className="mb-2 font-semibold text-neutral-60 text-xs uppercase tracking-wide">
