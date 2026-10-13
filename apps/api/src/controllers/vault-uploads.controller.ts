@@ -10,6 +10,8 @@ import { type FileDto, toFileDto } from "../vault/dto"
 import { liveFileNames } from "../vault/siblings"
 import { completedUsage, wouldExceedQuota } from "../vault/usage"
 
+//todo: rclone like upload retry & deduplication, also chunking and sync transfer support
+
 type CreateUploadBody = {
   directoryId?: string | null
   filename: string

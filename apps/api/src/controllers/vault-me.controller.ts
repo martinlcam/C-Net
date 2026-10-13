@@ -12,6 +12,7 @@ type VaultMe = {
 @Security("jwt")
 export class VaultMeController extends Controller {
   /** GET /vault/me — current user's quota and storage usage. */
+  //todo: enforce at zfs
   @Get()
   public async getMe(@Request() req: ExpressRequest): Promise<VaultMe> {
     const actor = actorFrom(req)
