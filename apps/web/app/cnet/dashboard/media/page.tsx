@@ -72,7 +72,7 @@ function MoviesView({ onPlay, search }: { onPlay: (m: Movie) => void; search: st
     <>
       <MovieRow title="Continue Watching" movies={cont.data ?? []} onPlay={onPlay} />
       <MovieRow title="Recently Added" movies={latest.data ?? []} onPlay={onPlay} />
-      {(genres.data ?? []).slice(0, 6).map((g) => (
+      {(genres.data ?? []).map((g) => (
         <MovieGenreRow key={g} genre={g} onPlay={onPlay} />
       ))}
       {!cont.isLoading && !latest.isLoading && (latest.data ?? []).length === 0 ? (
@@ -130,7 +130,7 @@ function TvView({
         </section>
       ) : null}
       <SeriesRow title="Recently Added" series={latest.data ?? []} onOpen={onOpenSeries} />
-      {(genres.data ?? []).slice(0, 6).map((g) => (
+      {(genres.data ?? []).map((g) => (
         <SeriesGenreRow key={g} genre={g} onOpen={onOpenSeries} />
       ))}
       {!latest.isLoading && (latest.data ?? []).length === 0 ? (
