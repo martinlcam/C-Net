@@ -1,19 +1,14 @@
-"use client"
-
-import { useEffect } from "react"
-
-/**
- * Marks the body while any front-facing (portfolio) page is mounted so global
- * CSS can hide the window scrollbar there without affecting the app pages.
- * Mirrors the `data-bd` theme-swap pattern used by /bd.
+/*
+ * Front-facing (portfolio) pages hide the window scrollbar entirely: content
+ * still scrolls, just with no visible track. The rule is rendered with the
+ * page rather than added on mount, so the track never flashes before
+ * hydration, and it leaves with the layout on the way to the app pages.
  */
 export function PortfolioChrome() {
-  useEffect(() => {
-    document.documentElement.classList.add("portfolio-no-scrollbar")
-    return () => {
-      document.documentElement.classList.remove("portfolio-no-scrollbar")
-    }
-  }, [])
-
-  return null
+  return (
+    <style>{`
+      html { scrollbar-width: none; }
+      html::-webkit-scrollbar { display: none; }
+    `}</style>
+  )
 }

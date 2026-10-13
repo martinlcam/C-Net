@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { NetworkTopology } from "@/components/ui/network-topology"
 import {
   TOPOLOGY_EDGES,
@@ -35,17 +36,20 @@ export function AboutSection() {
         {/* One row: personal bio · 4 skill squares · deployment topology (fans out, 4:4:6) */}
         <div className="grid lg:grid-cols-[minmax(220px,4fr)_minmax(260px,4fr)_minmax(360px,6fr)] gap-10 lg:gap-12 items-start">
           {/* Personal bio */}
-          <div className="line-through">
+          <div>
             <h3 className="text-2xl font-semibold text-black mb-4">Personal Bio</h3>
             <p className="text-base text-gray-700 mb-4 leading-relaxed">
-              I'm a full-stack developer passionate about building modern web applications and
-              managing infrastructure. I enjoy working with cutting-edge technologies and solving
-              complex problems.
+              I studied Cognitive Science (COGS), and I'm interested in how the brain gives rise to
+              cognition and consciousness. I think brain-computer interfaces are the future of how
+              we'll work with computers.
             </p>
             <p className="text-base text-gray-700 leading-relaxed">
-              My expertise spans frontend and backend development, with a focus on creating
-              scalable, maintainable applications. I'm particularly interested in homelab
-              infrastructure management and DevOps practices.
+              I've taken a small first step toward that in{" "}
+              <Link href="/bd" className="text-black underline underline-offset-2">
+                my own project
+              </Link>
+              , which streams my EEG live to this site. The goal is to control my computer with a
+              brain harness.
             </p>
           </div>
 

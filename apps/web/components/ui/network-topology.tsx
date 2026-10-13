@@ -296,7 +296,7 @@ export function NetworkTopology({
                 width={node.w}
                 height={node.h}
                 rx={7}
-                fill={n.accent ? "rgba(173,112,235,0.08)" : "#faf6f1"}
+                fill={n.accent ? "rgba(173,112,235,0.08)" : "#ffffff"}
                 stroke={stroke}
                 strokeWidth={1.25}
               />

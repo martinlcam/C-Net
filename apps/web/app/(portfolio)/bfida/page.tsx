@@ -13,10 +13,9 @@ export default function BfidaPage() {
   const [scoreVersion, setScoreVersion] = useState(0)
 
   return (
-    <div className="min-h-screen w-full bg-[#faf6f1]">
+    <div className="min-h-screen w-full">
       <AuthModal />
       <HeaderSection />
-      <div className="h-[65px]" aria-hidden="true" />
       <BfidaHeroSection />
       <BfidaGameSection onScoreRecorded={() => setScoreVersion((v) => v + 1)} />
       <BfidaScoreboardSection refreshKey={scoreVersion} />

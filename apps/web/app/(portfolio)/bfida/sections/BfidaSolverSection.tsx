@@ -98,7 +98,7 @@ export function BfidaSolverSection() {
   return (
     <section
       id="solver"
-      className="border-b border-black px-6 sm:px-10 md:px-12 lg:px-20 py-16 md:py-24 bg-[#FAF6F1]"
+      className="border-b border-black px-6 sm:px-10 md:px-12 lg:px-20 py-16 md:py-24"
     >
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-4">
