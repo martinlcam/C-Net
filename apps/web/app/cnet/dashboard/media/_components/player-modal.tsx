@@ -1,6 +1,6 @@
 "use client"
 
-import { AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import Hls from "hls.js"
 import {
   Check,
@@ -31,6 +31,7 @@ import {
   TICKS_PER_SECOND,
 } from "@/lib/media-api"
 import { EpisodePanel } from "./episode-panel"
+import { popoverVariants } from "./motion"
 
 const SKIP = 5 // seconds for the back/forward skip buttons
 const NEXT_CARD_AT = 25 // show the "Up next" card this many seconds before the end
@@ -919,77 +920,87 @@ export function PlayerModal({
                 >
                   <Settings className="h-6 w-6" />
                 </button>
-                {settingsOpen ? (
-                  <div className="absolute right-0 bottom-10 flex w-[30rem] max-w-[calc(100vw-1.5rem)] gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15">
-                    {audioOpts.length > 1 ? (
-                      <div className="min-w-0 flex-1">
+                <AnimatePresence>
+                  {settingsOpen ? (
+                    <motion.div
+                      key="settings"
+                      variants={popoverVariants}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
+                      style={{ transformOrigin: "bottom right" }}
+                      className="absolute right-0 bottom-10 flex w-[30rem] max-w-[calc(100vw-1.5rem)] gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15"
+                    >
+                      {audioOpts.length > 1 ? (
+                        <div className="min-w-0 flex-1">
+                          <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
+                            Audio
+                          </p>
+                          <div className="max-h-56 overflow-y-auto">
+                            {audioOpts.map((t) => (
+                              <button
+                                key={t.index}
+                                type="button"
+                                onClick={() => selectAudio(t.index)}
+                                className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                              >
+                                <Check
+                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === audioIndex ? "opacity-100" : "opacity-0"}`}
+                                />
+                                <span className="min-w-0 break-words">{t.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      {subTracks.length > 0 ? (
+                        <div className="min-w-0 flex-1">
+                          <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
+                            Subtitles
+                          </p>
+                          <div className="max-h-56 overflow-y-auto">
+                            {[
+                              { index: -1, label: "Off" },
+                              ...subTracks.map((s) => ({ index: s.index, label: s.label })),
+                            ].map((t) => (
+                              <button
+                                key={t.index}
+                                type="button"
+                                onClick={() => selectSub(t.index)}
+                                className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                              >
+                                <Check
+                                  className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === curSub ? "opacity-100" : "opacity-0"}`}
+                                />
+                                <span className="min-w-0 break-words">{t.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="w-20 shrink-0">
                         <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
-                          Audio
+                          Speed
                         </p>
                         <div className="max-h-56 overflow-y-auto">
-                          {audioOpts.map((t) => (
+                          {[0.5, 1, 1.25, 1.5, 1.75, 2].map((r) => (
                             <button
-                              key={t.index}
+                              key={r}
                               type="button"
-                              onClick={() => selectAudio(t.index)}
-                              className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
+                              onClick={() => selectSpeed(r)}
+                              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
                             >
                               <Check
-                                className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === audioIndex ? "opacity-100" : "opacity-0"}`}
+                                className={`h-4 w-4 shrink-0 ${r === speed ? "opacity-100" : "opacity-0"}`}
                               />
-                              <span className="min-w-0 break-words">{t.label}</span>
+                              <span>{r}×</span>
                             </button>
                           ))}
                         </div>
                       </div>
-                    ) : null}
-                    {subTracks.length > 0 ? (
-                      <div className="min-w-0 flex-1">
-                        <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
-                          Subtitles
-                        </p>
-                        <div className="max-h-56 overflow-y-auto">
-                          {[
-                            { index: -1, label: "Off" },
-                            ...subTracks.map((s) => ({ index: s.index, label: s.label })),
-                          ].map((t) => (
-                            <button
-                              key={t.index}
-                              type="button"
-                              onClick={() => selectSub(t.index)}
-                              className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
-                            >
-                              <Check
-                                className={`mt-0.5 h-4 w-4 shrink-0 ${t.index === curSub ? "opacity-100" : "opacity-0"}`}
-                              />
-                              <span className="min-w-0 break-words">{t.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                    <div className="w-20 shrink-0">
-                      <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
-                        Speed
-                      </p>
-                      <div className="max-h-56 overflow-y-auto">
-                        {[0.5, 1, 1.25, 1.5, 1.75, 2].map((r) => (
-                          <button
-                            key={r}
-                            type="button"
-                            onClick={() => selectSpeed(r)}
-                            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-white hover:bg-white/10"
-                          >
-                            <Check
-                              className={`h-4 w-4 shrink-0 ${r === speed ? "opacity-100" : "opacity-0"}`}
-                            />
-                            <span>{r}×</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </div>
               <button
                 type="button"

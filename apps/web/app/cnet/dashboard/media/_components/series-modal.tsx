@@ -120,11 +120,13 @@ export function SeriesModal({
       backdropClassName="items-center p-3 sm:p-8"
       className="relative flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl sm:max-h-[88vh] sm:flex-row"
     >
+      {/* Stacked layout: the close button floats over the artwork. Side by side, it
+          sits in the episodes header so it lines up with the season picker. */}
       <button
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute top-2 right-2 z-10 rounded-full bg-black/40 p-1.5 text-white transition-colors hover:bg-black/60"
+        className="absolute top-2 right-2 z-10 rounded-full bg-black/40 p-1.5 text-white transition-colors hover:bg-black/60 sm:hidden"
       >
         <X className="h-5 w-5" />
       </button>
@@ -150,12 +152,21 @@ export function SeriesModal({
 
       {/* Right: season selector + scrollable episode list */}
       <div className="flex min-h-0 flex-1 flex-col p-4">
-        {/* Right padding keeps the season picker clear of the absolute close button. */}
-        <div className="mb-3 flex items-center justify-between gap-3 pr-11">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="font-semibold text-neutral-90">Episodes</h3>
-          {(seasons.data ?? []).length > 0 ? (
-            <SeasonPicker seasons={seasons.data ?? []} value={seasonId} onChange={setSeasonId} />
-          ) : null}
+          <div className="flex items-center gap-2">
+            {(seasons.data ?? []).length > 0 ? (
+              <SeasonPicker seasons={seasons.data ?? []} value={seasonId} onChange={setSeasonId} />
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="hidden rounded-full bg-neutral-20 p-1.5 text-neutral-70 transition-colors hover:bg-neutral-30 hover:text-neutral-90 sm:inline-flex"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">

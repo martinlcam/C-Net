@@ -43,6 +43,13 @@ export const dialogVariants: Variants = {
   exit: { opacity: 0, y: 10, scale: 0.98, transition: { duration: 0.15, ease: "easeIn" } },
 }
 
+/** Small anchored menus (the player's settings popover). Set the transform origin on the element. */
+export const popoverVariants: Variants = {
+  hidden: { opacity: 0, y: 6, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.16, ease: easeOut } },
+  exit: { opacity: 0, y: 4, scale: 0.98, transition: { duration: 0.12, ease: "easeIn" } },
+}
+
 export const panelVariants: Variants = {
   hidden: { x: "100%" },
   show: { x: 0, transition: spring },

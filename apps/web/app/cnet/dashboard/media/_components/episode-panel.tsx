@@ -40,7 +40,7 @@ function EpisodeRow({
       onClick={onPlay}
       aria-current={current}
       className={`group flex w-full gap-3 rounded-md p-2 text-left transition ${
-        current ? "bg-white/10 ring-1 ring-red-600/70" : "hover:bg-white/10"
+        current ? "bg-white/10 ring-1 ring-primary-purple-40/70" : "hover:bg-white/10"
       }`}
     >
       <div className="relative aspect-video w-28 shrink-0 overflow-hidden rounded bg-neutral-800">
@@ -54,7 +54,7 @@ function EpisodeRow({
         </span>
         {pct > 0 && pct < 100 ? (
           <div className="absolute right-0 bottom-0 left-0 h-1 bg-black/60">
-            <div className="h-full bg-red-600" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-primary-purple-40" style={{ width: `${pct}%` }} />
           </div>
         ) : null}
       </div>
@@ -70,7 +70,7 @@ function EpisodeRow({
           ) : null}
         </div>
         {current ? (
-          <p className="mt-0.5 font-medium text-red-500 text-xs">Now playing</p>
+          <p className="mt-0.5 font-medium text-primary-purple-40 text-xs">Now playing</p>
         ) : ep.overview ? (
           <p className="mt-0.5 line-clamp-2 text-white/50 text-xs leading-snug">{ep.overview}</p>
         ) : null}
