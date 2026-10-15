@@ -33,12 +33,26 @@ const CHANNEL = process.env.BAY_REDIS_CHANNEL || "bay:status"
 const CMD_SECRET = process.env.CNET_BAYD_CMD_SECRET || ""
 const IO_TICK_MS = Number(process.env.BAYD_IO_TICK_MS || 1000)
 const SLOW_TICK_MS = Number(process.env.BAYD_SLOW_TICK_MS || 10000)
+// Exit (so systemd restarts us) if no inventory write has succeeded for this long.
+const WATCHDOG_MS = Number(process.env.BAYD_WATCHDOG_MS || 60000)
 
-const publisher = new Redis(REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: false })
+// No offline queue: once the client wedged mid-handshake (TCP up, never "ready")
+// and ioredis silently queued every SET/PUBLISH for weeks — 3 GB of them — while
+// the API reported the inventory stale. Failing fast logs the problem instead,
+// and the watchdog below turns a persistent failure into a restart.
+const redisOpts = {
+  maxRetriesPerRequest: 3,
+  lazyConnect: false,
+  enableOfflineQueue: false,
+  connectTimeout: 10000,
+  keepAlive: 10000,
+}
+
+const publisher = new Redis(REDIS_URL, redisOpts)
 publisher.on("error", (e) => console.error("[bayd] redis error:", e.message))
 publisher.on("ready", () => console.log("[bayd] redis ready"))
 
-const subscriber = new Redis(REDIS_URL, { maxRetriesPerRequest: 3, lazyConnect: false })
+const subscriber = new Redis(REDIS_URL, redisOpts)
 subscriber.on("error", (e) => console.error("[bayd] cmd sub error:", e.message))
 subscriber.subscribe(BAY_CMD_CHANNEL, (err) => {
   if (err) console.error("[bayd] cmd subscribe failed:", err.message)
@@ -91,9 +105,25 @@ function slowTick(): void {
   resilver = resilverStatus()
 
   const payload: BayInventory = { ts: Date.now(), bays: inventory }
-  publisher.set(BAY_INVENTORY_KEY, JSON.stringify(payload)).catch((e) => {
-    console.error("[bayd] inventory publish failed:", (e as Error).message)
-  })
+  publisher
+    .set(BAY_INVENTORY_KEY, JSON.stringify(payload))
+    .then(() => {
+      lastInventoryOk = Date.now()
+    })
+    .catch((e) => {
+      console.error("[bayd] inventory publish failed:", (e as Error).message)
+    })
+}
+
+let lastInventoryOk = Date.now()
+
+function watchdogTick(): void {
+  const silentFor = Date.now() - lastInventoryOk
+  if (silentFor <= WATCHDOG_MS) return
+  console.error(
+    `[bayd] no inventory write for ${Math.round(silentFor / 1000)}s — exiting for restart`
+  )
+  process.exit(1)
 }
 
 function ioTick(): void {
@@ -128,11 +158,13 @@ slowTick()
 ioTick()
 const ioTimer = setInterval(ioTick, IO_TICK_MS)
 const slowTimer = setInterval(slowTick, SLOW_TICK_MS)
+const watchdogTimer = setInterval(watchdogTick, SLOW_TICK_MS)
 
 async function shutdown(sig: string): Promise<void> {
   console.log(`[bayd] ${sig} — shutting down`)
   clearInterval(ioTimer)
   clearInterval(slowTimer)
+  clearInterval(watchdogTimer)
   await Promise.allSettled([publisher.quit(), subscriber.quit()])
   process.exit(0)
 }

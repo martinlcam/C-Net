@@ -22,7 +22,7 @@ WorkingDirectory=/root/C-Net
 Environment=PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EnvironmentFile=/root/C-Net/.env
 ExecStart=/root/.bun/bin/bun run cnet-bayd
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]
