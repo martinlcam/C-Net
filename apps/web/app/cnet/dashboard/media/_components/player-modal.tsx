@@ -527,6 +527,37 @@ export function PlayerModal({
     if (!uiVisible) setSettingsOpen(false)
   }, [uiVisible])
 
+  // Clicking anywhere outside an open settings popover or episode panel dismisses it.
+  // Menu regions (and the buttons that toggle them) carry `data-player-menu`; the season
+  // picker's Radix content is portalled to <body>, so it is recognised by its popper
+  // wrapper, and an open Radix menu gets to dismiss itself first. The dismissing press
+  // is swallowed so it doesn't also reach the <video> and toggle playback.
+  const swallowClick = useRef(false)
+  useEffect(() => {
+    if (!settingsOpen && !episodesOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Element | null
+      if (!target || target.closest("[data-player-menu], [data-radix-popper-content-wrapper]"))
+        return
+      if (document.querySelector("[data-radix-menu-content][data-state=open]")) return
+      setSettingsOpen(false)
+      setEpisodesOpen(false)
+      swallowClick.current = true
+    }
+    document.addEventListener("pointerdown", onPointerDown, true)
+    return () => document.removeEventListener("pointerdown", onPointerDown, true)
+  }, [settingsOpen, episodesOpen])
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!swallowClick.current) return
+      swallowClick.current = false
+      e.stopPropagation()
+      e.preventDefault()
+    }
+    document.addEventListener("click", onClick, true)
+    return () => document.removeEventListener("click", onClick, true)
+  }, [])
+
   const togglePlay = useCallback(() => {
     const active = getActive()
     if (!active) return
@@ -901,6 +932,7 @@ export function PlayerModal({
               {item.seriesId ? (
                 <button
                   type="button"
+                  data-player-menu
                   onClick={() => setEpisodesOpen((o) => !o)}
                   aria-label="Episodes"
                   aria-expanded={episodesOpen}
@@ -910,7 +942,7 @@ export function PlayerModal({
                   <ListVideo className="h-6 w-6" />
                 </button>
               ) : null}
-              <div className="relative">
+              <div className="relative" data-player-menu>
                 <button
                   type="button"
                   onClick={() => setSettingsOpen((o) => !o)}

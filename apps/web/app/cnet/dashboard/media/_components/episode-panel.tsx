@@ -127,6 +127,7 @@ export function EpisodePanel({
       initial="hidden"
       animate="show"
       exit="exit"
+      data-player-menu
       className="pointer-events-auto absolute inset-y-0 right-0 z-20 flex w-full max-w-[26rem] flex-col bg-neutral-950/95 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-sm"
     >
       <div className="flex items-center justify-between gap-3 border-white/10 border-b p-3">
