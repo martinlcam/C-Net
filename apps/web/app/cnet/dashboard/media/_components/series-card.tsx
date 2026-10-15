@@ -1,25 +1,33 @@
 "use client"
 
-import { mediaUrl, type Series } from "@/lib/media-api"
+import { motion } from "framer-motion"
+import type { Series } from "@/lib/media-api"
+import { cardVariants } from "./motion"
+import { PosterImage } from "./poster-image"
 
-export function SeriesCard({ series, onOpen }: { series: Series; onOpen: (s: Series) => void }) {
+export function SeriesCard({
+  series,
+  index = 0,
+  onOpen,
+}: {
+  series: Series
+  index?: number
+  onOpen: (s: Series) => void
+}) {
   return (
-    <button
+    <motion.button
       type="button"
+      variants={cardVariants}
+      custom={index}
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.97 }}
       onClick={() => onOpen(series)}
       className="group w-36 shrink-0 text-left focus:outline-none"
       title={series.title}
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-neutral-10 ring-1 ring-neutral-30 transition group-hover:ring-2 group-hover:ring-neutral-60">
         {series.posterUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
-          <img
-            src={mediaUrl(series.posterUrl)}
-            alt={series.title}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
+          <PosterImage src={series.posterUrl} alt={series.title} />
         ) : (
           <div className="flex h-full w-full items-center justify-center p-2 text-center text-neutral-70 text-xs">
             {series.title}
@@ -28,6 +36,6 @@ export function SeriesCard({ series, onOpen }: { series: Series; onOpen: (s: Ser
       </div>
       <p className="mt-1 truncate font-medium text-neutral-90 text-sm">{series.title}</p>
       {series.year ? <p className="text-neutral-60 text-xs">{series.year}</p> : null}
-    </button>
+    </motion.button>
   )
 }

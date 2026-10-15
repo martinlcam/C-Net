@@ -1,9 +1,13 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { AnimatePresence, motion } from "framer-motion"
 import { Check, Play, X } from "lucide-react"
 import { useEffect, useState } from "react"
-import { type Episode, getEpisodes, getSeasons, mediaUrl, TICKS_PER_SECOND } from "@/lib/media-api"
+import { type Episode, getEpisodes, getSeasons, TICKS_PER_SECOND } from "@/lib/media-api"
+import { cardVariants, panelVariants, rowVariants, viewVariants } from "./motion"
+import { PosterImage } from "./poster-image"
+import { EpisodeListSkeleton } from "./skeletons"
 
 function episodeProgress(ep: Episode): number {
   if (ep.playedPercentage && ep.playedPercentage > 0) return Math.min(100, ep.playedPercentage)
@@ -16,17 +20,22 @@ function episodeProgress(ep: Episode): number {
 
 function EpisodeRow({
   ep,
+  index,
   current,
   onPlay,
 }: {
   ep: Episode
+  index: number
   current: boolean
   onPlay: () => void
 }) {
   const pct = episodeProgress(ep)
   return (
-    <button
+    <motion.button
       type="button"
+      variants={cardVariants}
+      custom={index}
+      whileTap={{ scale: 0.99 }}
       onClick={onPlay}
       aria-current={current}
       className={`group flex w-full gap-3 rounded-md p-2 text-left transition ${
@@ -34,16 +43,7 @@ function EpisodeRow({
       }`}
     >
       <div className="relative aspect-video w-28 shrink-0 overflow-hidden rounded bg-neutral-800">
-        {ep.posterUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
-          <img
-            src={mediaUrl(ep.posterUrl)}
-            alt={ep.title}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : null}
+        {ep.posterUrl ? <PosterImage src={ep.posterUrl} alt={ep.title} tone="dark" /> : null}
         <span
           className={`absolute inset-0 flex items-center justify-center bg-black/40 transition ${
             current ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -74,7 +74,7 @@ function EpisodeRow({
           <p className="mt-0.5 line-clamp-2 text-white/50 text-xs leading-snug">{ep.overview}</p>
         ) : null}
       </div>
-    </button>
+    </motion.button>
   )
 }
 
@@ -83,6 +83,7 @@ function EpisodeRow({
  * video keeps playing behind it, a season dropdown sits up top, and episodes scroll as
  * thumbnail rows with resume progress and the current episode highlighted. Selecting an
  * episode hands its whole season back as the new play queue so auto-advance still works.
+ * Slides in from the right; render inside an `AnimatePresence` to get the slide-out.
  */
 export function EpisodePanel({
   seriesId,
@@ -117,9 +118,16 @@ export function EpisodePanel({
     enabled: Boolean(seasonId),
   })
   const epList = episodes.data ?? []
+  const loading = seasons.isPending || (seasonId !== null && episodes.isPending)
 
   return (
-    <div className="pointer-events-auto absolute inset-y-0 right-0 z-20 flex w-full max-w-[26rem] flex-col bg-neutral-950/95 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-sm">
+    <motion.div
+      variants={panelVariants}
+      initial="hidden"
+      animate="show"
+      exit="exit"
+      className="pointer-events-auto absolute inset-y-0 right-0 z-20 flex w-full max-w-[26rem] flex-col bg-neutral-950/95 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-sm"
+    >
       <div className="flex items-center justify-between gap-3 border-white/10 border-b p-3">
         <div className="min-w-0">
           <p className="font-semibold text-sm">Episodes</p>
@@ -144,34 +152,63 @@ export function EpisodePanel({
             type="button"
             onClick={onClose}
             aria-label="Close episodes"
-            className="rounded-full p-1 hover:bg-white/15"
+            className="rounded-full p-1 transition-colors hover:bg-white/15"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
-        {episodes.isFetching && epList.length === 0 ? (
-          <p className="py-6 text-center text-sm text-white/50">Loading episodes…</p>
-        ) : epList.length === 0 ? (
-          <p className="py-6 text-center text-sm text-white/50">No episodes available.</p>
-        ) : (
-          epList.map((ep) => (
-            <EpisodeRow
-              key={ep.id}
-              ep={ep}
-              current={ep.id === currentItemId}
-              onPlay={() =>
-                onSelect(
-                  epList,
-                  epList.findIndex((e) => e.id === ep.id)
-                )
-              }
-            />
-          ))
-        )}
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        <AnimatePresence mode="wait" initial={false}>
+          {loading ? (
+            <motion.div
+              key="loading"
+              variants={viewVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              <EpisodeListSkeleton tone="dark" />
+            </motion.div>
+          ) : epList.length === 0 ? (
+            <motion.p
+              key="empty"
+              variants={viewVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              className="py-6 text-center text-sm text-white/50"
+            >
+              No episodes available.
+            </motion.p>
+          ) : (
+            <motion.div
+              key={seasonId}
+              variants={rowVariants}
+              initial="hidden"
+              animate="show"
+              exit={{ opacity: 0, transition: { duration: 0.12 } }}
+              className="space-y-1"
+            >
+              {epList.map((ep, i) => (
+                <EpisodeRow
+                  key={ep.id}
+                  ep={ep}
+                  index={i}
+                  current={ep.id === currentItemId}
+                  onPlay={() =>
+                    onSelect(
+                      epList,
+                      epList.findIndex((e) => e.id === ep.id)
+                    )
+                  }
+                />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   )
 }

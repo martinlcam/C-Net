@@ -1,7 +1,10 @@
 "use client"
 
+import { motion } from "framer-motion"
 import { Check } from "lucide-react"
-import { type Movie, mediaUrl, TICKS_PER_SECOND } from "@/lib/media-api"
+import { type Movie, TICKS_PER_SECOND } from "@/lib/media-api"
+import { cardVariants } from "./motion"
+import { PosterImage } from "./poster-image"
 
 function progressPercent(movie: Movie): number {
   if (movie.playedPercentage && movie.playedPercentage > 0)
@@ -13,25 +16,30 @@ function progressPercent(movie: Movie): number {
   return 0
 }
 
-export function MovieCard({ movie, onPlay }: { movie: Movie; onPlay: (m: Movie) => void }) {
+export function MovieCard({
+  movie,
+  index = 0,
+  onPlay,
+}: {
+  movie: Movie
+  index?: number
+  onPlay: (m: Movie) => void
+}) {
   const pct = progressPercent(movie)
   return (
-    <button
+    <motion.button
       type="button"
+      variants={cardVariants}
+      custom={index}
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.97 }}
       onClick={() => onPlay(movie)}
       className="group w-36 shrink-0 text-left focus:outline-none"
       title={movie.title}
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-neutral-10 ring-1 ring-neutral-30 transition group-hover:ring-2 group-hover:ring-neutral-60">
         {movie.posterUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
-          <img
-            src={mediaUrl(movie.posterUrl)}
-            alt={movie.title}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
+          <PosterImage src={movie.posterUrl} alt={movie.title} />
         ) : (
           <div className="flex h-full w-full items-center justify-center p-2 text-center text-neutral-70 text-xs">
             {movie.title}
@@ -50,6 +58,6 @@ export function MovieCard({ movie, onPlay }: { movie: Movie; onPlay: (m: Movie) 
       </div>
       <p className="mt-1 truncate font-medium text-neutral-90 text-sm">{movie.title}</p>
       {movie.year ? <p className="text-neutral-60 text-xs">{movie.year}</p> : null}
-    </button>
+    </motion.button>
   )
 }

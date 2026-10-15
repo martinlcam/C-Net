@@ -1,6 +1,9 @@
 "use client"
 
-import { type Episode, mediaUrl, TICKS_PER_SECOND } from "@/lib/media-api"
+import { motion } from "framer-motion"
+import { type Episode, TICKS_PER_SECOND } from "@/lib/media-api"
+import { cardVariants } from "./motion"
+import { PosterImage } from "./poster-image"
 
 function progressPercent(ep: Episode): number {
   if (ep.playedPercentage && ep.playedPercentage > 0) return Math.min(100, ep.playedPercentage)
@@ -13,9 +16,11 @@ function progressPercent(ep: Episode): number {
 
 export function EpisodeCard({
   episode,
+  index = 0,
   onPlay,
 }: {
   episode: Episode
+  index?: number
   onPlay: (e: Episode) => void
 }) {
   const pct = progressPercent(episode)
@@ -24,23 +29,18 @@ export function EpisodeCard({
       ? `S${episode.seasonNumber}E${episode.episodeNumber} · ${episode.title}`
       : episode.title
   return (
-    <button
+    <motion.button
       type="button"
+      variants={cardVariants}
+      custom={index}
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.97 }}
       onClick={() => onPlay(episode)}
       className="group w-48 shrink-0 text-left focus:outline-none"
       title={`${episode.seriesName ?? ""} ${tag}`}
     >
       <div className="relative aspect-video overflow-hidden rounded-md bg-neutral-10 ring-1 ring-neutral-30 transition group-hover:ring-2 group-hover:ring-neutral-60">
-        {episode.posterUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          // biome-ignore lint/performance/noImgElement: media posters are remote API URLs; next/image would need env-dependent remotePatterns
-          <img
-            src={mediaUrl(episode.posterUrl)}
-            alt={episode.title}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : null}
+        {episode.posterUrl ? <PosterImage src={episode.posterUrl} alt={episode.title} /> : null}
         {pct > 0 && pct < 100 ? (
           <div className="absolute right-0 bottom-0 left-0 h-1 bg-black/50">
             <div className="h-full bg-red-600" style={{ width: `${pct}%` }} />
@@ -51,6 +51,6 @@ export function EpisodeCard({
         {episode.seriesName ?? episode.title}
       </p>
       <p className="truncate text-neutral-60 text-xs">{tag}</p>
-    </button>
+    </motion.button>
   )
 }

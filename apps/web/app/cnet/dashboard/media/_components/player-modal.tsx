@@ -1,5 +1,6 @@
 "use client"
 
+import { AnimatePresence } from "framer-motion"
 import Hls from "hls.js"
 import {
   Check,
@@ -1031,16 +1032,19 @@ export function PlayerModal({
       ) : null}
 
       {/* In-player episode selector (TV only) */}
-      {episodesOpen && item.seriesId ? (
-        <EpisodePanel
-          seriesId={item.seriesId}
-          seriesName={item.seriesName}
-          currentSeasonId={item.seasonId}
-          currentItemId={item.id}
-          onSelect={selectEpisode}
-          onClose={() => setEpisodesOpen(false)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {episodesOpen && item.seriesId ? (
+          <EpisodePanel
+            key="episodes"
+            seriesId={item.seriesId}
+            seriesName={item.seriesName}
+            currentSeasonId={item.seasonId}
+            currentItemId={item.id}
+            onSelect={selectEpisode}
+            onClose={() => setEpisodesOpen(false)}
+          />
+        ) : null}
+      </AnimatePresence>
     </div>
   )
 }

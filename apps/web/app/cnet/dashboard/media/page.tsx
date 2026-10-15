@@ -1,8 +1,9 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { AnimatePresence, MotionConfig, motion } from "framer-motion"
 import { Plus, Search } from "lucide-react"
-import { useEffect, useId, useState } from "react"
+import { type ReactNode, useEffect, useId, useState } from "react"
 import {
   type Episode,
   getContinue,
@@ -20,6 +21,7 @@ import {
 import { useMediaViewStore } from "@/lib/stores/media-view"
 import { Button } from "@/stories/button/button"
 import { EpisodeCard } from "./_components/episode-card"
+import { rowVariants, spring, viewVariants } from "./_components/motion"
 import { MovieCard } from "./_components/movie-card"
 import { MovieRow } from "./_components/movie-row"
 import { PlayerModal } from "./_components/player-modal"
@@ -27,12 +29,18 @@ import { RequestDialog } from "./_components/request-dialog"
 import { SeriesCard } from "./_components/series-card"
 import { SeriesModal } from "./_components/series-modal"
 import { SeriesRow } from "./_components/series-row"
+import { GridSkeleton, RowSkeleton } from "./_components/skeletons"
 
 type Tab = "movies" | "tv"
 
+const TABS: { id: Tab; label: string }[] = [
+  { id: "movies", label: "Movies" },
+  { id: "tv", label: "TV" },
+]
+
 function MovieGenreRow({ genre, onPlay }: { genre: string; onPlay: (m: Movie) => void }) {
   const q = useQuery({ queryKey: ["media", "genre", genre], queryFn: () => getLibrary({ genre }) })
-  return <MovieRow title={genre} movies={q.data ?? []} onPlay={onPlay} />
+  return <MovieRow title={genre} movies={q.data ?? []} loading={q.isPending} onPlay={onPlay} />
 }
 
 function SeriesGenreRow({ genre, onOpen }: { genre: string; onOpen: (s: Series) => void }) {
@@ -40,7 +48,20 @@ function SeriesGenreRow({ genre, onOpen }: { genre: string; onOpen: (s: Series) 
     queryKey: ["media", "tv-genre", genre],
     queryFn: () => getSeries({ genre }),
   })
-  return <SeriesRow title={genre} series={q.data ?? []} onOpen={onOpen} />
+  return <SeriesRow title={genre} series={q.data ?? []} loading={q.isPending} onOpen={onOpen} />
+}
+
+function EmptyNote({ children }: { children: ReactNode }) {
+  return (
+    <motion.p
+      variants={viewVariants}
+      initial="hidden"
+      animate="show"
+      className="text-neutral-60 text-sm"
+    >
+      {children}
+    </motion.p>
+  )
 }
 
 function MoviesView({ onPlay, search }: { onPlay: (m: Movie) => void; search: string }) {
@@ -55,30 +76,51 @@ function MoviesView({ onPlay, search }: { onPlay: (m: Movie) => void; search: st
   })
 
   if (searching) {
+    const hits = results.data ?? []
+    if (results.isPending) return <GridSkeleton />
+    if (hits.length === 0) {
+      return (
+        <EmptyNote>
+          Nothing in the library matches “{search}”. Use the Add button to add it.
+        </EmptyNote>
+      )
+    }
     return (
-      <div className="flex flex-wrap gap-3">
-        {(results.data ?? []).map((m) => (
-          <MovieCard key={m.id} movie={m} onPlay={onPlay} />
+      <motion.div
+        key={search}
+        variants={rowVariants}
+        initial="hidden"
+        animate="show"
+        className="flex flex-wrap gap-3 pt-1"
+      >
+        {hits.map((m, i) => (
+          <MovieCard key={m.id} movie={m} index={i} onPlay={onPlay} />
         ))}
-        {results.isFetched && (results.data ?? []).length === 0 ? (
-          <p className="text-neutral-60 text-sm">
-            Nothing in the library matches “{search}”. Use the Add button to add it.
-          </p>
-        ) : null}
-      </div>
+      </motion.div>
     )
   }
+
+  const settled = !cont.isPending && !latest.isPending
   return (
     <>
-      <MovieRow title="Continue Watching" movies={cont.data ?? []} onPlay={onPlay} />
-      <MovieRow title="Recently Added" movies={latest.data ?? []} onPlay={onPlay} />
+      <MovieRow
+        title="Continue Watching"
+        movies={cont.data ?? []}
+        loading={cont.isPending}
+        onPlay={onPlay}
+      />
+      <MovieRow
+        title="Recently Added"
+        movies={latest.data ?? []}
+        loading={latest.isPending}
+        onPlay={onPlay}
+      />
+      {genres.isPending ? <RowSkeleton /> : null}
       {(genres.data ?? []).map((g) => (
         <MovieGenreRow key={g} genre={g} onPlay={onPlay} />
       ))}
-      {!cont.isLoading && !latest.isLoading && (latest.data ?? []).length === 0 ? (
-        <p className="text-neutral-60 text-sm">
-          No movies yet. Use the Add button to add your first one.
-        </p>
+      {settled && (latest.data ?? []).length === 0 ? (
+        <EmptyNote>No movies yet. Use the Add button to add your first one.</EmptyNote>
       ) : null}
     </>
   )
@@ -104,39 +146,57 @@ function TvView({
   })
 
   if (searching) {
+    const hits = results.data ?? []
+    if (results.isPending) return <GridSkeleton />
+    if (hits.length === 0) {
+      return <EmptyNote>Nothing matches “{search}”. Use the Add button to add it.</EmptyNote>
+    }
     return (
-      <div className="flex flex-wrap gap-3">
-        {(results.data ?? []).map((s) => (
-          <SeriesCard key={s.id} series={s} onOpen={onOpenSeries} />
+      <motion.div
+        key={search}
+        variants={rowVariants}
+        initial="hidden"
+        animate="show"
+        className="flex flex-wrap gap-3 pt-1"
+      >
+        {hits.map((s, i) => (
+          <SeriesCard key={s.id} series={s} index={i} onOpen={onOpenSeries} />
         ))}
-        {results.isFetched && (results.data ?? []).length === 0 ? (
-          <p className="text-neutral-60 text-sm">
-            Nothing matches “{search}”. Use the Add button to add it.
-          </p>
-        ) : null}
-      </div>
+      </motion.div>
     )
   }
+
+  const continuing = cont.data ?? []
   return (
     <>
-      {(cont.data ?? []).length > 0 ? (
-        <section className="space-y-2">
+      {cont.isPending ? <RowSkeleton wide count={5} /> : null}
+      {continuing.length > 0 ? (
+        <motion.section
+          variants={rowVariants}
+          initial="hidden"
+          animate="show"
+          className="space-y-2"
+        >
           <h2 className="font-semibold text-lg text-neutral-90">Continue Watching</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {(cont.data ?? []).map((ep) => (
-              <EpisodeCard key={ep.id} episode={ep} onPlay={onPlayEpisode} />
+          <div className="flex gap-3 overflow-x-auto pt-1 pb-2">
+            {continuing.map((ep, i) => (
+              <EpisodeCard key={ep.id} episode={ep} index={i} onPlay={onPlayEpisode} />
             ))}
           </div>
-        </section>
+        </motion.section>
       ) : null}
-      <SeriesRow title="Recently Added" series={latest.data ?? []} onOpen={onOpenSeries} />
+      <SeriesRow
+        title="Recently Added"
+        series={latest.data ?? []}
+        loading={latest.isPending}
+        onOpen={onOpenSeries}
+      />
+      {genres.isPending ? <RowSkeleton /> : null}
       {(genres.data ?? []).map((g) => (
         <SeriesGenreRow key={g} genre={g} onOpen={onOpenSeries} />
       ))}
-      {!latest.isLoading && (latest.data ?? []).length === 0 ? (
-        <p className="text-neutral-60 text-sm">
-          No shows yet. Use the Add button to add your first one.
-        </p>
+      {!latest.isPending && (latest.data ?? []).length === 0 ? (
+        <EmptyNote>No shows yet. Use the Add button to add your first one.</EmptyNote>
       ) : null}
     </>
   )
@@ -174,55 +234,94 @@ export default function MediaPage() {
     setQueue(episodes)
   }
 
-  const tabClass = (t: Tab) =>
-    `rounded-md px-3 py-1 font-medium text-sm ${
-      tab === t ? "bg-neutral-90 text-white" : "bg-neutral-10 text-neutral-70 hover:bg-neutral-30"
-    }`
+  const searching = query.trim().length > 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="font-bold text-2xl text-neutral-90">Media</h1>
-          <div className="flex gap-1">
-            <button type="button" className={tabClass("movies")} onClick={() => setTab("movies")}>
-              Movies
-            </button>
-            <button type="button" className={tabClass("tv")} onClick={() => setTab("tv")}>
-              TV
-            </button>
+    <MotionConfig reducedMotion="user">
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="font-bold text-2xl text-neutral-90">Media</h1>
+            <div className="flex gap-1">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  aria-pressed={tab === t.id}
+                  className={`relative rounded-md px-3 py-1 font-medium text-sm transition-colors ${
+                    tab === t.id
+                      ? "text-white"
+                      : "bg-neutral-10 text-neutral-70 hover:bg-neutral-30"
+                  }`}
+                >
+                  {tab === t.id ? (
+                    <motion.span
+                      layoutId="media-tab-pill"
+                      transition={spring}
+                      className="absolute inset-0 rounded-md bg-neutral-90"
+                    />
+                  ) : null}
+                  <span className="relative z-10">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-4 w-4 text-neutral-60" />
+              <input
+                id={searchId}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Search ${tab === "movies" ? "movies" : "shows"}…`}
+                className="w-48 rounded-md border border-neutral-30 bg-white py-2 pr-2 pl-8 text-sm outline-none transition-colors focus:border-neutral-60 sm:w-64"
+              />
+            </div>
+            <Button onClick={() => setRequesting(true)} className="gap-1">
+              <Plus className="h-4 w-4" /> Add
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-4 w-4 text-neutral-60" />
-            <input
-              id={searchId}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${tab === "movies" ? "movies" : "shows"}…`}
-              className="w-48 rounded-md border border-neutral-30 bg-white py-2 pr-2 pl-8 text-sm outline-none focus:border-neutral-60 sm:w-64"
+
+        {/* Tab and browse/search swaps crossfade; rows inside stagger in on their own. */}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={`${tab}:${searching ? "search" : "browse"}`}
+            variants={viewVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="space-y-6"
+          >
+            {tab === "movies" ? (
+              <MoviesView onPlay={playSingle} search={query} />
+            ) : (
+              <TvView onPlayEpisode={playSingle} onOpenSeries={setOpenSeries} search={query} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {openSeries ? (
+            <SeriesModal
+              key={openSeries.id}
+              series={openSeries}
+              escapeEnabled={!queue}
+              onClose={() => setOpenSeries(null)}
+              onPlay={playEpisode}
             />
-          </div>
-          <Button onClick={() => setRequesting(true)} className="gap-1">
-            <Plus className="h-4 w-4" /> Add
-          </Button>
-        </div>
+          ) : null}
+        </AnimatePresence>
+        {queue ? (
+          <PlayerModal queue={queue} startIndex={startIndex} onClose={() => setQueue(null)} />
+        ) : null}
+        <AnimatePresence>
+          {requesting ? (
+            <RequestDialog key="request" initialMode={tab} onClose={() => setRequesting(false)} />
+          ) : null}
+        </AnimatePresence>
       </div>
-
-      {tab === "movies" ? (
-        <MoviesView onPlay={playSingle} search={query} />
-      ) : (
-        <TvView onPlayEpisode={playSingle} onOpenSeries={setOpenSeries} search={query} />
-      )}
-
-      {openSeries ? (
-        <SeriesModal series={openSeries} onClose={() => setOpenSeries(null)} onPlay={playEpisode} />
-      ) : null}
-      {queue ? (
-        <PlayerModal queue={queue} startIndex={startIndex} onClose={() => setQueue(null)} />
-      ) : null}
-      {requesting ? <RequestDialog initialMode={tab} onClose={() => setRequesting(false)} /> : null}
-    </div>
+    </MotionConfig>
   )
 }
