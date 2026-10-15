@@ -589,6 +589,8 @@ export function PlayerModal({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // A popover inside the panel (the season picker) already consumed this key.
+      if (e.defaultPrevented) return
       switch (e.key) {
         case "Escape":
           if (episodesOpen) setEpisodesOpen(false)

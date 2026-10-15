@@ -14,6 +14,7 @@ import {
 import { DialogShell } from "./dialog-shell"
 import { cardVariants, rowVariants, viewVariants } from "./motion"
 import { PosterImage } from "./poster-image"
+import { SeasonPicker } from "./season-picker"
 import { EpisodeListSkeleton } from "./skeletons"
 
 function episodeProgress(ep: Episode): number {
@@ -149,21 +150,11 @@ export function SeriesModal({
 
       {/* Right: season selector + scrollable episode list */}
       <div className="flex min-h-0 flex-1 flex-col p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
+        {/* Right padding keeps the season picker clear of the absolute close button. */}
+        <div className="mb-3 flex items-center justify-between gap-3 pr-11">
           <h3 className="font-semibold text-neutral-90">Episodes</h3>
           {(seasons.data ?? []).length > 0 ? (
-            <select
-              value={seasonId ?? ""}
-              onChange={(e) => setSeasonId(e.target.value)}
-              aria-label="Select season"
-              className="rounded-md border border-neutral-30 bg-white px-3 py-1.5 text-neutral-90 text-sm outline-none focus:border-neutral-60"
-            >
-              {(seasons.data ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.seasonNumber === 0 ? "Specials" : `Season ${s.seasonNumber}`}
-                </option>
-              ))}
-            </select>
+            <SeasonPicker seasons={seasons.data ?? []} value={seasonId} onChange={setSeasonId} />
           ) : null}
         </div>
 

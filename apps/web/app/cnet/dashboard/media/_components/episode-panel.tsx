@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { type Episode, getEpisodes, getSeasons, TICKS_PER_SECOND } from "@/lib/media-api"
 import { cardVariants, panelVariants, rowVariants, viewVariants } from "./motion"
 import { PosterImage } from "./poster-image"
+import { SeasonPicker } from "./season-picker"
 import { EpisodeListSkeleton } from "./skeletons"
 
 function episodeProgress(ep: Episode): number {
@@ -135,18 +136,12 @@ export function EpisodePanel({
         </div>
         <div className="flex items-center gap-2">
           {(seasons.data ?? []).length > 1 ? (
-            <select
-              value={seasonId ?? ""}
-              onChange={(e) => setSeasonId(e.target.value)}
-              aria-label="Select season"
-              className="rounded-md border border-white/20 bg-neutral-900 px-2 py-1.5 text-sm text-white outline-none focus:border-white/50"
-            >
-              {(seasons.data ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.seasonNumber === 0 ? "Specials" : `Season ${s.seasonNumber}`}
-                </option>
-              ))}
-            </select>
+            <SeasonPicker
+              seasons={seasons.data ?? []}
+              value={seasonId}
+              onChange={setSeasonId}
+              tone="dark"
+            />
           ) : null}
           <button
             type="button"
