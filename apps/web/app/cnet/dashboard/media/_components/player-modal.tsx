@@ -33,6 +33,23 @@ import {
 import { EpisodePanel } from "./episode-panel"
 import { popoverVariants } from "./motion"
 
+// WebKit's prefixed fullscreen surface — iPhone Safari offers only the <video> form.
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null
+  webkitExitFullscreen?: () => void
+}
+type FullscreenElement = HTMLElement & { webkitRequestFullscreen?: () => void }
+type FullscreenVideo = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void
+  webkitExitFullscreen?: () => void
+  webkitDisplayingFullscreen?: boolean
+}
+
+const fullscreenElement = () => {
+  const doc = document as FullscreenDocument
+  return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null
+}
+
 const SKIP = 5 // seconds for the back/forward skip buttons
 const NEXT_CARD_AT = 25 // show the "Up next" card this many seconds before the end
 // How many audio tracks to keep warm at once. Each is a full muxed stream (video is
@@ -517,9 +534,13 @@ export function PlayerModal({
   )
 
   useEffect(() => {
-    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement))
+    const onFs = () => setIsFullscreen(Boolean(fullscreenElement()))
     document.addEventListener("fullscreenchange", onFs)
-    return () => document.removeEventListener("fullscreenchange", onFs)
+    document.addEventListener("webkitfullscreenchange", onFs)
+    return () => {
+      document.removeEventListener("fullscreenchange", onFs)
+      document.removeEventListener("webkitfullscreenchange", onFs)
+    }
   }, [])
 
   // Auto-hiding controls shouldn't leave the settings popover floating.
@@ -600,9 +621,37 @@ export function PlayerModal({
   }, [getActive])
 
   const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
-    else void containerRef.current?.requestFullscreen().catch(() => {})
-  }, [])
+    const doc = document as FullscreenDocument
+    const container = containerRef.current as FullscreenElement | null
+    const video = getActive() as FullscreenVideo | null
+
+    if (fullscreenElement()) {
+      if (doc.exitFullscreen) void doc.exitFullscreen().catch(() => {})
+      else doc.webkitExitFullscreen?.()
+      return
+    }
+    if (video?.webkitDisplayingFullscreen) {
+      video.webkitExitFullscreen?.()
+      return
+    }
+
+    // iPhone Safari has no element fullscreen: only the <video> itself can go
+    // fullscreen, in the native player. Everything else takes the whole container
+    // so our controls stay on screen.
+    const enterNativeVideoFullscreen = () => {
+      if (!video?.webkitEnterFullscreen) return
+      video.addEventListener("webkitendfullscreen", () => setIsFullscreen(false), { once: true })
+      video.webkitEnterFullscreen()
+      setIsFullscreen(true)
+    }
+    if (container?.requestFullscreen) {
+      container.requestFullscreen().catch(enterNativeVideoFullscreen)
+    } else if (container?.webkitRequestFullscreen) {
+      container.webkitRequestFullscreen()
+    } else {
+      enterNativeVideoFullscreen()
+    }
+  }, [getActive])
 
   const revealUi = useCallback(() => {
     setUiVisible(true)
@@ -626,7 +675,7 @@ export function PlayerModal({
       switch (e.key) {
         case "Escape":
           if (episodesOpen) setEpisodesOpen(false)
-          else if (!document.fullscreenElement) onClose()
+          else if (!fullscreenElement()) onClose()
           break
         case " ":
         case "k":

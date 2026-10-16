@@ -55,3 +55,10 @@ export const panelVariants: Variants = {
   show: { x: 0, transition: spring },
   exit: { x: "100%", transition: { duration: 0.2, ease: "easeIn" } },
 }
+
+/** Phone form of the side panel: a sheet rising from the bottom edge. */
+export const sheetVariants: Variants = {
+  hidden: { y: "100%" },
+  show: { y: 0, transition: spring },
+  exit: { y: "100%", transition: { duration: 0.2, ease: "easeIn" } },
+}

@@ -45,7 +45,7 @@ function EpisodeRow({
       onClick={() => onPlay(ep)}
       className="group flex w-full gap-3 border-neutral-10 border-b p-2 text-left transition-colors hover:bg-neutral-10"
     >
-      <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded bg-neutral-10">
+      <div className="relative aspect-video w-24 shrink-0 overflow-hidden rounded bg-neutral-10 sm:w-32">
         {ep.posterUrl ? <PosterImage src={ep.posterUrl} alt={ep.title} /> : null}
         <span className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100">
           <Play className="h-7 w-7 text-white" />
@@ -118,35 +118,50 @@ export function SeriesModal({
       onClose={onClose}
       escapeEnabled={escapeEnabled}
       backdropClassName="items-center p-3 sm:p-8"
-      className="relative flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl sm:max-h-[88vh] sm:flex-row"
+      className="relative flex h-full max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl sm:h-auto sm:max-h-[88vh] sm:flex-row"
     >
-      {/* Stacked layout: the close button floats over the artwork. Side by side, it
-          sits in the episodes header so it lines up with the season picker. */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        className="absolute top-2 right-2 z-10 rounded-full bg-black/40 p-1.5 text-white transition-colors hover:bg-black/60 sm:hidden"
-      >
-        <X className="h-5 w-5" />
-      </button>
-
-      {/* Left: full artwork + description */}
-      <div className="shrink-0 overflow-y-auto bg-neutral-90 text-white sm:max-h-[88vh] sm:w-80">
-        <div className="relative aspect-[2/3] w-full bg-neutral-80">
-          {art ? <PosterImage src={art} alt={series.title} tone="dark" /> : null}
+      {/* Left: artwork + description. Stacked on a phone it collapses to a compact
+          header with its own close button, so the episode list gets the height. */}
+      <div className="shrink-0 bg-neutral-90 text-white sm:max-h-[88vh] sm:w-80 sm:overflow-y-auto">
+        <div className="flex gap-3 p-3 sm:hidden">
+          <div className="relative aspect-[2/3] w-16 shrink-0 overflow-hidden rounded bg-neutral-80">
+            {art ? <PosterImage src={art} alt={series.title} tone="dark" /> : null}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate font-semibold">{series.title}</h2>
+            {meta.length > 0 ? (
+              <p className="mt-0.5 text-white/60 text-xs">{meta.join(" · ")}</p>
+            ) : null}
+            {series.overview ? (
+              <p className="mt-1 line-clamp-2 text-white/70 text-xs">{series.overview}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="self-start rounded-full bg-white/10 p-1.5 text-white transition-colors hover:bg-white/20"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <div className="p-4">
-          <h2 className="font-semibold text-lg">{series.title}</h2>
-          {meta.length > 0 ? (
-            <p className="mt-1 text-white/60 text-xs">{meta.join(" · ")}</p>
-          ) : null}
-          {(series.genres?.length ?? 0) > 0 ? (
-            <p className="mt-2 text-white/70 text-xs">{series.genres.join(", ")}</p>
-          ) : null}
-          {series.overview ? (
-            <p className="mt-3 text-sm text-white/80 leading-relaxed">{series.overview}</p>
-          ) : null}
+
+        <div className="hidden sm:block">
+          <div className="relative aspect-[2/3] w-full bg-neutral-80">
+            {art ? <PosterImage src={art} alt={series.title} tone="dark" /> : null}
+          </div>
+          <div className="p-4">
+            <h2 className="font-semibold text-lg">{series.title}</h2>
+            {meta.length > 0 ? (
+              <p className="mt-1 text-white/60 text-xs">{meta.join(" · ")}</p>
+            ) : null}
+            {(series.genres?.length ?? 0) > 0 ? (
+              <p className="mt-2 text-white/70 text-xs">{series.genres.join(", ")}</p>
+            ) : null}
+            {series.overview ? (
+              <p className="mt-3 text-sm text-white/80 leading-relaxed">{series.overview}</p>
+            ) : null}
+          </div>
         </div>
       </div>
 

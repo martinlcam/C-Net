@@ -5,10 +5,12 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Check, Play, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { type Episode, getEpisodes, getSeasons, TICKS_PER_SECOND } from "@/lib/media-api"
-import { cardVariants, panelVariants, rowVariants, viewVariants } from "./motion"
+import { cn } from "@/lib/utils"
+import { cardVariants, panelVariants, rowVariants, sheetVariants, viewVariants } from "./motion"
 import { PosterImage } from "./poster-image"
 import { SeasonPicker } from "./season-picker"
 import { EpisodeListSkeleton } from "./skeletons"
+import { useIsMobile } from "./use-is-mobile"
 
 function episodeProgress(ep: Episode): number {
   if (ep.playedPercentage && ep.playedPercentage > 0) return Math.min(100, ep.playedPercentage)
@@ -120,16 +122,26 @@ export function EpisodePanel({
   })
   const epList = episodes.data ?? []
   const loading = seasons.isPending || (seasonId !== null && episodes.isPending)
+  const mobile = useIsMobile()
 
   return (
     <motion.div
-      variants={panelVariants}
+      variants={mobile ? sheetVariants : panelVariants}
       initial="hidden"
       animate="show"
       exit="exit"
       data-player-menu
-      className="pointer-events-auto absolute inset-y-0 right-0 z-20 flex w-full max-w-[26rem] flex-col bg-neutral-950/95 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-sm"
+      className={cn(
+        "pointer-events-auto absolute z-20 flex flex-col bg-neutral-950/95 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-sm",
+        // Phones: a bottom sheet that leaves the picture visible above it.
+        mobile
+          ? "inset-x-0 bottom-0 max-h-[70dvh] rounded-t-2xl pb-[env(safe-area-inset-bottom)]"
+          : "inset-y-0 right-0 w-full max-w-[26rem]"
+      )}
     >
+      {mobile ? (
+        <div aria-hidden className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/25" />
+      ) : null}
       <div className="flex items-center justify-between gap-3 border-white/10 border-b p-3">
         <div className="min-w-0">
           <p className="font-semibold text-sm">Episodes</p>
