@@ -30,8 +30,10 @@ import {
   setWatched,
   TICKS_PER_SECOND,
 } from "@/lib/media-api"
+import { cn } from "@/lib/utils"
 import { EpisodePanel } from "./episode-panel"
-import { popoverVariants } from "./motion"
+import { popoverVariants, sheetVariants } from "./motion"
+import { useIsMobile } from "./use-is-mobile"
 
 // WebKit's prefixed fullscreen surface — iPhone Safari offers only the <video> form.
 type FullscreenDocument = Document & {
@@ -164,6 +166,12 @@ export function PlayerModal({
   const volumeRef = useRef(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [uiVisible, setUiVisible] = useState(true)
+  const uiVisibleRef = useRef(true)
+  uiVisibleRef.current = uiVisible
+  // On touch, a tap on a hidden-controls picture only reveals the controls; the
+  // click that follows must not also pause. Set at touchstart, consumed by the click.
+  const tapWasReveal = useRef(false)
+  const mobile = useIsMobile()
 
   // The set of audio streams to keep warm (all of them, capped), plus a stable signature
   // so the setup effect rebuilds only on item / track-set change — NOT on audio switch.
@@ -653,13 +661,24 @@ export function PlayerModal({
     }
   }, [getActive])
 
+  // Keep the controls up while a menu is open: on a phone nothing moves the mouse
+  // while you read the settings sheet, and hiding would close it under you.
+  const menuOpenRef = useRef(false)
+  menuOpenRef.current = settingsOpen || episodesOpen
+
   const revealUi = useCallback(() => {
     setUiVisible(true)
     if (hideTimer.current) clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => {
-      if (!getActive()?.paused) setUiVisible(false)
+      if (!getActive()?.paused && !menuOpenRef.current) setUiVisible(false)
     }, 3000)
   }, [getActive])
+
+  // Closing a menu re-arms the hide timer, which may have fired (and done nothing)
+  // while the menu was open.
+  useEffect(() => {
+    if (!settingsOpen && !episodesOpen) revealUi()
+  }, [settingsOpen, episodesOpen, revealUi])
 
   useEffect(() => {
     revealUi()
@@ -795,8 +814,12 @@ export function PlayerModal({
     // biome-ignore lint/a11y/noStaticElementInteractions: player chrome reveals controls on mouse move; not a control itself
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex select-none flex-col bg-black"
+      className="fixed inset-0 z-50 flex select-none flex-col bg-black [-webkit-tap-highlight-color:transparent]"
       onMouseMove={revealUi}
+      onTouchStart={() => {
+        tapWasReveal.current = !uiVisibleRef.current
+        revealUi()
+      }}
     >
       {audioKeys.map((ai) => {
         const isActive = ai === activeKey
@@ -806,7 +829,13 @@ export function PlayerModal({
             key={`${item.id}-${ai}`}
             ref={registerMedia(ai)}
             playsInline
-            onClick={togglePlay}
+            onClick={() => {
+              if (tapWasReveal.current) {
+                tapWasReveal.current = false
+                return
+              }
+              togglePlay()
+            }}
             className={`absolute inset-0 h-full w-full bg-black transition-opacity duration-200 ${
               isActive ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
@@ -835,8 +864,8 @@ export function PlayerModal({
 
       {/* Controls overlay */}
       <div
-        className={`pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/70 via-transparent to-black/80 transition-opacity duration-300 ${
-          uiVisible ? "opacity-100" : "opacity-0"
+        className={`pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/70 via-transparent to-black/80 transition-[opacity,visibility] duration-300 ${
+          uiVisible ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
         {/* Top bar */}
@@ -903,7 +932,7 @@ export function PlayerModal({
             <span>{fmtTime(duration)}</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               type="button"
               onClick={togglePlay}
@@ -973,7 +1002,7 @@ export function PlayerModal({
                   }
                 }}
                 aria-label="Volume"
-                className="h-1 w-20 cursor-pointer accent-white"
+                className="hidden h-1 w-20 cursor-pointer accent-white sm:block"
               />
             </div>
 
@@ -1005,13 +1034,26 @@ export function PlayerModal({
                   {settingsOpen ? (
                     <motion.div
                       key="settings"
-                      variants={popoverVariants}
+                      variants={mobile ? sheetVariants : popoverVariants}
                       initial="hidden"
                       animate="show"
                       exit="exit"
                       style={{ transformOrigin: "bottom right" }}
-                      className="absolute right-0 bottom-10 flex w-[30rem] max-w-[calc(100vw-1.5rem)] gap-2 rounded-md bg-neutral-900/95 p-3 text-sm shadow-xl ring-1 ring-white/15"
+                      className={cn(
+                        "flex bg-neutral-900/95 text-sm shadow-xl ring-1 ring-white/15",
+                        // Phones: a stacked bottom sheet; the anchored popover would hang
+                        // off the left edge of the screen.
+                        mobile
+                          ? "fixed inset-x-0 bottom-0 z-30 max-h-[70dvh] flex-col gap-4 overflow-y-auto rounded-t-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+                          : "absolute right-0 bottom-10 w-[30rem] max-w-[calc(100vw-1.5rem)] gap-2 rounded-md p-3"
+                      )}
                     >
+                      {mobile ? (
+                        <div
+                          aria-hidden
+                          className="-mt-2 mx-auto h-1 w-10 shrink-0 rounded-full bg-white/25"
+                        />
+                      ) : null}
                       {audioOpts.length > 1 ? (
                         <div className="min-w-0 flex-1">
                           <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
@@ -1059,7 +1101,7 @@ export function PlayerModal({
                           </div>
                         </div>
                       ) : null}
-                      <div className="w-20 shrink-0">
+                      <div className="w-full shrink-0 sm:w-20">
                         <p className="mb-1 px-2 font-semibold text-white/50 text-xs uppercase">
                           Speed
                         </p>
