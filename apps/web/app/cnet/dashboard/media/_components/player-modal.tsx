@@ -54,9 +54,12 @@ const fullscreenElement = () => {
 
 const SKIP = 5 // seconds for the back/forward skip buttons
 const NEXT_CARD_AT = 25 // show the "Up next" card this many seconds before the end
-// How many audio tracks to keep warm at once. Each is a full muxed stream (video is
-// copied, only audio transcodes, so extra tracks are cheap) — capped so a file with a
-// pathological number of audio streams doesn't spin up a dozen sessions.
+// How many audio tracks to keep warm at once when the video is direct-copied (H.264
+// 8-bit): each warm track is then a full muxed stream where only the audio transcodes,
+// so extra tracks are cheap — capped so a file with a pathological number of audio
+// streams doesn't spin up a dozen sessions. When the video itself must be transcoded
+// (HEVC / 10-bit) every warm track is a full parallel x264 encode, so only the active
+// track is warmed and switching falls back to a reload.
 const MAX_PARALLEL_AUDIO = 6
 // Key for the "no explicit audio stream" instance (file default) — real Jellyfin audio
 // stream indices are ≥ 1, so -1 is a safe sentinel.
@@ -142,6 +145,8 @@ export function PlayerModal({
   // once instead of flashing the file's default first). `null` = file default.
   const [audioOpts, setAudioOpts] = useState<AudioTrack[]>([])
   const [audioIndex, setAudioIndex] = useState<number | null | undefined>(undefined)
+  // False when Jellyfin must transcode the video stream — then only one track is warmed.
+  const [videoDirect, setVideoDirect] = useState(true)
   // Text subtitle tracks from the API (each a full Stream.vtt, not HLS-segmented).
   const [subTracks, setSubTracks] = useState<SubtitleTrack[]>([])
   // Selected subtitle = Jellyfin stream index, or -1 for off.
@@ -179,14 +184,14 @@ export function PlayerModal({
   const audioKeys: number[] =
     audioIndex === undefined
       ? []
-      : audioOpts.length <= 1
+      : audioOpts.length <= 1 || !videoDirect
         ? [activeKey]
         : (() => {
             const keys = audioOpts.map((a) => a.index).slice(0, MAX_PARALLEL_AUDIO)
             if (!keys.includes(activeKey)) keys.push(activeKey)
             return keys.sort((a, b) => a - b)
           })()
-  const audioKeysSig = audioKeys.join(",")
+  const audioKeysSig = `${videoDirect ? "d" : "t"}:${audioKeys.join(",")}`
 
   const goNext = useCallback(() => {
     setIndex((i) => (i < list.length - 1 ? i + 1 : i))
@@ -267,6 +272,7 @@ export function PlayerModal({
         if (cancelled) return
         setStreamUrl(t.hlsUrl)
         setAudioOpts(t.audio)
+        setVideoDirect(t.videoDirect)
         setSubTracks(t.subtitles)
         setCreditsStart(t.creditsStartSeconds)
         setIntro(
@@ -320,7 +326,9 @@ export function PlayerModal({
       // same URL can only 403 again.
       getItemTracks(id)
         .then((t) => {
-          if (itemIdRef.current === id) setStreamUrl(t.hlsUrl)
+          if (itemIdRef.current !== id) return
+          setStreamUrl(t.hlsUrl)
+          setVideoDirect(t.videoDirect)
         })
         .catch(() => {}) // no fresh signature — a plain rebuild still clears a wedged decoder
         .finally(() => {
@@ -1074,6 +1082,11 @@ export function PlayerModal({
                               </button>
                             ))}
                           </div>
+                          {!videoDirect ? (
+                            <p className="mt-1 px-2 text-white/40 text-xs">
+                              Switching audio reloads on this file
+                            </p>
+                          ) : null}
                         </div>
                       ) : null}
                       {subTracks.length > 0 ? (

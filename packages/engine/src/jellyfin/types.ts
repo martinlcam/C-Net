@@ -16,6 +16,10 @@ export type JellyfinMediaStream = {
   DisplayTitle?: string
   IsDefault?: boolean
   IsForced?: boolean
+  // Video-stream fields (Jellyfin returns them on every stream; only set for Type "Video").
+  BitDepth?: number
+  Profile?: string
+  VideoRangeType?: string
 }
 
 export type JellyfinItem = {

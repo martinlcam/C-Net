@@ -91,6 +91,14 @@ export interface ItemTracksDTO {
    */
   introStartSeconds: number | null
   introEndSeconds: number | null
+  /**
+   * True when the video stream can be remuxed to the browser as-is (H.264, 8-bit).
+   * False means Jellyfin must CPU-transcode the video (HEVC, 10-bit, etc.) — the
+   * player then warms only the active audio track, since each extra warm track
+   * would be a full parallel x264 encode rather than a cheap audio-only transcode.
+   */
+  videoDirect: boolean
+  videoCodec: string | null
 }
 
 // ISO 639-2/B codes → display name for the common audio languages we ship.
@@ -167,7 +175,15 @@ function introRangeSeconds(item: JellyfinItem): { start: number; end: number } |
  * (often Spanish Latino), so we pick English first, then Japanese, then the
  * file's own default — the player loads that track and offers the rest.
  */
+// Browsers decode H.264 8-bit natively; anything else (HEVC, Hi10P, AV1 on older
+// hardware) forces a video transcode on a box with no usable GPU encoder.
+function isVideoDirect(video: JellyfinMediaStream | undefined): boolean {
+  if (!video) return true
+  return (video.Codec ?? "").toLowerCase() === "h264" && (video.BitDepth ?? 8) <= 8
+}
+
 export function buildItemTracks(userId: string, item: JellyfinItem): ItemTracksDTO {
+  const video = (item.MediaStreams ?? []).find((s) => s.Type === "Video")
   const audioStreams = (item.MediaStreams ?? []).filter((s) => s.Type === "Audio")
   const audio = audioStreams.map((s) => ({
     index: s.Index,
@@ -195,6 +211,8 @@ export function buildItemTracks(userId: string, item: JellyfinItem): ItemTracksD
     creditsStartSeconds: creditsStartSeconds(item),
     introStartSeconds: intro?.start ?? null,
     introEndSeconds: intro?.end ?? null,
+    videoDirect: isVideoDirect(video),
+    videoCodec: video?.Codec?.toLowerCase() ?? null,
   }
 }
 

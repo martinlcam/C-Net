@@ -89,6 +89,9 @@ export type ItemTracks = {
   creditsStartSeconds: number | null
   introStartSeconds: number | null
   introEndSeconds: number | null
+  /** False when the video itself must be transcoded (HEVC/10-bit) — see the API DTO. */
+  videoDirect: boolean
+  videoCodec: string | null
 }
 
 export type DiscoverResult = {
