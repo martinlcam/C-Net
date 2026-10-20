@@ -15,6 +15,7 @@ export { Logger, logger } from "./logger"
 export { findRepoRoot, isLocalDataTankPath, resolveTankMountPath } from "./paths"
 export {
   closeAllQueues,
+  closeQueues,
   getBackupsQueue,
   getCleanupQueue,
   getHealthChecksQueue,

@@ -2,13 +2,17 @@ import { getVaultThumbnailsQueue, resolveCollision } from "@cnet/core"
 import { db } from "@cnet/db"
 import { vaultFiles, vaultUploads } from "@cnet/db/schema"
 import { getStorageAdapter } from "@cnet/engine"
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Put, Request, Route, Security } from "tsoa"
+import { HttpError } from "../middleware/error.middleware"
 import { actorFrom } from "../vault/access"
 import { type FileDto, toFileDto } from "../vault/dto"
 import { liveFileNames } from "../vault/siblings"
 import { completedUsage, wouldExceedQuota } from "../vault/usage"
+
+// Each chunk is buffered in memory by readBody, so the client's chunk size is capped.
+const MAX_CHUNK_BYTES = 64 * 1024 * 1024
 
 type CreateUploadBody = {
   directoryId?: string | null
@@ -36,13 +40,14 @@ export class VaultUploadsController extends Controller {
     @Body() body: CreateUploadBody
   ): Promise<CreateUploadResult> {
     const actor = actorFrom(req)
-    if (body.chunkSize <= 0 || body.expectedSize < 0) {
-      this.setStatus(400)
-      throw new Error("Invalid chunkSize or expectedSize")
+    if (body.chunkSize <= 0 || body.expectedSize < 0 || body.chunkSize > MAX_CHUNK_BYTES) {
+      throw new HttpError(
+        400,
+        `chunkSize must be 1..${MAX_CHUNK_BYTES} bytes and expectedSize >= 0`
+      )
     }
     if (await wouldExceedQuota(actor.id, actor.quotaBytes, body.expectedSize)) {
-      this.setStatus(413)
-      throw new Error("Quota exceeded")
+      throw new HttpError(413, "Quota exceeded")
     }
     const chunkCount = Math.max(1, Math.ceil(body.expectedSize / body.chunkSize))
     const [upload] = await db
@@ -71,23 +76,31 @@ export class VaultUploadsController extends Controller {
     const actor = actorFrom(req)
     const upload = await this.loadUpload(actor.id, id)
     if (!upload) {
-      this.setStatus(404)
-      throw new Error("Upload session not found")
+      throw new HttpError(404, "Upload session not found")
+    }
+    if (!Number.isInteger(index) || index < 0 || index >= upload.chunkCount) {
+      throw new HttpError(400, `Chunk index ${index} outside 0..${upload.chunkCount - 1}`)
     }
     const body = await readBody(req)
-    await getStorageAdapter().appendChunk(actor.id, id, index, body)
-    const received = upload.receivedChunks.includes(index)
-      ? upload.receivedChunks
-      : [...upload.receivedChunks, index]
-    await db
+    const isLast = index === upload.chunkCount - 1
+    const expectedLen = isLast ? upload.expectedSize - index * upload.chunkSize : upload.chunkSize
+    if (body.length !== expectedLen) {
+      throw new HttpError(400, `Chunk ${index} must be ${expectedLen} bytes, got ${body.length}`)
+    }
+    await getStorageAdapter().writeChunk(actor.id, id, index * upload.chunkSize, body)
+    // One atomic statement: add the index only if absent and derive progress from the
+    // distinct count, so concurrent chunks cannot lose each other's updates.
+    const merged = sql`(select array_agg(distinct i order by i) from unnest(array_append(${vaultUploads.receivedChunks}, ${index}::int)) as i)`
+    const [row] = await db
       .update(vaultUploads)
       .set({
-        receivedChunks: received,
-        uploadedBytes: upload.uploadedBytes + body.length,
+        receivedChunks: merged,
+        uploadedBytes: sql`least(${vaultUploads.expectedSize}, cardinality(${merged}) * ${vaultUploads.chunkSize})`,
         lastChunkAt: new Date(),
       })
       .where(eq(vaultUploads.id, id))
-    return { received: received.length }
+      .returning({ receivedChunks: vaultUploads.receivedChunks })
+    return { received: row.receivedChunks.length }
   }
 
   /** GET /vault/uploads/:id — resume info. */
@@ -99,8 +112,7 @@ export class VaultUploadsController extends Controller {
     const actor = actorFrom(req)
     const upload = await this.loadUpload(actor.id, id)
     if (!upload) {
-      this.setStatus(404)
-      throw new Error("Upload session not found")
+      throw new HttpError(404, "Upload session not found")
     }
     return {
       receivedChunks: upload.receivedChunks,
@@ -115,24 +127,30 @@ export class VaultUploadsController extends Controller {
     const actor = actorFrom(req)
     const upload = await this.loadUpload(actor.id, id)
     if (!upload) {
-      this.setStatus(404)
-      throw new Error("Upload session not found")
+      throw new HttpError(404, "Upload session not found")
     }
     // Every chunk 0..chunkCount-1 must be present.
     const present = new Set(upload.receivedChunks)
     for (let i = 0; i < upload.chunkCount; i++) {
       if (!present.has(i)) {
-        this.setStatus(409)
-        throw new Error(`Missing chunk ${i}; resume before finalizing`)
+        throw new HttpError(409, `Missing chunk ${i}; resume before finalizing`)
       }
     }
-    // Quota re-check against actual bytes (guards a wrong expectedSize).
+    // The bytes on disk are the truth; a counter can drift if a write failed after the
+    // chunk was recorded, and a short file must never graduate to vault_files.
+    const onDisk = await getStorageAdapter().partSize(actor.id, id)
+    if (onDisk !== upload.expectedSize) {
+      throw new HttpError(
+        409,
+        `Upload has ${onDisk ?? 0} bytes on disk, expected ${upload.expectedSize}; resume before finalizing`
+      )
+    }
+    // Quota re-check against the real size (guards a wrong expectedSize at open time).
     const completed = await completedUsage(actor.id)
-    if (actor.quotaBytes !== null && completed + upload.uploadedBytes > actor.quotaBytes) {
+    if (actor.quotaBytes !== null && completed + upload.expectedSize > actor.quotaBytes) {
       await getStorageAdapter().remove(actor.id, id)
       await db.delete(vaultUploads).where(eq(vaultUploads.id, id))
-      this.setStatus(413)
-      throw new Error("Quota exceeded")
+      throw new HttpError(413, "Quota exceeded")
     }
 
     await getStorageAdapter().finalize(actor.id, id)
@@ -147,7 +165,7 @@ export class VaultUploadsController extends Controller {
         ownerUserId: actor.id,
         directoryId: upload.directoryId,
         filename,
-        size: upload.uploadedBytes,
+        size: upload.expectedSize,
         contentType: upload.contentType,
       })
       .returning()

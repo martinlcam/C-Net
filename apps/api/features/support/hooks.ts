@@ -1,5 +1,9 @@
 import "@cnet/core/env"
+import { mkdtempSync } from "node:fs"
 import type { Server } from "node:http"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { closeQueues } from "@cnet/core"
 import { After, AfterAll, BeforeAll, setDefaultTimeout } from "@cucumber/cucumber"
 import { createApp } from "../../src/server"
 import { type InviteWorld, runtime } from "./world"
@@ -11,6 +15,8 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set. Run `bun run db:start && bun run db:migrate` first.")
 }
 process.env.AUTH_SECRET ??= "bdd-only-secret"
+// Vault scenarios write real bytes; always use a throwaway tank, never .env's dev tank.
+process.env.TANK_MOUNT_PATH = mkdtempSync(join(tmpdir(), "cnet-bdd-tank-"))
 process.env.VAULT_ALLOWLIST ??= JSON.stringify([
   { email: "super@bdd.local", role: "super" },
   { email: "storage@bdd.local", role: "storage" },
@@ -33,5 +39,9 @@ After(async function (this: InviteWorld) {
 })
 
 AfterAll(async () => {
+  // A finalize enqueues a thumbnail job, which opens a Redis connection that would
+  // otherwise keep the process alive; keep-alive sockets likewise block server.close.
+  await closeQueues()
+  server?.closeAllConnections?.()
   await new Promise<void>((resolve) => server?.close(() => resolve()))
 })

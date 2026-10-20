@@ -1,7 +1,8 @@
 import { db } from "@cnet/db"
-import { partyEvents, partyGuests } from "@cnet/db/schema"
+import { partyEvents, partyGuests, users, vaultFiles, vaultUploads } from "@cnet/db/schema"
 import { setWorldConstructor, World } from "@cucumber/cucumber"
 import { eq, inArray } from "drizzle-orm"
+import jwt from "jsonwebtoken"
 
 export type HttpResult = { status: number; body: unknown }
 
@@ -22,8 +23,11 @@ export class InviteWorld extends World {
   groupChatUrl = "https://ig.me/j/test-group-chat"
   token: string | undefined
   res: HttpResult = { status: 0, body: null }
+  vaultUserId: string | undefined
+  uploadId: string | undefined
+  uploadChunkSize = 0
 
-  private headers(): Record<string, string> {
+  headers(): Record<string, string> {
     const h: Record<string, string> = { "Content-Type": "application/json" }
     if (this.token) h.Authorization = `Bearer ${this.token}`
     return h
@@ -31,6 +35,32 @@ export class InviteWorld extends World {
 
   async get(path: string): Promise<HttpResult> {
     const r = await fetch(`${runtime.baseUrl}${path}`, { headers: this.headers() })
+    this.res = { status: r.status, body: await r.json().catch(() => null) }
+    return this.res
+  }
+
+  /** Insert (or reuse) a real users row so vault FKs hold, and sign a token for it. */
+  async signInAsVaultUser(): Promise<void> {
+    const email = "storage@bdd.local"
+    const [row] = await db
+      .insert(users)
+      .values({ email, name: "BDD Storage" })
+      .onConflictDoUpdate({ target: users.email, set: { name: "BDD Storage" } })
+      .returning({ id: users.id })
+    this.vaultUserId = row.id
+    const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
+    if (!secret) throw new Error("AUTH_SECRET missing")
+    this.token = jwt.sign({ id: row.id, sub: row.id, email, name: "BDD Storage" }, secret, {
+      expiresIn: "1h",
+    })
+  }
+
+  async putRaw(path: string, body: Uint8Array): Promise<HttpResult> {
+    const r = await fetch(`${runtime.baseUrl}${path}`, {
+      method: "PUT",
+      headers: { ...this.headers(), "Content-Type": "application/octet-stream" },
+      body,
+    })
     this.res = { status: r.status, body: await r.json().catch(() => null) }
     return this.res
   }
@@ -90,6 +120,11 @@ export class InviteWorld extends World {
     if (this.eventIds.length > 0) {
       await db.delete(partyEvents).where(inArray(partyEvents.id, this.eventIds))
     }
+    if (this.vaultUserId) {
+      await db.delete(vaultUploads).where(eq(vaultUploads.ownerUserId, this.vaultUserId))
+      await db.delete(vaultFiles).where(eq(vaultFiles.ownerUserId, this.vaultUserId))
+    }
+    this.uploadId = undefined
     this.eventIds = []
     this.guestIds.clear()
     this.token = undefined
