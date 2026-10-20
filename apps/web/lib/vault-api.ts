@@ -1,4 +1,5 @@
 import { RetryableError, runWithConcurrency, withRetry } from "./upload-scheduler"
+import { classify, type ExistingFile } from "./upload-sync"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
@@ -188,6 +189,70 @@ async function putChunk(uploadId: string, index: number, blob: Blob): Promise<vo
   )
 }
 
+type SessionShape = { id: string; chunkSize: number; chunkCount: number }
+
+/** Send every chunk not in `have`, in parallel; progress counts acknowledged bytes. */
+async function sendChunks(
+  session: SessionShape,
+  file: File,
+  have: Set<number>,
+  onProgress?: (fraction: number) => void
+): Promise<void> {
+  const sizeOf = (index: number) =>
+    Math.min(session.chunkSize, file.size - index * session.chunkSize)
+  let acked = 0
+  const todo: number[] = []
+  for (let i = 0; i < session.chunkCount; i++) {
+    if (have.has(i)) acked += sizeOf(i)
+    else todo.push(i)
+  }
+  onProgress?.(file.size === 0 ? 1 : acked / file.size)
+  await runWithConcurrency(todo, CHUNKS_IN_FLIGHT, async (index) => {
+    const start = index * session.chunkSize
+    const blob = file.slice(start, start + sizeOf(index))
+    await putChunk(session.id, index, blob)
+    acked += blob.size
+    onProgress?.(file.size === 0 ? 1 : acked / file.size)
+  })
+}
+
+type UploadProgress = { receivedChunks: number[]; uploadedBytes: number; chunkCount: number }
+
+/**
+ * Finalize, and on a 409 (server has fewer bytes than expected) fetch what it has,
+ * re-send the rest once, and finalize again.
+ */
+async function finalizeUpload(
+  session: SessionShape,
+  file: File,
+  replaceFileId?: string,
+  onProgress?: (fraction: number) => void
+): Promise<VaultFile> {
+  const attempt = () =>
+    fetch(`${API_BASE}/vault/uploads/${session.id}/finalize`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(replaceFileId ? { replaceFileId } : {}),
+    })
+  let res = await attempt()
+  if (res.status === 409) {
+    const progress = await req<UploadProgress>(`/vault/uploads/${session.id}`)
+    await sendChunks(session, file, new Set(progress.receivedChunks), onProgress)
+    res = await attempt()
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }))
+    throw new Error(body.message || "Finalize failed")
+  }
+  return res.json() as Promise<VaultFile>
+}
+
+export type UploadOptions = {
+  /** Replace this existing same-name file (it goes to the trash) instead of renaming. */
+  replaceFileId?: string
+}
+
 /**
  * Upload one file as parallel, retried chunks. `onProgress` receives acknowledged bytes
  * over total as a fraction.
@@ -195,7 +260,8 @@ async function putChunk(uploadId: string, index: number, blob: Blob): Promise<vo
 export async function uploadFile(
   file: File,
   directoryId: string | null,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  options: UploadOptions = {}
 ): Promise<VaultFile> {
   const open = await req<CreateUploadResult>("/vault/uploads", {
     method: "POST",
@@ -208,16 +274,19 @@ export async function uploadFile(
       sourceModifiedAt: new Date(file.lastModified).toISOString(),
     }),
   })
-  const indexes = Array.from({ length: open.chunkCount }, (_, i) => i)
-  let acked = 0
-  await runWithConcurrency(indexes, CHUNKS_IN_FLIGHT, async (index) => {
-    const start = index * open.chunkSize
-    const blob = file.slice(start, Math.min(start + open.chunkSize, file.size))
-    await putChunk(open.uploadId, index, blob)
-    acked += blob.size
-    onProgress?.(file.size === 0 ? 1 : acked / file.size)
-  })
-  return req<VaultFile>(`/vault/uploads/${open.uploadId}/finalize`, { method: "POST" })
+  const session = { id: open.uploadId, chunkSize: open.chunkSize, chunkCount: open.chunkCount }
+  await sendChunks(session, file, new Set(), onProgress)
+  return finalizeUpload(session, file, options.replaceFileId, onProgress)
+}
+
+/** Continue an open session: send only the chunks the server does not have, then finalize. */
+export async function resumeUpload(
+  session: Pick<UploadSession, "id" | "chunkSize" | "chunkCount" | "receivedChunks">,
+  file: File,
+  onProgress?: (fraction: number) => void
+): Promise<VaultFile> {
+  await sendChunks(session, file, new Set(session.receivedChunks), onProgress)
+  return finalizeUpload(session, file, undefined, onProgress)
 }
 
 /** Per-file hooks while a folder (and its subtree) uploads. */
@@ -225,26 +294,57 @@ export type FolderUploadHandlers = {
   onProgress: (file: File, fraction: number) => void
   onDone?: (file: File, result: VaultFile) => void
   onError?: (file: File, err: unknown) => void
+  /** The destination already has this exact file (name, size, modified time). */
+  onSkip?: (file: File) => void
+  /** An earlier, interrupted upload of this file is being continued. */
+  onResume?: (file: File) => void
+}
+
+export type FolderUploadSummary = {
+  uploaded: number
+  skipped: number
+  resumed: number
+  replaced: number
+  failed: number
 }
 
 /**
- * Upload a whole folder picked with a directory input, recreating its nested
- * directory tree under `parentId` first, then uploading each file into the
- * directory that mirrors its `webkitRelativePath`. Directories are created
- * parents-first so every child resolves to a real, owned directory id; we key
- * off the returned ids (not names) so collision-renamed folders still nest
- * their contents correctly.
+ * Upload a folder picked with a directory input the way `rclone copy` would: existing
+ * directories are reused by name, files already present (same name, size and modified
+ * time) are skipped, interrupted uploads are resumed, changed files replace the old copy
+ * (which goes to the trash), and everything else uploads fresh. Dropping the same folder
+ * again after a crash therefore sends only what is missing.
  */
 export async function uploadFolder(
   files: File[],
   parentId: string | null,
   handlers: FolderUploadHandlers
-): Promise<void> {
+): Promise<FolderUploadSummary> {
   // Map a file's relative path to "directory part" + "filename".
   const relOf = (f: File) => f.webkitRelativePath || f.name
   const dirPartOf = (rel: string) => {
     const i = rel.lastIndexOf("/")
     return i === -1 ? "" : rel.slice(0, i)
+  }
+
+  // One listing per directory id, shared by the directory walk and the per-file checks.
+  const listings = new Map<string | null, Promise<DirectoryListing>>()
+  const listingOf = (id: string | null) => {
+    let p = listings.get(id)
+    if (!p) {
+      p = listDir(id)
+      listings.set(id, p)
+    }
+    return p
+  }
+  const sessionsCache = new Map<string | null, Promise<UploadSession[]>>()
+  const sessionsOf = (id: string | null) => {
+    let p = sessionsCache.get(id)
+    if (!p) {
+      p = listUploadSessions(id)
+      sessionsCache.set(id, p)
+    }
+    return p
   }
 
   // 1. Collect every unique directory path in the selection.
@@ -258,25 +358,71 @@ export async function uploadFolder(
     }
   }
 
-  // 2. Create them parents-first; "" maps to the upload target directory.
+  // 2. Resolve them parents-first, reusing a same-named child when it already exists;
+  //    "" maps to the upload target directory.
   const dirIds = new Map<string, string | null>([["", parentId]])
   const ordered = [...dirPaths].sort((a, b) => a.split("/").length - b.split("/").length)
   for (const path of ordered) {
     const i = path.lastIndexOf("/")
     const parentPath = i === -1 ? "" : path.slice(0, i)
     const name = i === -1 ? path : path.slice(i + 1)
-    const created = await createDir(dirIds.get(parentPath) ?? parentId, name)
-    dirIds.set(path, created.id)
+    const under = dirIds.get(parentPath) ?? parentId
+    const existing = (await listingOf(under)).directories.find((dir) => dir.name === name)
+    if (existing) {
+      dirIds.set(path, existing.id)
+    } else {
+      const created = await createDir(under, name)
+      dirIds.set(path, created.id)
+      listings.delete(under) // the parent listing is stale now
+    }
   }
 
-  // 3. Upload files into their mirrored directories, a couple at a time.
+  // 3. Classify and transfer, a couple of files at a time.
+  const summary: FolderUploadSummary = {
+    uploaded: 0,
+    skipped: 0,
+    resumed: 0,
+    replaced: 0,
+    failed: 0,
+  }
   await runWithConcurrency(files, FILES_IN_FLIGHT, async (f) => {
     const targetId = dirIds.get(dirPartOf(relOf(f))) ?? parentId
     try {
-      const result = await uploadFile(f, targetId, (frac) => handlers.onProgress(f, frac))
+      const [listing, sessions] = await Promise.all([listingOf(targetId), sessionsOf(targetId)])
+      const existing: ExistingFile[] = listing.files.map((x) => ({
+        id: x.id,
+        name: x.filename,
+        size: x.size,
+        sourceModifiedAt: x.sourceModifiedAt,
+      }))
+      const decision = classify(
+        { name: f.name, size: f.size, mtimeMs: f.lastModified },
+        existing,
+        sessions
+      )
+      const progress = (frac: number) => handlers.onProgress(f, frac)
+      if (decision.kind === "skip") {
+        summary.skipped++
+        handlers.onSkip?.(f)
+        return
+      }
+      let result: VaultFile
+      if (decision.kind === "resume") {
+        handlers.onResume?.(f)
+        result = await resumeUpload(decision.session, f, progress)
+        summary.resumed++
+      } else if (decision.kind === "replace") {
+        result = await uploadFile(f, targetId, progress, { replaceFileId: decision.fileId })
+        summary.replaced++
+      } else {
+        result = await uploadFile(f, targetId, progress)
+        summary.uploaded++
+      }
       handlers.onDone?.(f, result)
     } catch (err) {
+      summary.failed++
       handlers.onError?.(f, err)
     }
   })
+  return summary
 }

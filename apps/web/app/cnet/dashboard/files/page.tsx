@@ -120,7 +120,7 @@ export default function FilesPage() {
       if (id) useTransferStore.getState().update(id, p)
     }
     try {
-      await uploadFolder(files, dirId, {
+      const summary = await uploadFolder(files, dirId, {
         onProgress: (file, frac) => patch(file, { progress: Math.round(frac * 100) }),
         onDone: (file) => patch(file, { progress: 100, status: "completed" }),
         onError: (file, err) =>
@@ -128,6 +128,30 @@ export default function FilesPage() {
             status: "error",
             error: err instanceof Error ? err.message : "Upload failed",
           }),
+        // Already there: drop the row rather than leave it stuck at 0%.
+        onSkip: (file) => {
+          const id = ids.get(file)
+          if (id) useTransferStore.getState().remove(id)
+        },
+        onResume: (file) =>
+          patch(file, { label: `${file.webkitRelativePath || file.name} (resumed)` }),
+      })
+      const parts = [
+        `${summary.uploaded} uploaded`,
+        `${summary.skipped} already there`,
+        summary.resumed ? `${summary.resumed} resumed` : null,
+        summary.replaced ? `${summary.replaced} replaced` : null,
+        summary.failed ? `${summary.failed} failed` : null,
+      ].filter(Boolean)
+      transfers.upsert({
+        id: `upload-summary:${stamp}`,
+        label: `Folder sync: ${parts.join(", ")}`,
+        kind: "upload",
+        progress: 100,
+        status: summary.failed ? "error" : "completed",
+        error: summary.failed
+          ? "Some files failed; drop the folder again to retry them"
+          : undefined,
       })
     } finally {
       invalidate()
