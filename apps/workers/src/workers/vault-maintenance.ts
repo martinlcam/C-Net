@@ -17,6 +17,15 @@ export function cutoffDate(now: number, msAgo: number): Date {
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
 
+/**
+ * How long an upload session may sit without a chunk before it is reaped. Two days by
+ * default: a laptop closed overnight should still be able to resume the next evening.
+ */
+export function uploadTtlHours(env: NodeJS.ProcessEnv): number {
+  const n = Number(env.VAULT_UPLOAD_TTL_HOURS)
+  return Number.isFinite(n) && n > 0 ? n : 48
+}
+
 async function purgeTrash(): Promise<{ purgedFiles: number; purgedDirs: number }> {
   const ttlDays = Number(process.env.VAULT_TRASH_TTL_DAYS ?? "30")
   const cutoff = cutoffDate(Date.now(), ttlDays * DAY_MS)
@@ -40,7 +49,7 @@ async function purgeTrash(): Promise<{ purgedFiles: number; purgedDirs: number }
 }
 
 async function reapUploads(): Promise<{ reaped: number }> {
-  const ttlHours = Number(process.env.VAULT_UPLOAD_TTL_HOURS ?? "24")
+  const ttlHours = uploadTtlHours(process.env)
   const cutoff = cutoffDate(Date.now(), ttlHours * HOUR_MS)
   const adapter = getStorageAdapter()
 
