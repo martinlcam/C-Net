@@ -146,6 +146,23 @@ const CHUNK_BACKOFF_MS = 1000
 
 type CreateUploadResult = { uploadId: string; chunkSize: number; chunkCount: number }
 
+/** An open upload session on the server; see UploadSessionDto on the API side. */
+export type UploadSession = {
+  id: string
+  directoryId: string | null
+  filename: string
+  expectedSize: number
+  chunkSize: number
+  chunkCount: number
+  receivedChunks: number[]
+  sourceModifiedAt: string | null
+}
+
+export function listUploadSessions(directoryId: string | null): Promise<UploadSession[]> {
+  const q = directoryId ? `?directoryId=${encodeURIComponent(directoryId)}` : ""
+  return req<UploadSession[]>(`/vault/uploads${q}`)
+}
+
 async function putChunk(uploadId: string, index: number, blob: Blob): Promise<void> {
   await withRetry(
     async () => {

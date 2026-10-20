@@ -2,9 +2,9 @@ import { getVaultThumbnailsQueue, resolveCollision } from "@cnet/core"
 import { db } from "@cnet/db"
 import { vaultFiles, vaultUploads } from "@cnet/db/schema"
 import { getStorageAdapter } from "@cnet/engine"
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq, isNull, sql } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
-import { Body, Controller, Get, Path, Post, Put, Request, Route, Security } from "tsoa"
+import { Body, Controller, Get, Path, Post, Put, Query, Request, Route, Security } from "tsoa"
 import { HttpError } from "../middleware/error.middleware"
 import { actorFrom } from "../vault/access"
 import { type FileDto, toFileDto } from "../vault/dto"
@@ -25,6 +25,17 @@ type CreateUploadBody = {
 }
 type CreateUploadResult = { uploadId: string; chunkSize: number; chunkCount: number }
 type UploadProgress = { receivedChunks: number[]; uploadedBytes: number; chunkCount: number }
+/** An open (unfinalized) upload session, enough for a client to resume it. */
+type UploadSessionDto = {
+  id: string
+  directoryId: string | null
+  filename: string
+  expectedSize: number
+  chunkSize: number
+  chunkCount: number
+  receivedChunks: number[]
+  sourceModifiedAt: string | null
+}
 
 async function readBody(req: ExpressRequest): Promise<Buffer> {
   const chunks: Buffer[] = []
@@ -35,6 +46,34 @@ async function readBody(req: ExpressRequest): Promise<Buffer> {
 @Route("vault/uploads")
 @Security("jwt")
 export class VaultUploadsController extends Controller {
+  /** GET /vault/uploads?directoryId= — the caller's open sessions in one folder (omit = root). */
+  @Get()
+  public async listSessions(
+    @Request() req: ExpressRequest,
+    @Query() directoryId?: string
+  ): Promise<UploadSessionDto[]> {
+    const actor = actorFrom(req)
+    const rows = await db
+      .select()
+      .from(vaultUploads)
+      .where(
+        and(
+          eq(vaultUploads.ownerUserId, actor.id),
+          directoryId ? eq(vaultUploads.directoryId, directoryId) : isNull(vaultUploads.directoryId)
+        )
+      )
+    return rows.map((u) => ({
+      id: u.id,
+      directoryId: u.directoryId,
+      filename: u.filename,
+      expectedSize: u.expectedSize,
+      chunkSize: u.chunkSize,
+      chunkCount: u.chunkCount,
+      receivedChunks: u.receivedChunks,
+      sourceModifiedAt: u.sourceModifiedAt?.toISOString() ?? null,
+    }))
+  }
+
   /** POST /vault/uploads — open an upload session (quota pre-flight at start). */
   @Post()
   public async createUpload(
