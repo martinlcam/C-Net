@@ -62,6 +62,7 @@ Feature: Chunked vault uploads survive retries and parallelism
     And the part file on disk is truncated to 6 bytes
     And I finalize the upload
     Then the response status is 409
+    And the upload reports 0 received chunks
 
   Scenario: oversized chunk sizes are refused at session creation
     When I open an upload session for "huge.bin" of 1 bytes with a 128 MiB chunk size

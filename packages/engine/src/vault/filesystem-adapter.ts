@@ -26,11 +26,16 @@ export class FilesystemAdapter implements StorageAdapter {
   async writeChunk(userId: string, id: string, offset: number, body: Buffer): Promise<void> {
     const p = this.partPath(userId, id)
     await mkdir(dirname(p), { recursive: true })
-    // "r+" keeps existing bytes but fails when the part does not exist yet; "a+" would
-    // ignore the position on some platforms, so create-if-missing is a separate step.
+    // "r+" keeps existing bytes but fails when the part does not exist yet. Parallel
+    // first chunks all race to create it, so creation is exclusive ("wx"): a loser gets
+    // EEXIST and reopens "r+". Never "w+" here, which would truncate what a concurrent
+    // writer already put in the file.
     const fh = await open(p, "r+").catch(async (err: NodeJS.ErrnoException) => {
       if (err.code !== "ENOENT") throw err
-      return open(p, "w+")
+      return open(p, "wx").catch(async (err2: NodeJS.ErrnoException) => {
+        if (err2.code !== "EEXIST") throw err2
+        return open(p, "r+")
+      })
     })
     try {
       let written = 0

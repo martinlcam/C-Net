@@ -212,6 +212,12 @@ export class VaultUploadsController extends Controller {
     // chunk was recorded, and a short file must never graduate to vault_files.
     const onDisk = await getStorageAdapter().partSize(actor.id, id)
     if (onDisk !== upload.expectedSize) {
+      // Every chunk was recorded yet the bytes are wrong, so the receipts are not to be
+      // trusted; clear them so a resuming client re-sends the whole file.
+      await db
+        .update(vaultUploads)
+        .set({ receivedChunks: [], uploadedBytes: 0 })
+        .where(eq(vaultUploads.id, id))
       throw new HttpError(
         409,
         `Upload has ${onDisk ?? 0} bytes on disk, expected ${upload.expectedSize}; resume before finalizing`

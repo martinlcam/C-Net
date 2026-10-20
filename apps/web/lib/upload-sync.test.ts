@@ -40,10 +40,18 @@ describe("classify", () => {
     expect(classify(local(), [], [s])).toEqual({ kind: "resume", session: s })
   })
 
-  it("prefers resuming over replacing when both an old file and a session exist", () => {
+  it("resumes and carries the replace target when a changed old file is also present", () => {
     const s = session()
     const changed = existing({ size: 999 })
-    expect(classify(local(), [changed], [s])).toEqual({ kind: "resume", session: s })
+    expect(classify(local(), [changed], [s])).toEqual({
+      kind: "resume",
+      session: s,
+      replaceFileId: "f1",
+    })
+  })
+
+  it("skips rather than resumes when the live file already matches exactly", () => {
+    expect(classify(local(), [existing()], [session()])).toEqual({ kind: "skip" })
   })
 
   it("replaces a same-name file whose size differs", () => {
@@ -62,8 +70,9 @@ describe("classify", () => {
     })
   })
 
-  it("replaces a same-name file uploaded before modified times were recorded", () => {
-    expect(classify(local(), [existing({ sourceModifiedAt: null })], [])).toEqual({
+  it("falls back to size-only when the remote has no modified time, like rclone", () => {
+    expect(classify(local(), [existing({ sourceModifiedAt: null })], [])).toEqual({ kind: "skip" })
+    expect(classify(local(), [existing({ sourceModifiedAt: null, size: 999 })], [])).toEqual({
       kind: "replace",
       fileId: "f1",
     })

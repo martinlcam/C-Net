@@ -27,6 +27,23 @@ describe("FilesystemAdapter", () => {
     const bytes = await readFile(adapter.resolvePath("u1", "f1"))
     expect(bytes.toString()).toBe("hello world")
   })
+  it("keeps every chunk when six first chunks of a new file land at once", async () => {
+    // Regression for a create-if-missing race: a late creator must not truncate what
+    // earlier concurrent writers already put in the part file.
+    const chunk = 256 * 1024
+    const parts = Array.from({ length: 6 }, (_, i) => Buffer.alloc(chunk, 65 + i))
+    for (let run = 0; run < 20; run++) {
+      const id = `race-${run}`
+      await Promise.all(parts.map((b, i) => adapter.writeChunk("u1", id, i * chunk, b)))
+      await adapter.finalize("u1", id)
+      const bytes = await readFile(adapter.resolvePath("u1", id))
+      expect(bytes.length).toBe(chunk * 6)
+      for (let i = 0; i < 6; i++) {
+        expect(bytes[i * chunk]).toBe(65 + i)
+        expect(bytes[(i + 1) * chunk - 1]).toBe(65 + i)
+      }
+    }
+  })
   it("serves a byte range", async () => {
     const chunks: Buffer[] = []
     const stream = adapter.createReadStream("u1", "f1", { start: 0, end: 4 })

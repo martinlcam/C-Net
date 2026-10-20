@@ -283,10 +283,11 @@ export async function uploadFile(
 export async function resumeUpload(
   session: Pick<UploadSession, "id" | "chunkSize" | "chunkCount" | "receivedChunks">,
   file: File,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  options: UploadOptions = {}
 ): Promise<VaultFile> {
   await sendChunks(session, file, new Set(session.receivedChunks), onProgress)
-  return finalizeUpload(session, file, undefined, onProgress)
+  return finalizeUpload(session, file, options.replaceFileId, onProgress)
 }
 
 /** Per-file hooks while a folder (and its subtree) uploads. */
@@ -409,7 +410,9 @@ export async function uploadFolder(
       let result: VaultFile
       if (decision.kind === "resume") {
         handlers.onResume?.(f)
-        result = await resumeUpload(decision.session, f, progress)
+        result = await resumeUpload(decision.session, f, progress, {
+          replaceFileId: decision.replaceFileId,
+        })
         summary.resumed++
       } else if (decision.kind === "replace") {
         result = await uploadFile(f, targetId, progress, { replaceFileId: decision.fileId })
