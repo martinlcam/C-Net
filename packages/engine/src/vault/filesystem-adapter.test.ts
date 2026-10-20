@@ -16,10 +16,13 @@ afterAll(async () => {
 })
 
 describe("FilesystemAdapter", () => {
-  it("appends chunks, finalizes, reads back", async () => {
-    await adapter.appendChunk("u1", "f1", 0, Buffer.from("hello "))
-    await adapter.appendChunk("u1", "f1", 1, Buffer.from("world"))
+  it("writes chunks by offset, out of order, idempotently", async () => {
+    await adapter.writeChunk("u1", "f1", 6, Buffer.from("world"))
+    await adapter.writeChunk("u1", "f1", 0, Buffer.from("hello "))
+    await adapter.writeChunk("u1", "f1", 6, Buffer.from("world")) // duplicate
+    expect(await adapter.partSize("u1", "f1")).toBe(11)
     await adapter.finalize("u1", "f1")
+    expect(await adapter.partSize("u1", "f1")).toBeNull()
     expect(await adapter.size("u1", "f1")).toBe(11)
     const bytes = await readFile(adapter.resolvePath("u1", "f1"))
     expect(bytes.toString()).toBe("hello world")

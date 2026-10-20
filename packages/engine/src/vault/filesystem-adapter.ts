@@ -1,5 +1,5 @@
 import { createReadStream, type ReadStream } from "node:fs"
-import { appendFile, mkdir, rename, rm, stat, writeFile } from "node:fs/promises"
+import { mkdir, open, rename, rm, stat, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { resolveTankMountPath } from "@cnet/core/paths"
 import type { StorageAdapter } from "./adapter"
@@ -23,10 +23,31 @@ export class FilesystemAdapter implements StorageAdapter {
     return join(this.userDir(userId), ".renders", `${id}.pdf`)
   }
 
-  async appendChunk(userId: string, id: string, _index: number, body: Buffer): Promise<void> {
+  async writeChunk(userId: string, id: string, offset: number, body: Buffer): Promise<void> {
     const p = this.partPath(userId, id)
     await mkdir(dirname(p), { recursive: true })
-    await appendFile(p, body)
+    // "r+" keeps existing bytes but fails when the part does not exist yet; "a+" would
+    // ignore the position on some platforms, so create-if-missing is a separate step.
+    const fh = await open(p, "r+").catch(async (err: NodeJS.ErrnoException) => {
+      if (err.code !== "ENOENT") throw err
+      return open(p, "w+")
+    })
+    try {
+      let written = 0
+      while (written < body.length) {
+        const r = await fh.write(body, written, body.length - written, offset + written)
+        written += r.bytesWritten
+      }
+    } finally {
+      await fh.close()
+    }
+  }
+  async partSize(userId: string, id: string): Promise<number | null> {
+    try {
+      return (await stat(this.partPath(userId, id))).size
+    } catch {
+      return null
+    }
   }
   async finalize(userId: string, id: string): Promise<void> {
     await rename(this.partPath(userId, id), this.filePath(userId, id))
