@@ -11,6 +11,7 @@ export type VaultFile = {
   thumbKey: string | null
   starred: boolean
   color: string | null
+  sourceModifiedAt: string | null
   previewUrl: string
   downloadUrl: string
   thumbUrl: string
@@ -187,6 +188,7 @@ export async function uploadFile(
       contentType: file.type || "application/octet-stream",
       expectedSize: file.size,
       chunkSize: CHUNK_SIZE,
+      sourceModifiedAt: new Date(file.lastModified).toISOString(),
     }),
   })
   const indexes = Array.from({ length: open.chunkCount }, (_, i) => i)

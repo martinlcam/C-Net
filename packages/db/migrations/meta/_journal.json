@@ -78,6 +78,13 @@
       "when": 1791246525071,
       "tag": "0010_silky_nemesis",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792483287510,
+      "tag": "0011_shocking_proteus",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,7 @@ export const vaultUploads = pgTable(
     receivedChunks: integer("received_chunks").array().notNull().default(sql`'{}'`),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     lastChunkAt: timestamp("last_chunk_at"),
+    sourceModifiedAt: timestamp("source_modified_at", { withTimezone: true }),
   },
   (t) => ({
     ownerIdx: index("vault_upload_owner_idx").on(t.ownerUserId),

@@ -20,6 +20,8 @@ type CreateUploadBody = {
   contentType: string
   expectedSize: number
   chunkSize: number
+  /** The source file's own modified time (ISO 8601), as the browser reports it. */
+  sourceModifiedAt?: string
 }
 type CreateUploadResult = { uploadId: string; chunkSize: number; chunkCount: number }
 type UploadProgress = { receivedChunks: number[]; uploadedBytes: number; chunkCount: number }
@@ -49,6 +51,10 @@ export class VaultUploadsController extends Controller {
     if (await wouldExceedQuota(actor.id, actor.quotaBytes, body.expectedSize)) {
       throw new HttpError(413, "Quota exceeded")
     }
+    const sourceModifiedAt = body.sourceModifiedAt ? new Date(body.sourceModifiedAt) : null
+    if (sourceModifiedAt && Number.isNaN(sourceModifiedAt.getTime())) {
+      throw new HttpError(400, "sourceModifiedAt must be an ISO 8601 date")
+    }
     const chunkCount = Math.max(1, Math.ceil(body.expectedSize / body.chunkSize))
     const [upload] = await db
       .insert(vaultUploads)
@@ -60,6 +66,7 @@ export class VaultUploadsController extends Controller {
         expectedSize: body.expectedSize,
         chunkSize: body.chunkSize,
         chunkCount,
+        sourceModifiedAt,
       })
       .returning()
     this.setStatus(201)
@@ -167,6 +174,7 @@ export class VaultUploadsController extends Controller {
         filename,
         size: upload.expectedSize,
         contentType: upload.contentType,
+        sourceModifiedAt: upload.sourceModifiedAt,
       })
       .returning()
     await db.delete(vaultUploads).where(eq(vaultUploads.id, id))

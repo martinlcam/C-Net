@@ -20,6 +20,8 @@ export const vaultFiles = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     deletedAt: timestamp("deleted_at"),
     originalDirectoryId: uuid("original_directory_id"),
+    // The source file's own modified time (from the browser), used for rclone-style skip/replace.
+    sourceModifiedAt: timestamp("source_modified_at", { withTimezone: true }),
   },
   (t) => ({
     ownerCreatedIdx: index("vault_file_owner_created_idx").on(t.ownerUserId, t.createdAt),

@@ -12,6 +12,8 @@ export type FileDto = {
   thumbKey: string | null
   starred: boolean
   color: string | null
+  /** The source file's modified time at upload (ISO 8601), or null for older files. */
+  sourceModifiedAt: string | null
 } & SignedUrls
 
 export type DirDto = { id: string; name: string; path: string; parentId: string | null }
@@ -28,6 +30,7 @@ export function toFileDto(f: typeof vaultFiles.$inferSelect, nowMs: number, meta
     thumbKey: f.thumbKey,
     starred: meta?.starredAt != null,
     color: meta?.color ?? null,
+    sourceModifiedAt: f.sourceModifiedAt?.toISOString() ?? null,
     ...signedUrlsFor(f.ownerUserId, f.id, nowMs),
   }
 }
