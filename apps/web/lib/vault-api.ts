@@ -1,3 +1,5 @@
+import { RetryableError, runWithConcurrency, withRetry } from "./upload-scheduler"
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 export type VaultFile = {
@@ -131,10 +133,47 @@ export function adminDeleteFile(userId: string, id: string): Promise<{ deleted: 
 }
 
 // --- chunked upload ---
-const CHUNK_SIZE = 5 * 1024 * 1024 // 5 MiB
+// 16 MiB chunks: well under the API's 64 MiB cap and Cloudflare's 100 MB body limit.
+const CHUNK_SIZE = 16 * 1024 * 1024
+// Per file. A 96 MB window keeps a high-latency tunnel busy instead of waiting on each
+// round trip; the server writes chunks by offset, so order does not matter.
+const CHUNKS_IN_FLIGHT = 6
+// Files at a time, so one file's last chunk never leaves the link idle.
+const FILES_IN_FLIGHT = 2
+const CHUNK_ATTEMPTS = 5
+const CHUNK_BACKOFF_MS = 1000
 
 type CreateUploadResult = { uploadId: string; chunkSize: number; chunkCount: number }
 
+async function putChunk(uploadId: string, index: number, blob: Blob): Promise<void> {
+  await withRetry(
+    async () => {
+      let res: Response
+      try {
+        res = await fetch(`${API_BASE}/vault/uploads/${uploadId}/chunks/${index}`, {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: blob,
+        })
+      } catch (err) {
+        const why = err instanceof Error ? err.message : "network error"
+        throw new RetryableError(`Chunk ${index}: ${why}`)
+      }
+      if (res.ok) return
+      if (res.status >= 500 || res.status === 429) {
+        throw new RetryableError(`Chunk ${index} failed (${res.status})`)
+      }
+      throw new Error(`Chunk ${index} failed (${res.status})`)
+    },
+    { attempts: CHUNK_ATTEMPTS, baseMs: CHUNK_BACKOFF_MS }
+  )
+}
+
+/**
+ * Upload one file as parallel, retried chunks. `onProgress` receives acknowledged bytes
+ * over total as a fraction.
+ */
 export async function uploadFile(
   file: File,
   directoryId: string | null,
@@ -150,20 +189,15 @@ export async function uploadFile(
       chunkSize: CHUNK_SIZE,
     }),
   })
-
-  for (let index = 0; index < open.chunkCount; index++) {
+  const indexes = Array.from({ length: open.chunkCount }, (_, i) => i)
+  let acked = 0
+  await runWithConcurrency(indexes, CHUNKS_IN_FLIGHT, async (index) => {
     const start = index * open.chunkSize
-    const blob = file.slice(start, start + open.chunkSize)
-    const res = await fetch(`${API_BASE}/vault/uploads/${open.uploadId}/chunks/${index}`, {
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/octet-stream" },
-      body: blob,
-    })
-    if (!res.ok) throw new Error(`Chunk ${index} failed`)
-    onProgress?.((index + 1) / open.chunkCount)
-  }
-
+    const blob = file.slice(start, Math.min(start + open.chunkSize, file.size))
+    await putChunk(open.uploadId, index, blob)
+    acked += blob.size
+    onProgress?.(file.size === 0 ? 1 : acked / file.size)
+  })
   return req<VaultFile>(`/vault/uploads/${open.uploadId}/finalize`, { method: "POST" })
 }
 
@@ -216,8 +250,8 @@ export async function uploadFolder(
     dirIds.set(path, created.id)
   }
 
-  // 3. Upload each file into its mirrored directory.
-  for (const f of files) {
+  // 3. Upload files into their mirrored directories, a couple at a time.
+  await runWithConcurrency(files, FILES_IN_FLIGHT, async (f) => {
     const targetId = dirIds.get(dirPartOf(relOf(f))) ?? parentId
     try {
       const result = await uploadFile(f, targetId, (frac) => handlers.onProgress(f, frac))
@@ -225,5 +259,5 @@ export async function uploadFolder(
     } catch (err) {
       handlers.onError?.(f, err)
     }
-  }
+  })
 }
