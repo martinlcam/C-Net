@@ -26,6 +26,7 @@ export class InviteWorld extends World {
   vaultUserId: string | undefined
   uploadId: string | undefined
   uploadChunkSize = 0
+  existingFileId: string | undefined
 
   headers(): Record<string, string> {
     const h: Record<string, string> = { "Content-Type": "application/json" }

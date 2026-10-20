@@ -66,3 +66,33 @@ Feature: Chunked vault uploads survive retries and parallelism
   Scenario: oversized chunk sizes are refused at session creation
     When I open an upload session for "huge.bin" of 1 bytes with a 128 MiB chunk size
     Then the response status is 400
+
+  Scenario: the source modified time travels from the session to the file
+    Given an upload session for "clip.bin" of 4 bytes in 4-byte chunks modified at "2025-01-12T14:02:20.000Z"
+    When I send chunk 0 with bytes "abcd"
+    And I finalize the upload
+    Then the response status is 201
+    And the file's source modified time is "2025-01-12T14:02:20.000Z"
+
+  Scenario: open sessions can be found by directory
+    Given an upload session for "clip.bin" of 10 bytes in 4-byte chunks
+    When I send chunk 0 with bytes "abcd"
+    And I list upload sessions in the root
+    Then the response status is 200
+    And the list has one session for "clip.bin" with received chunks 0
+
+  Scenario: finalizing with a replace target trashes the old file
+    Given a vault file "clip.bin" of 4 bytes already exists in the root
+    And an upload session for "clip.bin" of 4 bytes in 4-byte chunks
+    When I send chunk 0 with bytes "wxyz"
+    And I finalize the upload replacing the existing "clip.bin"
+    Then the response status is 201
+    And the new file is named "clip.bin"
+    And the old "clip.bin" is in the trash
+    And the stored file is exactly "wxyz"
+
+  Scenario: a replace target that is not the caller's file is refused
+    Given an upload session for "clip.bin" of 4 bytes in 4-byte chunks
+    When I send chunk 0 with bytes "wxyz"
+    And I finalize the upload replacing a file that does not exist
+    Then the response status is 400

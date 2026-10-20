@@ -24,6 +24,13 @@ type CreateUploadBody = {
   sourceModifiedAt?: string
 }
 type CreateUploadResult = { uploadId: string; chunkSize: number; chunkCount: number }
+type FinalizeBody = {
+  /**
+   * Replace this existing file of the caller's in the same folder: the new upload keeps
+   * the exact name and the old file goes to the trash (rclone's "changed, overwrite").
+   */
+  replaceFileId?: string
+}
 type UploadProgress = { receivedChunks: number[]; uploadedBytes: number; chunkCount: number }
 /** An open (unfinalized) upload session, enough for a client to resume it. */
 type UploadSessionDto = {
@@ -169,11 +176,30 @@ export class VaultUploadsController extends Controller {
 
   /** POST /vault/uploads/:id/finalize — assemble, store, graduate to vault_files. */
   @Post("{id}/finalize")
-  public async finalize(@Request() req: ExpressRequest, @Path() id: string): Promise<FileDto> {
+  public async finalize(
+    @Request() req: ExpressRequest,
+    @Path() id: string,
+    @Body() body?: FinalizeBody
+  ): Promise<FileDto> {
     const actor = actorFrom(req)
     const upload = await this.loadUpload(actor.id, id)
     if (!upload) {
       throw new HttpError(404, "Upload session not found")
+    }
+    const replacing = body?.replaceFileId
+      ? await db.query.vaultFiles.findFirst({
+          where: and(
+            eq(vaultFiles.id, body.replaceFileId),
+            eq(vaultFiles.ownerUserId, actor.id),
+            isNull(vaultFiles.deletedAt)
+          ),
+        })
+      : null
+    if (body?.replaceFileId && !replacing) {
+      throw new HttpError(400, "replaceFileId is not one of your live files")
+    }
+    if (replacing && (replacing.directoryId ?? null) !== (upload.directoryId ?? null)) {
+      throw new HttpError(400, "replaceFileId must be in the upload's folder")
     }
     // Every chunk 0..chunkCount-1 must be present.
     const present = new Set(upload.receivedChunks)
@@ -200,10 +226,16 @@ export class VaultUploadsController extends Controller {
     }
 
     await getStorageAdapter().finalize(actor.id, id)
-    const filename = resolveCollision(
-      upload.filename,
-      await liveFileNames(actor.id, upload.directoryId)
-    )
+    if (replacing) {
+      // Trash the old file first so the new one can take its exact name.
+      await db
+        .update(vaultFiles)
+        .set({ deletedAt: new Date(), originalDirectoryId: replacing.directoryId })
+        .where(eq(vaultFiles.id, replacing.id))
+    }
+    const filename = replacing
+      ? upload.filename
+      : resolveCollision(upload.filename, await liveFileNames(actor.id, upload.directoryId))
     const [file] = await db
       .insert(vaultFiles)
       .values({
