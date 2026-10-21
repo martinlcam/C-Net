@@ -1,6 +1,20 @@
 # deploy/Caddyfile — single origin for the Cloudflare Tunnel.
 # TLS terminates at Cloudflare; Caddy serves plain HTTP on :80 to cloudflared.
 # reverse_proxy auto-upgrades WebSocket connections.
+# www -> apex (canonical)
+www.martin.cam:80 {
+	redir https://martin.cam{uri} permanent
+}
+
+# bci.martin.cam -> static BCI 101 deck under /opt/bci (files only, no service).
+# cloudflared forwards the original Host header, so a host-matched site on the same
+# port is enough; keep /opt/bci outside /opt/cnet so deploys never touch it.
+bci.martin.cam:80 {
+	root * /opt/bci
+	file_server
+}
+
+# martin.cam, staging.martin.cam, and direct -> the app (single origin)
 :80 {
 	# Backend API: strip /svc, forward to Express (serves its tsoa routes at root).
 	handle_path /svc/* {

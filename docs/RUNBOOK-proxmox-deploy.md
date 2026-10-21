@@ -232,3 +232,26 @@ One-time, inside CT 110:
    (`DATABASE_URL` is in `/opt/cnet/.env`). The event `id` in the file is the invite link:
    `https://invite.martin.cam/<id>`. Pick a fresh `gen_random_uuid()` for a real party.
 4. Responses: `https://martin.cam/cnet/dashboard/admin/invites` (superuser only).
+
+### bci.martin.cam (static BCI 101 deck)
+
+A plain static site, no service: `/opt/bci` in CT 110 holds `index.html`, `assets/` and
+`bci-101.pdf`. It lives outside `/opt/cnet` on purpose, so `deploy.sh` never touches it.
+
+One-time, inside CT 110 (done 2026-10-21):
+
+1. Copy the built deck in: tar it on the workstation, `scp` to the PVE host, `pct push 110`,
+   untar into `/opt/bci`, `chown -R root:root`, dirs 755 / files 644 (Caddy runs as `caddy`).
+2. Caddy: the `bci.martin.cam:80 { root * /opt/bci; file_server }` block from `deploy/Caddyfile`
+   goes in `/etc/caddy/Caddyfile` above the `:80` catch-all. `caddy validate --config
+   /etc/caddy/Caddyfile && systemctl reload caddy`.
+3. Add to `/etc/cloudflared/config.yml` ingress, above the `http_status:404` fallback:
+   ```yaml
+     - hostname: bci.martin.cam
+       service: http://localhost:80
+   ```
+   `cloudflared tunnel ingress validate && systemctl restart cloudflared`.
+4. `cloudflared tunnel route dns cnet bci.martin.cam` (creates the proxied CNAME).
+5. Verify: `curl -I https://bci.martin.cam/` and `/bci-101.pdf` return 200.
+
+To publish a new build, repeat step 1 only (overwrite `/opt/bci`).
