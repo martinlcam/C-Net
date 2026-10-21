@@ -44,9 +44,20 @@ type UploadSessionDto = {
   sourceModifiedAt: string | null
 }
 
-async function readBody(req: ExpressRequest): Promise<Buffer> {
+/**
+ * Buffer the raw body. Past `max` bytes nothing more is kept: the rest of the stream is
+ * drained (aborting it mid-read would leave the client without a response) and the
+ * request is refused as too large, so a runaway body costs bandwidth but not memory.
+ */
+async function readBody(req: ExpressRequest, max: number): Promise<Buffer> {
   const chunks: Buffer[] = []
-  for await (const c of req) chunks.push(c as Buffer)
+  let total = 0
+  for await (const c of req) {
+    total += (c as Buffer).length
+    if (total > max) chunks.length = 0
+    else chunks.push(c as Buffer)
+  }
+  if (total > max) throw new HttpError(413, `Chunk body exceeds  bytes`)
   return Buffer.concat(chunks)
 }
 
@@ -134,9 +145,9 @@ export class VaultUploadsController extends Controller {
     if (!Number.isInteger(index) || index < 0 || index >= upload.chunkCount) {
       throw new HttpError(400, `Chunk index ${index} outside 0..${upload.chunkCount - 1}`)
     }
-    const body = await readBody(req)
     const isLast = index === upload.chunkCount - 1
     const expectedLen = isLast ? upload.expectedSize - index * upload.chunkSize : upload.chunkSize
+    const body = await readBody(req, expectedLen)
     if (body.length !== expectedLen) {
       throw new HttpError(400, `Chunk ${index} must be ${expectedLen} bytes, got ${body.length}`)
     }

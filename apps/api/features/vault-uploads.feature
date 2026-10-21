@@ -32,7 +32,7 @@ Feature: Chunked vault uploads survive retries and parallelism
   Scenario: the last chunk may only be the remainder
     Given an upload session for "clip.bin" of 10 bytes in 4-byte chunks
     When I send chunk 2 with bytes "ijk"
-    Then the response status is 400
+    Then the response status is 413
 
   Scenario: a file that is an exact multiple of the chunk size has a full last chunk
     Given an upload session for "even.bin" of 8 bytes in 4-byte chunks
@@ -97,3 +97,9 @@ Feature: Chunked vault uploads survive retries and parallelism
     When I send chunk 0 with bytes "wxyz"
     And I finalize the upload replacing a file that does not exist
     Then the response status is 400
+
+  Scenario: a chunk body longer than the chunk size is refused as too large
+    Given an upload session for "clip.bin" of 10 bytes in 4-byte chunks
+    When I send chunk 0 with bytes "abcdefghij"
+    Then the response status is 413
+    And the upload reports 0 received chunks

@@ -75,12 +75,6 @@ export function getQueue(queueName: string): Queue {
   return queue
 }
 
-/** Close every queue opened by this process (test teardown, graceful shutdown). */
-export async function closeQueues(): Promise<void> {
-  await Promise.all([...queues.values()].map((q) => q.close()))
-  queues.clear()
-}
-
 /*
  * Get the metrics collection queue.
  */
