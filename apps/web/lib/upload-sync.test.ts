@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test"
-import { classify, type ExistingFile, type LocalFile, type OpenSession } from "./upload-sync"
+import {
+  bytesToSend,
+  classify,
+  type ExistingFile,
+  type LocalFile,
+  type OpenSession,
+} from "./upload-sync"
 
 const local = (over: Partial<LocalFile> = {}): LocalFile => ({
   name: "clip.mp4",
@@ -88,5 +94,18 @@ describe("classify", () => {
 
   it("ignores a session whose size does not match the local file", () => {
     expect(classify(local(), [], [session({ expectedSize: 5 })])).toEqual({ kind: "new" })
+  })
+})
+
+describe("bytesToSend", () => {
+  it("is the whole file for new and replace, nothing for skip", () => {
+    expect(bytesToSend({ kind: "new" }, 1000)).toBe(1000)
+    expect(bytesToSend({ kind: "replace", fileId: "f1" }, 1000)).toBe(1000)
+    expect(bytesToSend({ kind: "skip" }, 1000)).toBe(0)
+  })
+  it("is only the missing chunks for a resume, with a short last chunk", () => {
+    const s = session({ expectedSize: 1000, chunkSize: 400, chunkCount: 3, receivedChunks: [0] })
+    // chunks 1 (400) and 2 (200) remain
+    expect(bytesToSend({ kind: "resume", session: s }, 1000)).toBe(600)
   })
 })

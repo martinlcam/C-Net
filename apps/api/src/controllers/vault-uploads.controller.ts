@@ -2,12 +2,13 @@ import { getVaultThumbnailsQueue, resolveCollision } from "@cnet/core"
 import { db } from "@cnet/db"
 import { vaultFiles, vaultUploads } from "@cnet/db/schema"
 import { getStorageAdapter } from "@cnet/engine"
-import { and, eq, isNull, sql } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Put, Query, Request, Route, Security } from "tsoa"
 import { HttpError } from "../middleware/error.middleware"
 import { actorFrom } from "../vault/access"
 import { type FileDto, toFileDto } from "../vault/dto"
+import { recordChunkReceipt } from "../vault/receipts"
 import { liveFileNames } from "../vault/siblings"
 import { completedUsage, wouldExceedQuota } from "../vault/usage"
 
@@ -152,19 +153,14 @@ export class VaultUploadsController extends Controller {
       throw new HttpError(400, `Chunk ${index} must be ${expectedLen} bytes, got ${body.length}`)
     }
     await getStorageAdapter().writeChunk(actor.id, id, index * upload.chunkSize, body)
-    // One atomic statement: add the index only if absent and derive progress from the
-    // distinct count, so concurrent chunks cannot lose each other's updates.
-    const merged = sql`(select array_agg(distinct i order by i) from unnest(array_append(${vaultUploads.receivedChunks}, ${index}::int)) as i)`
-    const [row] = await db
-      .update(vaultUploads)
-      .set({
-        receivedChunks: merged,
-        uploadedBytes: sql`least(${vaultUploads.expectedSize}, cardinality(${merged}) * ${vaultUploads.chunkSize})`,
-        lastChunkAt: new Date(),
-      })
-      .where(eq(vaultUploads.id, id))
-      .returning({ receivedChunks: vaultUploads.receivedChunks })
-    return { received: row.receivedChunks.length }
+    const received = await recordChunkReceipt(id, index)
+    if (!received) {
+      // Finalized or reaped between loading the session and recording the chunk: the
+      // bytes just written belong to nothing, so drop them rather than leave an orphan.
+      await getStorageAdapter().remove(actor.id, id)
+      throw new HttpError(404, "Upload session not found")
+    }
+    return { received: received.length }
   }
 
   /** GET /vault/uploads/:id — resume info. */

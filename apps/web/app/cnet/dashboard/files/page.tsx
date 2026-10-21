@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/stories/dropdown-menu/dropdown-menu"
 import { FileGrid } from "../_components/file-grid"
+import { formatBytes } from "../_components/format"
 import { TextDialog, type TextPrompt } from "../_components/text-dialog"
 import { useFileViewMode } from "../_components/use-file-view-mode"
 import { ViewModeToggle } from "../_components/view-mode-toggle"
@@ -119,6 +120,14 @@ export default function FilesPage() {
       const id = ids.get(file)
       if (id) useTransferStore.getState().update(id, p)
     }
+    const summaryId = `upload-summary:${stamp}`
+    transfers.upsert({
+      id: summaryId,
+      label: "Folder sync: checking what is already there…",
+      kind: "upload",
+      progress: 0,
+      status: "active",
+    })
     try {
       const summary = await uploadFolder(files, dirId, {
         onProgress: (file, frac) => patch(file, { progress: Math.round(frac * 100) }),
@@ -135,6 +144,11 @@ export default function FilesPage() {
         },
         onResume: (file) =>
           patch(file, { label: `${file.webkitRelativePath || file.name} (resumed)` }),
+        onBytes: (sent, planned) =>
+          useTransferStore.getState().update(summaryId, {
+            label: `Folder sync: ${formatBytes(sent)} of ${formatBytes(planned)} sent`,
+            progress: planned ? Math.round((sent / planned) * 100) : 0,
+          }),
       })
       const parts = [
         `${summary.uploaded} uploaded`,
@@ -142,9 +156,10 @@ export default function FilesPage() {
         summary.resumed ? `${summary.resumed} resumed` : null,
         summary.replaced ? `${summary.replaced} replaced` : null,
         summary.failed ? `${summary.failed} failed` : null,
+        `${formatBytes(summary.bytes)} sent`,
       ].filter(Boolean)
       transfers.upsert({
-        id: `upload-summary:${stamp}`,
+        id: summaryId,
         label: `Folder sync: ${parts.join(", ")}`,
         kind: "upload",
         progress: 100,

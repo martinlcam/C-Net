@@ -1,5 +1,11 @@
-import { RetryableError, runWithConcurrency, withRetry } from "./upload-scheduler"
-import { classify, type ExistingFile } from "./upload-sync"
+import {
+  isGoneSession,
+  RetryableError,
+  runWithConcurrency,
+  UploadRequestError,
+  withRetry,
+} from "./upload-scheduler"
+import { bytesToSend, classify, type ExistingFile } from "./upload-sync"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
@@ -183,7 +189,7 @@ async function putChunk(uploadId: string, index: number, blob: Blob): Promise<vo
       if (res.status >= 500 || res.status === 429) {
         throw new RetryableError(`Chunk ${index} failed (${res.status})`)
       }
-      throw new Error(`Chunk ${index} failed (${res.status})`)
+      throw new UploadRequestError(res.status, `Chunk ${index} failed (${res.status})`)
     },
     { attempts: CHUNK_ATTEMPTS, baseMs: CHUNK_BACKOFF_MS }
   )
@@ -243,7 +249,7 @@ async function finalizeUpload(
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(body.message || "Finalize failed")
+    throw new UploadRequestError(res.status, body.message || "Finalize failed")
   }
   return res.json() as Promise<VaultFile>
 }
@@ -299,6 +305,8 @@ export type FolderUploadHandlers = {
   onSkip?: (file: File) => void
   /** An earlier, interrupted upload of this file is being continued. */
   onResume?: (file: File) => void
+  /** Running total of bytes acknowledged by the server, and the bytes this drop will send. */
+  onBytes?: (sent: number, planned: number) => void
 }
 
 export type FolderUploadSummary = {
@@ -307,6 +315,8 @@ export type FolderUploadSummary = {
   resumed: number
   replaced: number
   failed: number
+  /** Bytes actually put on the wire by this drop. */
+  bytes: number
 }
 
 /**
@@ -385,6 +395,15 @@ export async function uploadFolder(
     resumed: 0,
     replaced: 0,
     failed: 0,
+    bytes: 0,
+  }
+  // Bytes acknowledged so far per file, so the running total survives parallel progress.
+  const ackedByFile = new Map<File, number>()
+  let planned = 0
+  const reportBytes = () => {
+    let sent = 0
+    for (const n of ackedByFile.values()) sent += n
+    handlers.onBytes?.(sent, planned)
   }
   await runWithConcurrency(files, FILES_IN_FLIGHT, async (f) => {
     const targetId = dirIds.get(dirPartOf(relOf(f))) ?? parentId
@@ -401,19 +420,40 @@ export async function uploadFolder(
         existing,
         sessions
       )
-      const progress = (frac: number) => handlers.onProgress(f, frac)
+      let toSend = bytesToSend(decision, f.size)
+      planned += toSend
+      const progress = (frac: number) => {
+        handlers.onProgress(f, frac)
+        // frac counts bytes already on the server for a resume, so scale to what we send.
+        const already = f.size - toSend
+        ackedByFile.set(f, Math.max(0, Math.round(frac * f.size) - already))
+        reportBytes()
+      }
       if (decision.kind === "skip") {
         summary.skipped++
         handlers.onSkip?.(f)
+        reportBytes()
         return
       }
       let result: VaultFile
       if (decision.kind === "resume") {
         handlers.onResume?.(f)
-        result = await resumeUpload(decision.session, f, progress, {
-          replaceFileId: decision.replaceFileId,
-        })
-        summary.resumed++
+        try {
+          result = await resumeUpload(decision.session, f, progress, {
+            replaceFileId: decision.replaceFileId,
+          })
+          summary.resumed++
+        } catch (err) {
+          if (!isGoneSession(err)) throw err
+          // The session was reaped or finalized elsewhere since we listed it: start over,
+          // which means the whole file goes on the wire after all.
+          planned += f.size - toSend
+          toSend = f.size
+          result = await uploadFile(f, targetId, progress, {
+            replaceFileId: decision.replaceFileId,
+          })
+          summary.uploaded++
+        }
       } else if (decision.kind === "replace") {
         result = await uploadFile(f, targetId, progress, { replaceFileId: decision.fileId })
         summary.replaced++
@@ -421,6 +461,9 @@ export async function uploadFolder(
         result = await uploadFile(f, targetId, progress)
         summary.uploaded++
       }
+      summary.bytes += toSend
+      ackedByFile.set(f, toSend)
+      reportBytes()
       handlers.onDone?.(f, result)
     } catch (err) {
       summary.failed++

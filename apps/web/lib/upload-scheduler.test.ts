@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test"
-import { RetryableError, runWithConcurrency, withRetry } from "./upload-scheduler"
+import {
+  isGoneSession,
+  RetryableError,
+  runWithConcurrency,
+  UploadRequestError,
+  withRetry,
+} from "./upload-scheduler"
 
 describe("runWithConcurrency", () => {
   it("never runs more than `limit` workers at once and finishes every item", async () => {
@@ -77,5 +83,13 @@ describe("withRetry", () => {
       )
     ).rejects.toThrow("bad request")
     expect(calls).toBe(1)
+  })
+})
+
+describe("UploadRequestError / isGoneSession", () => {
+  it("recognises a 404 from the upload endpoints as a session that no longer exists", () => {
+    expect(isGoneSession(new UploadRequestError(404, "Chunk 3 failed (404)"))).toBe(true)
+    expect(isGoneSession(new UploadRequestError(400, "bad"))).toBe(false)
+    expect(isGoneSession(new Error("Chunk 3 failed (404)"))).toBe(false)
   })
 })

@@ -48,6 +48,19 @@ function alreadyThere(local: LocalFile, file: ExistingFile): boolean {
   return file.sourceModifiedAt === null || sameSecond(local.mtimeMs, file.sourceModifiedAt)
 }
 
+/** Bytes a decision will put on the wire: whole file for new/replace, missing chunks for resume. */
+export function bytesToSend(decision: SyncDecision, fileSize: number): number {
+  if (decision.kind === "skip") return 0
+  if (decision.kind !== "resume") return fileSize
+  const { chunkSize, chunkCount, receivedChunks } = decision.session
+  const have = new Set(receivedChunks)
+  let bytes = 0
+  for (let i = 0; i < chunkCount; i++) {
+    if (!have.has(i)) bytes += Math.min(chunkSize, fileSize - i * chunkSize)
+  }
+  return bytes
+}
+
 export function classify(
   local: LocalFile,
   existing: ExistingFile[],

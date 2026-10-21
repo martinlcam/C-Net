@@ -1,3 +1,19 @@
+/** A definitive HTTP failure from an upload endpoint (not retried). */
+export class UploadRequestError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = "UploadRequestError"
+  }
+}
+
+/** True when the server no longer knows the upload session (finalized elsewhere or reaped). */
+export function isGoneSession(err: unknown): boolean {
+  return err instanceof UploadRequestError && err.status === 404
+}
+
 /** Thrown (or wrapped) for failures worth retrying: network errors, 5xx, 429. */
 export class RetryableError extends Error {
   constructor(message: string) {
