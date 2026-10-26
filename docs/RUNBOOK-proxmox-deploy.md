@@ -255,3 +255,23 @@ One-time, inside CT 110 (done 2026-10-21):
 5. Verify: `curl -I https://bci.martin.cam/` and `/bci-101.pdf` return 200.
 
 To publish a new build, repeat step 1 only (overwrite `/opt/bci`).
+
+### UPS (NUT on the PVE host) and the dashboard overview
+
+The CyberPower UPS is on USB to the **PVE host**. NUT runs there in standalone mode
+(`/etc/nut/`, upsd bound to 127.0.0.1): three minutes on battery, or a low-battery report,
+shuts the host down cleanly, which stops the containers and exports the pools.
+
+The dashboard's read-only environment panel (`GET /proxmox/overview`) shows the UPS via
+`cnet-ups-publish`, a host-side agent that runs `upsc` every 10 s and writes the raw
+variables to the C-Net Redis under `ups:status` (nothing new listens on the network):
+
+```bash
+install -d /opt/cnet-host
+install -m 644 deploy/host/ups-publish.ts /opt/cnet-host/ups-publish.ts
+install -m 644 deploy/systemd/cnet-ups-publish.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now cnet-ups-publish
+upsc cyberpower            # what the agent publishes
+```
+
+Re-run the two `install` lines after changing either file in the repo.

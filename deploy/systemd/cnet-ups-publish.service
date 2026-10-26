@@ -1,0 +1,28 @@
+# deploy/systemd/cnet-ups-publish.service — runs on the PVE host (not in a container),
+# because NUT and the UPS's USB cable live there. Reads the UPS with `upsc` and writes
+# the raw variables to the C-Net Redis under ups:status for the dashboard overview.
+#
+# Install:  cp deploy/host/ups-publish.ts /opt/cnet-host/ups-publish.ts
+#           cp deploy/systemd/cnet-ups-publish.service /etc/systemd/system/
+#           systemctl daemon-reload && systemctl enable --now cnet-ups-publish
+# REDIS_URL comes from the same .env the bay agent uses.
+[Unit]
+Description=C-Net UPS state publisher (upsc -> Redis)
+After=network-online.target nut-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/root/C-Net/.env
+Environment=UPS_NAME=cyberpower
+ExecStart=/root/.bun/bin/bun run /opt/cnet-host/ups-publish.ts
+Restart=always
+RestartSec=10
+# Only reads: no need for anything beyond talking to upsd on localhost and Redis.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -49,7 +49,7 @@ export function CnetNav({ role, onNavigate }: { role?: string; onNavigate?: () =
       />
       <NavLink
         href="/cnet/dashboard/infrastructure/proxmox"
-        label="Proxmox"
+        label="Storage"
         active={pathname.includes("/proxmox")}
         onNavigate={onNavigate}
       />

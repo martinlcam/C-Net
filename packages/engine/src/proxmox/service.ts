@@ -12,7 +12,9 @@ import type {
   PveZfsTree,
 } from "./storage-types"
 import type {
+  GuestInterface,
   NodeMetrics,
+  NodeStorageStatus,
   ProxmoxGuestAction,
   ProxmoxGuestType,
   ProxmoxNode,
@@ -229,6 +231,36 @@ export class ProxmoxService {
       throw new Error(
         `Failed to fetch storage: ${error instanceof Error ? error.message : "Unknown error"}`
       )
+    }
+  }
+
+  /** Storages as the node sees them, with used/total; disabled ones come back inactive. */
+  async getNodeStorages(node: string): Promise<NodeStorageStatus[]> {
+    try {
+      const response = await this.client.get(`/nodes/${node}/storage`)
+      return response.data.data || []
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch node storages: ${error instanceof Error ? error.message : "Unknown error"}`
+      )
+    }
+  }
+
+  /**
+   * A running container's interfaces (name, MAC, addresses). Stopped containers and
+   * older PVE builds have none to report, so a failure yields an empty list.
+   */
+  async getLxcInterfaces(node: string, vmid: number): Promise<GuestInterface[]> {
+    try {
+      const response = await this.client.get(`/nodes/${node}/lxc/${vmid}/interfaces`)
+      return (response.data.data || []).map((raw: Record<string, unknown>) => ({
+        name: String(raw.name ?? ""),
+        hwaddr: (raw.hwaddr as string) || undefined,
+        inet: (raw.inet as string) || undefined,
+        inet6: (raw.inet6 as string) || undefined,
+      }))
+    } catch {
+      return []
     }
   }
 

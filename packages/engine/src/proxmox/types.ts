@@ -71,3 +71,25 @@ export interface StoragePool {
   nodes?: string
   shared?: boolean
 }
+
+/** One row of `/nodes/{node}/storage`: a storage as seen from that node, with usage. */
+export interface NodeStorageStatus {
+  storage: string
+  type: string
+  content?: string
+  /** 1 when the storage is reachable right now; 0 when disabled or unavailable. */
+  active?: number
+  enabled?: number
+  shared?: number
+  used?: number
+  total?: number
+  avail?: number
+}
+
+/** One network interface of a running container, from `/nodes/{node}/lxc/{vmid}/interfaces`. */
+export interface GuestInterface {
+  name: string
+  hwaddr?: string
+  inet?: string
+  inet6?: string
+}

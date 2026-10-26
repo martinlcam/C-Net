@@ -1,10 +1,17 @@
 import { decrypt, getEncryptionPassword } from "@cnet/core"
 import { db } from "@cnet/db"
 import { infrastructureConfigs } from "@cnet/db/schema"
-import { logAuditAction, type ProxmoxGuestAction, ProxmoxService } from "@cnet/engine"
+import {
+  logAuditAction,
+  type PoolStatus,
+  type ProxmoxGuestAction,
+  ProxmoxService,
+} from "@cnet/engine"
 import { eq } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Controller, Get, Path, Post, Request, Response, Route, Security } from "tsoa"
+import { getUpsSummary } from "../lib/ups-status"
+import { HttpError } from "../middleware/error.middleware"
 
 interface ProxmoxErrorResponse {
   error: string
@@ -15,6 +22,77 @@ interface GuestActionResponse {
   success: boolean
   taskId: string
 }
+
+/** A guest plus the addresses its running interfaces hold (empty when stopped). */
+export type OverviewGuest = {
+  vmid: number
+  name: string
+  status: string
+  /** "lxc" or "qemu". */
+  type: string
+  /** CPU load as a fraction of one core (PVE convention), when running. */
+  cpu: number | null
+  cpus: number | null
+  mem: number | null
+  maxmem: number | null
+  disk: number | null
+  maxdisk: number | null
+  netin: number | null
+  netout: number | null
+  uptimeSeconds: number | null
+  ips: string[]
+}
+
+export type OverviewUps = {
+  ts: number
+  model: string | null
+  status: string[]
+  onBattery: boolean
+  lowBattery: boolean
+  chargePercent: number | null
+  runtimeSeconds: number | null
+  loadPercent: number | null
+  loadWatts: number | null
+  inputVoltage: number | null
+  outputVoltage: number | null
+}
+
+export type OverviewStorage = {
+  storage: string
+  type: string
+  active: boolean
+  used: number | null
+  total: number | null
+  /** Set for ZFS storages whose pool is imported: health and raid level from zpool. */
+  pool: { state: string; raid: string; scan: string; errors: string } | null
+}
+
+/**
+ * Everything the dashboard's read-only environment panel shows, in one call.
+ * Host-global (the proxbox node), so it uses the host token and is superuser-only.
+ */
+export type ProxmoxOverviewDTO = {
+  fetchedAt: string
+  node: {
+    name: string
+    uptimeSeconds: number | null
+    cpuPercent: number
+    cpuCores: number
+    memoryUsed: number
+    memoryTotal: number
+    rootUsed: number
+    rootTotal: number
+  }
+  guests: OverviewGuest[]
+  storages: OverviewStorage[]
+  ups: OverviewUps | null
+}
+
+// The panel polls every 15 s and PVE answers a dozen calls per overview; one short
+// cache keeps a second tab or a fast refresh from doubling the load on the host.
+const OVERVIEW_TTL_MS = 10_000
+let overviewCache: { at: number; value: ProxmoxOverviewDTO } | null = null
+let overviewInFlight: Promise<ProxmoxOverviewDTO> | null = null
 
 /**
  * Audit action name per power verb. `satisfies` keeps the values as literals so
@@ -105,6 +183,30 @@ export class ProxmoxController extends Controller {
       this.setStatus(500)
       return { error: `Failed to ${action} VM`, message }
     }
+  }
+
+  /* GET /proxmox/overview — read-only snapshot of the proxbox environment. */
+  @Get("overview")
+  @Response<ProxmoxErrorResponse>(503, "Not configured")
+  public async getOverview(): Promise<ProxmoxOverviewDTO> {
+    const host = process.env.CNET_STORAGE_PVE_HOST
+    const user = process.env.CNET_STORAGE_PVE_USER
+    const token = process.env.CNET_STORAGE_PVE_TOKEN
+    if (!host || !user || !token) {
+      throw new HttpError(
+        503,
+        "Proxmox connection not configured: set CNET_STORAGE_PVE_HOST, CNET_STORAGE_PVE_USER and CNET_STORAGE_PVE_TOKEN"
+      )
+    }
+    if (overviewCache && Date.now() - overviewCache.at < OVERVIEW_TTL_MS) return overviewCache.value
+    if (!overviewInFlight) {
+      overviewInFlight = buildOverview(new ProxmoxService(host, user, token)).finally(() => {
+        overviewInFlight = null
+      })
+    }
+    const value = await overviewInFlight
+    overviewCache = { at: Date.now(), value }
+    return value
   }
 
   /* GET /proxmox/nodes */
@@ -205,5 +307,74 @@ export class ProxmoxController extends Controller {
     @Request() req: ExpressRequest
   ): Promise<GuestActionResponse | ProxmoxErrorResponse> {
     return this.runGuestAction(vmid, "reboot", req)
+  }
+}
+
+async function buildOverview(proxmox: ProxmoxService): Promise<ProxmoxOverviewDTO> {
+  const node = process.env.CNET_STORAGE_PVE_NODE || "proxbox"
+  const [status, guests, storages, pools, ups] = await Promise.all([
+    proxmox.getNodeStatus(node),
+    proxmox.getAllVMs(),
+    proxmox.getNodeStorages(node),
+    proxmox.getPoolStatuses(node).catch((): PoolStatus[] => []),
+    getUpsSummary(),
+  ])
+  const withIps: OverviewGuest[] = await Promise.all(
+    guests.map(async (g): Promise<OverviewGuest> => {
+      let ips: string[] = []
+      if (g.type === "lxc" && g.status === "running") {
+        const ifaces = await proxmox.getLxcInterfaces(node, g.vmid)
+        ips = ifaces
+          .filter((i) => i.name !== "lo")
+          .flatMap((i) => (i.inet ? [i.inet.replace(/\/\d+$/, "")] : []))
+      }
+      return {
+        vmid: g.vmid,
+        name: g.name ?? "",
+        status: g.status,
+        type: g.type ?? "qemu",
+        cpu: g.cpu ?? null,
+        cpus: g.cpus ?? null,
+        mem: g.mem ?? null,
+        maxmem: g.maxmem ?? null,
+        disk: g.disk ?? null,
+        maxdisk: g.maxdisk ?? null,
+        netin: g.netin ?? null,
+        netout: g.netout ?? null,
+        uptimeSeconds: g.uptime ?? null,
+        ips,
+      }
+    })
+  )
+  const poolByName = new Map(pools.map((p) => [p.name, p]))
+  return {
+    fetchedAt: new Date().toISOString(),
+    node: {
+      name: node,
+      uptimeSeconds: status.uptime ?? null,
+      cpuPercent: status.cpu.usage,
+      cpuCores: status.cpu.cores,
+      memoryUsed: status.memory.used,
+      memoryTotal: status.memory.total,
+      rootUsed: status.disk.used,
+      rootTotal: status.disk.total,
+    },
+    guests: withIps.sort((a, b) => a.vmid - b.vmid),
+    storages: storages
+      .map((st) => {
+        const pool = st.type === "zfspool" ? poolByName.get(st.storage) : undefined
+        return {
+          storage: st.storage,
+          type: st.type,
+          active: st.active === 1,
+          used: st.used ?? null,
+          total: st.total ?? null,
+          pool: pool
+            ? { state: pool.state, raid: pool.raid, scan: pool.scan.raw, errors: pool.errors }
+            : null,
+        }
+      })
+      .sort((a, b) => a.storage.localeCompare(b.storage)),
+    ups,
   }
 }

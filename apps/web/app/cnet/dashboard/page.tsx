@@ -1,4 +1,4 @@
-import { MetricsCard } from "@/components/MetricsCard"
+import { ProxmoxOverview } from "@/components/proxmox/ProxmoxOverview"
 import { SonarFindingsPanel } from "@/components/SonarFindingsPanel"
 
 export default function DashboardPage() {
@@ -9,14 +9,10 @@ export default function DashboardPage() {
       </h1>
 
       <div className="mb-8">
-        <SonarFindingsPanel />
+        <ProxmoxOverview />
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <MetricsCard title="CPU Usage" value={45.2} unit="%" variant="default" />
-        <MetricsCard title="Memory Usage" value={62.8} unit="%" variant="warning" />
-        <MetricsCard title="Disk Usage" value={38.5} unit="%" variant="success" />
-      </div>
+      <SonarFindingsPanel />
     </div>
   )
 }

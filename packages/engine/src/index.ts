@@ -55,7 +55,9 @@ export type {
 } from "./proxmox/storage-types"
 export { type ProxmoxConnectionTestResult, testProxmoxConnection } from "./proxmox/test"
 export type {
+  GuestInterface,
   NodeMetrics,
+  NodeStorageStatus,
   ProxmoxGuestAction,
   ProxmoxGuestType,
   ProxmoxNode,
@@ -63,6 +65,14 @@ export type {
   ProxmoxVMStatus,
   StoragePool,
 } from "./proxmox/types"
+export {
+  parseUpsc,
+  summarizeUps,
+  UPS_STATUS_KEY,
+  UPS_STATUS_MAX_AGE_MS,
+  type UpsRawStatus,
+  type UpsSummary,
+} from "./proxmox/ups"
 export { RadarrService } from "./radarr/service"
 export type {
   RadarrImage,
