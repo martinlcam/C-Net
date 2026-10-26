@@ -38,6 +38,11 @@ export type JellyfinItem = {
   MediaStreams?: JellyfinMediaStream[]
   MediaSources?: Array<{ Id: string; Container?: string; Size?: number }>
   Chapters?: Array<{ StartPositionTicks?: number; Name?: string }>
+  // Series airing metadata from the provider (TVDB/TMDB); absent on movies and episodes.
+  Status?: string
+  AirDays?: string[]
+  AirTime?: string
+  ProviderIds?: Record<string, string>
   // TV (series / season / episode) fields
   IndexNumber?: number
   ParentIndexNumber?: number

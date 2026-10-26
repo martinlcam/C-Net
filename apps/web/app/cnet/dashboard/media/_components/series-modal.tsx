@@ -11,6 +11,7 @@ import {
   type Series,
   TICKS_PER_SECOND,
 } from "@/lib/media-api"
+import { airingLine } from "./airing-label"
 import { DialogShell } from "./dialog-shell"
 import { cardVariants, rowVariants, viewVariants } from "./motion"
 import { PosterImage } from "./poster-image"
@@ -105,6 +106,7 @@ export function SeriesModal({
   const epList = episodes.data ?? []
   // Skeleton until the seasons are known and the chosen season's episodes have landed.
   const loading = seasons.isPending || (seasonId !== null && episodes.isPending)
+  const airingText = airingLine(series.airing, Date.now())
   const meta = [
     series.year ? String(series.year) : null,
     series.seasonCount ? `${series.seasonCount} season${series.seasonCount > 1 ? "s" : ""}` : null,
@@ -132,6 +134,7 @@ export function SeriesModal({
             {meta.length > 0 ? (
               <p className="mt-0.5 text-white/60 text-xs">{meta.join(" · ")}</p>
             ) : null}
+            {airingText ? <p className="mt-0.5 text-white/80 text-xs">{airingText}</p> : null}
             {series.overview ? (
               <p className="mt-1 line-clamp-2 text-white/70 text-xs">{series.overview}</p>
             ) : null}
@@ -155,6 +158,7 @@ export function SeriesModal({
             {meta.length > 0 ? (
               <p className="mt-1 text-white/60 text-xs">{meta.join(" · ")}</p>
             ) : null}
+            {airingText ? <p className="mt-1 text-white/80 text-xs">{airingText}</p> : null}
             {(series.genres?.length ?? 0) > 0 ? (
               <p className="mt-2 text-white/70 text-xs">{series.genres.join(", ")}</p>
             ) : null}

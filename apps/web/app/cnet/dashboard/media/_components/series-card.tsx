@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import type { Series } from "@/lib/media-api"
+import { airingChip } from "./airing-label"
 import { cardVariants } from "./motion"
 import { PosterImage } from "./poster-image"
 
@@ -14,6 +15,7 @@ export function SeriesCard({
   index?: number
   onOpen: (s: Series) => void
 }) {
+  const chip = airingChip(series.airing, Date.now())
   return (
     <motion.button
       type="button"
@@ -33,6 +35,11 @@ export function SeriesCard({
             {series.title}
           </div>
         )}
+        {chip ? (
+          <span className="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 font-medium text-[10px] text-white tabular-nums backdrop-blur-sm">
+            {chip}
+          </span>
+        ) : null}
       </div>
       <p className="mt-1 truncate font-medium text-neutral-90 text-sm">{series.title}</p>
       {series.year ? <p className="text-neutral-60 text-xs">{series.year}</p> : null}

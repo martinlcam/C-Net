@@ -18,6 +18,15 @@ export type Movie = {
   played: boolean
 }
 
+export type Airing = {
+  status: "continuing" | "ended" | "upcoming" | "unknown"
+  nextAiring: string | null
+  previousAiring: string | null
+  airDay: string | null
+  network: string | null
+  source: "sonarr" | "jellyfin"
+}
+
 export type Series = {
   id: string
   title: string
@@ -29,6 +38,7 @@ export type Series = {
   posterUrl: string | null
   backdropUrl: string | null
   seasonCount?: number
+  airing: Airing | null
 }
 
 export type Season = {

@@ -9,7 +9,7 @@ import type {
 } from "./types"
 
 const ITEM_FIELDS =
-  "Overview,Genres,RunTimeTicks,CommunityRating,OfficialRating,MediaSources,ProductionYear"
+  "Overview,Genres,RunTimeTicks,CommunityRating,OfficialRating,MediaSources,ProductionYear,ProviderIds"
 
 /**
  * Thin client for a single Jellyfin server, authenticated with the server-wide

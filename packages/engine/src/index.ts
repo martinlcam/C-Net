@@ -12,6 +12,7 @@ export type {
   JellyfinUser,
   JellyfinUserData,
 } from "./jellyfin/types"
+export { type AiringInfo, type AiringStatus, airingInfo, matchSonarrSeries } from "./media/airing"
 export { guestAddresses } from "./proxmox/addresses"
 export {
   BAY_CMD_CHANNEL,

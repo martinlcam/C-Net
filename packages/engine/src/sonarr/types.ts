@@ -26,7 +26,13 @@ export type SonarrSeries = {
   year: number
   tvdbId: number
   monitored: boolean
+  /** continuing | ended | upcoming */
   status?: string
+  /** ISO time of the next episode to air, when the show is still releasing. */
+  nextAiring?: string
+  previousAiring?: string
+  airTime?: string
+  network?: string
   statistics?: SonarrStatistics
 }
 

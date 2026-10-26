@@ -1,12 +1,21 @@
-import type { JellyfinItem } from "@cnet/engine"
+import { airingInfo, type JellyfinItem, matchSonarrSeries, type SonarrSeries } from "@cnet/engine"
 import type { Request as ExpressRequest } from "express"
 import { Controller, Get, Path, Query, Request, Route, Security } from "tsoa"
-import { getJellyfin } from "../media/clients"
+import { getJellyfin, getSonarr } from "../media/clients"
 import { resolveJellyfinUser } from "../media/provision"
 import { signMediaUrls } from "../media/urls"
 import { actorFrom } from "../vault/access"
 
 const TICKS_PER_MINUTE = 600_000_000
+
+export interface AiringDTO {
+  status: "continuing" | "ended" | "upcoming" | "unknown"
+  nextAiring: string | null
+  previousAiring: string | null
+  airDay: string | null
+  network: string | null
+  source: "sonarr" | "jellyfin"
+}
 
 export interface SeriesDTO {
   id: string
@@ -19,6 +28,24 @@ export interface SeriesDTO {
   posterUrl: string | null
   backdropUrl: string | null
   seasonCount?: number
+  /** Whether the show is still releasing and when the next episode lands; null if unknown. */
+  airing: AiringDTO | null
+}
+
+// Sonarr's whole series list in one call, kept ten minutes: it changes when a show is
+// added, not per request, and every series row on the page would otherwise refetch it.
+const SONARR_TTL_MS = 10 * 60_000
+let sonarrCache: { at: number; list: SonarrSeries[] } | null = null
+async function sonarrSeriesList(): Promise<SonarrSeries[]> {
+  if (sonarrCache && Date.now() - sonarrCache.at < SONARR_TTL_MS) return sonarrCache.list
+  try {
+    const list = await getSonarr().getSeries()
+    sonarrCache = { at: Date.now(), list }
+    return list
+  } catch (err) {
+    console.error("Sonarr series list unavailable; airing info falls back to Jellyfin:", err)
+    return sonarrCache?.list ?? []
+  }
 }
 
 export interface SeasonDTO {
@@ -47,7 +74,7 @@ export interface EpisodeDTO {
   played: boolean
 }
 
-function toSeriesDTO(userId: string, item: JellyfinItem): SeriesDTO {
+function toSeriesDTO(userId: string, item: JellyfinItem, sonarr: SonarrSeries[]): SeriesDTO {
   const urls = signMediaUrls(userId, item.Id)
   return {
     id: item.Id,
@@ -60,6 +87,7 @@ function toSeriesDTO(userId: string, item: JellyfinItem): SeriesDTO {
     posterUrl: item.ImageTags?.Primary ? urls.posterUrl : null,
     backdropUrl: (item.BackdropImageTags?.length ?? 0) > 0 ? urls.backdropUrl : null,
     seasonCount: item.ChildCount,
+    airing: airingInfo(item, matchSonarrSeries(item, sonarr)),
   }
 }
 
@@ -108,7 +136,8 @@ export class MediaTvController extends Controller {
     const actor = actorFrom(req)
     const { jellyfinUserId } = await resolveJellyfinUser(actor)
     const res = await getJellyfin().series(jellyfinUserId, { genre, search, sortBy: sort })
-    return { items: res.Items.map((i) => toSeriesDTO(actor.id, i)) }
+    const sonarr = await sonarrSeriesList()
+    return { items: res.Items.map((i) => toSeriesDTO(actor.id, i, sonarr)) }
   }
 
   @Get("tv/latest")
@@ -116,7 +145,8 @@ export class MediaTvController extends Controller {
     const actor = actorFrom(req)
     const { jellyfinUserId } = await resolveJellyfinUser(actor)
     const items = await getJellyfin().latestSeries(jellyfinUserId)
-    return { items: items.map((i) => toSeriesDTO(actor.id, i)) }
+    const sonarr = await sonarrSeriesList()
+    return { items: items.map((i) => toSeriesDTO(actor.id, i, sonarr)) }
   }
 
   @Get("tv/continue")
