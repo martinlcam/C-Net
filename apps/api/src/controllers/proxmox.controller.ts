@@ -2,6 +2,7 @@ import { decrypt, getEncryptionPassword } from "@cnet/core"
 import { db } from "@cnet/db"
 import { infrastructureConfigs } from "@cnet/db/schema"
 import {
+  guestAddresses,
   logAuditAction,
   type PoolStatus,
   type ProxmoxGuestAction,
@@ -323,10 +324,7 @@ async function buildOverview(proxmox: ProxmoxService): Promise<ProxmoxOverviewDT
     guests.map(async (g): Promise<OverviewGuest> => {
       let ips: string[] = []
       if (g.type === "lxc" && g.status === "running") {
-        const ifaces = await proxmox.getLxcInterfaces(node, g.vmid)
-        ips = ifaces
-          .filter((i) => i.name !== "lo")
-          .flatMap((i) => (i.inet ? [i.inet.replace(/\/\d+$/, "")] : []))
+        ips = guestAddresses(await proxmox.getLxcInterfaces(node, g.vmid))
       }
       return {
         vmid: g.vmid,

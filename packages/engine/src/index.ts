@@ -12,6 +12,7 @@ export type {
   JellyfinUser,
   JellyfinUserData,
 } from "./jellyfin/types"
+export { guestAddresses } from "./proxmox/addresses"
 export {
   BAY_CMD_CHANNEL,
   BAY_CMD_MAX_AGE_MS,
