@@ -31,7 +31,12 @@ export function fmtRuntime(seconds: number | null): string {
 }
 
 /** One plain sentence for the power rail, with the tone that colours it. */
-export function powerLine(ups: OverviewUps | null): { tone: Tone; text: string } {
+export type PowerReading = Pick<
+  OverviewUps,
+  "onBattery" | "lowBattery" | "chargePercent" | "runtimeSeconds" | "loadWatts"
+>
+
+export function powerLine(ups: PowerReading | null): { tone: Tone; text: string } {
   if (!ups) return { tone: "none", text: "No reading from the UPS" }
   const charge =
     ups.chargePercent === null

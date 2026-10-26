@@ -7,18 +7,22 @@ import { startBus } from "./redis-bus"
  *
  *  bridge (Python)    --PUBLISH bd:samples-->  Redis --SUB--> [this] --WS--> /bd/live
  *  cnet-bayd (host)   --PUBLISH bay:status-->  Redis --SUB--> [this] --WS--> /bay/live
+ *  host-publish (host)--PUBLISH host:status--> Redis --SUB--> [this] --WS--> /host/live
  *
- * Two independent fan-outs sharing one Redis subscriber:
- *  - bd:samples + bd:status  -> topic "bd"  -> /bd/live  (public EEG viewer)
- *  - bay:status              -> topic "bay" -> /bay/live (token-gated; storage data)
+ * Three independent fan-outs sharing one Redis subscriber:
+ *  - bd:samples + bd:status  -> topic "bd"   -> /bd/live   (public EEG viewer)
+ *  - bay:status              -> topic "bay"  -> /bay/live  (token-gated; storage data)
+ *  - host:status             -> topic "host" -> /host/live (token-gated; node/UPS/guests)
  */
 
 const PORT = Number(process.env.REALTIME_PORT || 4002)
 const CH_SAMPLES = process.env.BD_REDIS_CHANNEL_SAMPLES || "bd:samples"
 const CH_STATUS = process.env.BD_REDIS_CHANNEL_STATUS || "bd:status"
 const CH_BAY = process.env.BAY_REDIS_CHANNEL || "bay:status"
+const CH_HOST = process.env.HOST_REDIS_CHANNEL || "host:status"
 const TOPIC_BD = "bd"
 const TOPIC_BAY = "bay"
+const TOPIC_HOST = "host"
 const SERVER_START_TS = Date.now()
 
 type ClientRole = "viewer" | "ingest"
@@ -30,9 +34,9 @@ const publishers = new Set<ServerWebSocket<ClientData>>()
 let nextClientId = 1
 const genId = (prefix: string) => `${prefix}-${(nextClientId++).toString(36)}`
 
-// Redis -> WS fan-out. Route bay frames to the bay topic, everything else to bd.
-const bus = startBus([CH_SAMPLES, CH_STATUS, CH_BAY], (channel, payload) => {
-  const topic = channel === CH_BAY ? TOPIC_BAY : TOPIC_BD
+// Redis -> WS fan-out. Bay and host frames go to their own topics, everything else to bd.
+const bus = startBus([CH_SAMPLES, CH_STATUS, CH_BAY, CH_HOST], (channel, payload) => {
+  const topic = channel === CH_BAY ? TOPIC_BAY : channel === CH_HOST ? TOPIC_HOST : TOPIC_BD
   server.publish(topic, payload)
 })
 
@@ -72,6 +76,18 @@ const server = Bun.serve<ClientData>({
       }
       const ok = srv.upgrade(req, {
         data: { role: "viewer", id: genId("b"), topic: TOPIC_BAY, openedAt: Date.now() },
+      })
+      return ok ? undefined : new Response("expected websocket upgrade", { status: 426 })
+    }
+
+    // Host telemetry (node, guests, UPS) — same superuser-only key as the bay stream.
+    if (url.pathname === "/host/live") {
+      const token = url.searchParams.get("token") || ""
+      if (!tokensMatch(token, bayViewKey())) {
+        return new Response("unauthorized", { status: 401 })
+      }
+      const ok = srv.upgrade(req, {
+        data: { role: "viewer", id: genId("h"), topic: TOPIC_HOST, openedAt: Date.now() },
       })
       return ok ? undefined : new Response("expected websocket upgrade", { status: 426 })
     }
@@ -148,7 +164,7 @@ const server = Bun.serve<ClientData>({
 })
 
 console.log(
-  `[rt] realtime up on :${PORT}  channels=[${CH_SAMPLES}, ${CH_STATUS}, ${CH_BAY}]  topics=[${TOPIC_BD}, ${TOPIC_BAY}]`
+  `[rt] realtime up on :${PORT}  channels=[${CH_SAMPLES}, ${CH_STATUS}, ${CH_BAY}, ${CH_HOST}]  topics=[${TOPIC_BD}, ${TOPIC_BAY}, ${TOPIC_HOST}]`
 )
 
 const shutdown = async (sig: string) => {

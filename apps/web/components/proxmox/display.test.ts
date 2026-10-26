@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import { fmtRuntime, poolTone, powerLine, scanSummary, storageState, usageTone } from "./display"
+import type { OverviewUps } from "./overview-api"
 
 describe("usageTone", () => {
   it("is calm below 70, warm to 90, hot above", () => {
@@ -31,7 +32,7 @@ describe("fmtRuntime", () => {
 })
 
 describe("powerLine", () => {
-  const base = {
+  const base: OverviewUps = {
     ts: 0,
     model: "CST150UC",
     status: ["OL"],
@@ -44,6 +45,7 @@ describe("powerLine", () => {
     inputVoltage: 115,
     outputVoltage: 115,
   }
+  const reading = (over: Partial<OverviewUps>): OverviewUps => ({ ...base, ...over })
   it("reads as one plain sentence on mains", () => {
     expect(powerLine(base)).toEqual({
       tone: "ok",
@@ -52,7 +54,7 @@ describe("powerLine", () => {
   })
   it("switches to the battery wording and a warning tone when on battery", () => {
     expect(
-      powerLine({ ...base, status: ["OB", "DISCHRG"], onBattery: true, chargePercent: 82 })
+      powerLine(reading({ status: ["OB", "DISCHRG"], onBattery: true, chargePercent: 82 }))
     ).toEqual({
       tone: "warn",
       text: "On battery, 82% charge, 60 min left at 153 W",
@@ -60,14 +62,15 @@ describe("powerLine", () => {
   })
   it("is hot when the UPS reports low battery", () => {
     expect(
-      powerLine({
-        ...base,
-        status: ["OB", "LB"],
-        onBattery: true,
-        lowBattery: true,
-        chargePercent: 9,
-        runtimeSeconds: 70,
-      }).tone
+      powerLine(
+        reading({
+          status: ["OB", "LB"],
+          onBattery: true,
+          lowBattery: true,
+          chargePercent: 9,
+          runtimeSeconds: 70,
+        })
+      ).tone
     ).toBe("bad")
   })
   it("says so when there is no reading", () => {

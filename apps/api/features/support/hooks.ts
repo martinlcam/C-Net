@@ -5,6 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { closeAllQueues } from "@cnet/core"
 import { After, AfterAll, BeforeAll, setDefaultTimeout } from "@cucumber/cucumber"
+import { closeRedis } from "../../src/lib/redis-client"
 import { createApp } from "../../src/server"
 import { type InviteWorld, runtime } from "./world"
 
@@ -43,6 +44,7 @@ AfterAll(async () => {
   // A finalize enqueues a thumbnail job, which opens a Redis connection that would
   // otherwise keep the process alive; keep-alive sockets likewise block server.close.
   await closeAllQueues()
+  await closeRedis()
   server?.closeAllConnections?.()
   await new Promise<void>((resolve) => server?.close(() => resolve()))
   rmSync(bddTank, { recursive: true, force: true })

@@ -3,6 +3,8 @@ import { db } from "@cnet/db"
 import { infrastructureConfigs } from "@cnet/db/schema"
 import {
   guestAddresses,
+  HOST_HISTORY_KEY,
+  HOST_HISTORY_LEN,
   logAuditAction,
   type PoolStatus,
   type ProxmoxGuestAction,
@@ -11,6 +13,7 @@ import {
 import { eq } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
 import { Controller, Get, Path, Post, Request, Response, Route, Security } from "tsoa"
+import { getRedis } from "../lib/redis-client"
 import { getUpsSummary } from "../lib/ups-status"
 import { HttpError } from "../middleware/error.middleware"
 
@@ -208,6 +211,25 @@ export class ProxmoxController extends Controller {
     const value = await overviewInFlight
     overviewCache = { at: Date.now(), value }
     return value
+  }
+
+  /*
+   * GET /proxmox/overview/history — the host agent's recent frames, oldest first, so the
+   * live panel's charts are full on arrival. Shapes are the agent's; see
+   * packages/engine host-live.ts. Returned as unknown for the OpenAPI schema.
+   */
+  @Get("overview/history")
+  public async getOverviewHistory(): Promise<unknown[]> {
+    const raw = await getRedis().lrange(HOST_HISTORY_KEY, 0, HOST_HISTORY_LEN - 1)
+    const frames: unknown[] = []
+    for (const r of raw) {
+      try {
+        frames.push(JSON.parse(r))
+      } catch {
+        /* skip a malformed frame */
+      }
+    }
+    return frames.reverse()
   }
 
   /* GET /proxmox/nodes */

@@ -1,0 +1,28 @@
+# deploy/systemd/cnet-host-publish.service — runs on the PVE host (not in a container),
+# because NUT, the UPS's USB cable and pvesh live there. Publishes a live host frame
+# (UPS, node, guests) on Redis host:status every 2 s, keeps 90 frames of history, and
+# refreshes the ups:status snapshot. Replaces cnet-ups-publish.
+#
+# Install:  install -d /opt/cnet-host
+#           install -m 644 deploy/host/host-publish.ts /opt/cnet-host/host-publish.ts
+#           install -m 644 deploy/systemd/cnet-host-publish.service /etc/systemd/system/
+#           systemctl daemon-reload && systemctl enable --now cnet-host-publish
+# REDIS_URL comes from the same .env the bay agent uses.
+[Unit]
+Description=C-Net host state publisher (upsc + pvesh -> Redis)
+After=network-online.target nut-server.service pve-cluster.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/root/C-Net/.env
+Environment=UPS_NAME=cyberpower
+Environment=PVE_NODE=proxbox
+ExecStart=/root/.bun/bin/bun run /opt/cnet-host/host-publish.ts
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

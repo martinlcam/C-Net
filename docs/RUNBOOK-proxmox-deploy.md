@@ -262,16 +262,18 @@ The CyberPower UPS is on USB to the **PVE host**. NUT runs there in standalone m
 (`/etc/nut/`, upsd bound to 127.0.0.1): three minutes on battery, or a low-battery report,
 shuts the host down cleanly, which stops the containers and exports the pools.
 
-The dashboard's read-only environment panel (`GET /proxmox/overview`) shows the UPS via
-`cnet-ups-publish`, a host-side agent that runs `upsc` every 10 s and writes the raw
-variables to the C-Net Redis under `ups:status` (nothing new listens on the network):
+The dashboard overview reads `GET /proxmox/overview` (REST snapshot every 15 s) and the
+`/host/live` WebSocket on apps/realtime (2 s frames). Both come from `cnet-host-publish`, a
+host-side agent that runs `upsc` and `pvesh` and writes to the C-Net Redis: `host:status`
+(pub/sub), `host:history` (last 90 frames, replayed on page load) and `ups:status` (snapshot).
+Nothing new listens on the network.
 
 ```bash
 install -d /opt/cnet-host
-install -m 644 deploy/host/ups-publish.ts /opt/cnet-host/ups-publish.ts
-install -m 644 deploy/systemd/cnet-ups-publish.service /etc/systemd/system/
-systemctl daemon-reload && systemctl enable --now cnet-ups-publish
+install -m 644 deploy/host/host-publish.ts /opt/cnet-host/host-publish.ts
+install -m 644 deploy/systemd/cnet-host-publish.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now cnet-host-publish
 upsc cyberpower            # what the agent publishes
 ```
 
-Re-run the two `install` lines after changing either file in the repo.
+Re-run the `install` lines after changing either file in the repo.
