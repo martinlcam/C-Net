@@ -277,3 +277,28 @@ upsc cyberpower            # what the agent publishes
 ```
 
 Re-run the `install` lines after changing either file in the repo.
+
+### Retired drives and pools (powered down on purpose)
+
+When a pool is exported and its drives taken out of service, Proxmox stops listing both, so
+the Storage page would show the bays as empty and the pool would vanish. Instead, declare
+them in `/opt/cnet/.env` on CT 110 and the page shows the bays as "powered down" and the
+pool as OFFLINE:
+
+```
+CNET_STORAGE_RETIRED="11:ZA13EK55:cold_tank:mirror,12:ZA13KGFQ:cold_tank:mirror"
+```
+
+(`bay:serial:pool:raid`, comma separated.) `systemctl restart cnet-api` after editing.
+
+To really keep a drive asleep, detaching it from the kernel is the only reliable way, since
+any SMART or identity query (Proxmox's disk list included) spins it back up. On the PVE host:
+
+```bash
+hdparm -Y /dev/sdX && echo 1 > /sys/block/sdX/device/delete   # sleep, then detach
+echo "- - -" > /sys/class/scsi_host/hostN/scan                # bring it back (N from
+                                                               #   readlink -f /sys/block/sdX/device)
+```
+
+Bays 11 and 12 (cold_tank) were detached on 2026-10-26; their SCSI hosts are host3 (sdi) and
+host5 (sdj).

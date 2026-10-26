@@ -33,6 +33,7 @@ function faultMessages(bays: BayInfo[], pools: PoolStatus[]): string[] {
     }
   }
   for (const b of bays) {
+    if (b.retired) msgs.push(`Bay ${b.bayIndex} (${b.serial}) powered down on purpose`)
     if (b.offline) msgs.push(`Bay ${b.bayIndex} (${b.serial}) seated but offline — reseat`)
     if (b.smartHealth === "FAILED") msgs.push(`Bay ${b.bayIndex} (${b.serial}) SMART FAILED`)
   }

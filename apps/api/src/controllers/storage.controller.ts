@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto"
-import { logAuditAction, ProxmoxService } from "@cnet/engine"
+import { logAuditAction, ProxmoxService, parseRetiredSpec, withRetiredPools } from "@cnet/engine"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Request, Response, Route, Security, Tags } from "tsoa"
 import { BayCommandError, getBayInventory, sendBayCommand } from "../lib/bay-command-client"
@@ -66,6 +66,11 @@ export class StorageController extends Controller {
     return process.env.CNET_STORAGE_PVE_NODE || "proxbox"
   }
 
+  /** Drives/pools taken out of service on purpose; see packages/engine retired.ts. */
+  private static get retired() {
+    return parseRetiredSpec(process.env.CNET_STORAGE_RETIRED)
+  }
+
   private notConfigured(): StorageErrorResponse {
     this.setStatus(503)
     return {
@@ -100,7 +105,9 @@ export class StorageController extends Controller {
       }
     }
     try {
-      return { data: await proxmox.getBays(StorageController.node, inv.bays) }
+      return {
+        data: await proxmox.getBays(StorageController.node, inv.bays, StorageController.retired),
+      }
     } catch (error) {
       console.error("Failed to fetch bays:", error)
       this.setStatus(500)
@@ -119,7 +126,8 @@ export class StorageController extends Controller {
     const proxmox = StorageController.getService()
     if (!proxmox) return this.notConfigured()
     try {
-      return { data: await proxmox.getPoolStatuses(StorageController.node) }
+      const pools = await proxmox.getPoolStatuses(StorageController.node)
+      return { data: withRetiredPools(pools, StorageController.retired) }
     } catch (error) {
       console.error("Failed to fetch pools:", error)
       this.setStatus(500)

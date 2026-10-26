@@ -15,6 +15,7 @@ const STATE_STYLES: Record<string, string> = {
   ONLINE: "text-accent-green-40 border-accent-green-70/50 bg-accent-green-100/20",
   DEGRADED: "text-amber-300 border-amber-500/60 bg-amber-950/30",
   FAULTED: "text-accent-red-40 border-accent-red-60 bg-accent-red-100/30",
+  OFFLINE: "text-amber-300 border-amber-500/60 bg-amber-950/30",
 }
 
 const BTN =

@@ -5,6 +5,7 @@
  */
 
 import { type BayInventoryEntry, PROXBOX_BAY_MAP } from "./bay-map"
+import type { RetiredBay } from "./retired"
 import type {
   BayInfo,
   BayPool,
@@ -104,8 +105,10 @@ export function mapPool(tree: PveZfsTree, list?: PveZfsListEntry): PoolStatus {
 export function assembleBays(
   disks: PveDisk[],
   poolTrees: PoolStatus[],
-  inventory: BayInventoryEntry[]
+  inventory: BayInventoryEntry[],
+  retired: RetiredBay[] = []
 ): BayInfo[] {
+  const retiredByBay = new Map(retired.map((r) => [r.bayIndex, r]))
   const diskBySerial = new Map<string, PveDisk>()
   for (const d of disks) if (d.serial) diskBySerial.set(d.serial, d)
 
@@ -120,8 +123,11 @@ export function assembleBays(
 
   return PROXBOX_BAY_MAP.map((slot) => {
     const inv = invByBay.get(slot.bayIndex)
-    const present = inv?.present ?? false
-    const serial = inv?.serial
+    const gone = retiredByBay.get(slot.bayIndex)
+    // A detached drive has no device node, so the inventory says "absent"; the admin's
+    // declaration is what we know about it.
+    const present = (inv?.present ?? false) || gone !== undefined
+    const serial = inv?.serial ?? gone?.serial
     const disk = serial ? diskBySerial.get(serial) : undefined
     const membership = serial ? poolBySerial.get(serial) : undefined
 
@@ -131,7 +137,8 @@ export function assembleBays(
       ledCapable: slot.ledCapable,
       occupied: present,
       // Drive seated at the port but the OS/PVE can't enumerate it (link issue).
-      offline: present && !disk,
+      offline: present && !disk && gone === undefined,
+      retired: gone !== undefined,
       serial,
       model: disk?.model,
       sizeBytes: disk?.size,

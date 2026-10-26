@@ -1,6 +1,7 @@
 import https from "node:https"
 import axios, { type AxiosInstance } from "axios"
 import type { BayInventoryEntry } from "./bay-map"
+import { type RetiredBay, withRetiredPools } from "./retired"
 import { assembleBays, mapPool, mapSmart } from "./storage"
 import type {
   BayInfo,
@@ -324,9 +325,13 @@ export class ProxmoxService {
   }
 
   /** Composed: the calibrated 12-bay view (occupancy, identity, pool membership). */
-  async getBays(node: string, inventory: BayInventoryEntry[]): Promise<BayInfo[]> {
+  async getBays(
+    node: string,
+    inventory: BayInventoryEntry[],
+    retired: RetiredBay[] = []
+  ): Promise<BayInfo[]> {
     const [disks, pools] = await Promise.all([this.getDisks(node), this.getPoolStatuses(node)])
-    return assembleBays(disks, pools, inventory)
+    return assembleBays(disks, withRetiredPools(pools, retired), inventory, retired)
   }
 
   /** Composed: parsed SMART for one drive, located by serial via `disks/list`. */

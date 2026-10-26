@@ -43,6 +43,7 @@ export {
   type HostLiveUps,
 } from "./proxmox/host-live"
 export type { BayLiveFrame, BayLiveState, SpinState } from "./proxmox/live-types"
+export { parseRetiredSpec, type RetiredBay, withRetiredPools } from "./proxmox/retired"
 export { ProxmoxService } from "./proxmox/service"
 export {
   assembleBays,

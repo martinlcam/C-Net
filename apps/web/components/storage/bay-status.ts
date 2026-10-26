@@ -23,6 +23,7 @@ export interface BayStatus {
 export function deriveBayStatus(bay: BayInfo, pool?: PoolStatus, live?: BayLiveState): BayStatus {
   if (live?.locate) return { tone: "locate", label: "Locating" }
   if (!bay.occupied) return { tone: "empty", label: "Empty" }
+  if (bay.retired) return { tone: "offline", label: "Powered down" }
   if (bay.offline) return { tone: "offline", label: "Offline · no link" }
 
   const z = bay.zfsState

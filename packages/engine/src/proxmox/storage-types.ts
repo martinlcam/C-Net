@@ -21,6 +21,8 @@ export interface BayInfo {
   occupied: boolean
   /** Seated but the OS can't talk to it (no SATA link), e.g. a loose drive. */
   offline: boolean
+  /** Taken out of service on purpose: pool exported, drive detached so nothing wakes it. */
+  retired: boolean
   serial?: string
   model?: string
   sizeBytes?: number
