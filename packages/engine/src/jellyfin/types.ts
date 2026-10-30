@@ -22,6 +22,18 @@ export type JellyfinMediaStream = {
   VideoRangeType?: string
 }
 
+/** One trickplay tile grid: JPEG sheets of TileWidth×TileHeight thumbnails, Width×Height each. */
+export type JellyfinTrickplayInfo = {
+  Width: number
+  Height: number
+  TileWidth: number
+  TileHeight: number
+  ThumbnailCount: number
+  /** Milliseconds between consecutive thumbnails. */
+  Interval: number
+  Bandwidth?: number
+}
+
 export type JellyfinItem = {
   Id: string
   Name: string
@@ -38,6 +50,9 @@ export type JellyfinItem = {
   MediaStreams?: JellyfinMediaStream[]
   MediaSources?: Array<{ Id: string; Container?: string; Size?: number }>
   Chapters?: Array<{ StartPositionTicks?: number; Name?: string }>
+  // Scrub-preview tile grids keyed by media source id, then by tile width. Only present
+  // once the library has trickplay extraction on and the item has been processed.
+  Trickplay?: Record<string, Record<string, JellyfinTrickplayInfo>>
   // Series airing metadata from the provider (TVDB/TMDB); absent on movies and episodes.
   Status?: string
   AirDays?: string[]

@@ -90,6 +90,15 @@ export type SubtitleTrack = {
   label: string
   forced: boolean
 }
+/** Scrub-preview thumbnail grid — see TrickplayDTO on the API side. */
+export type Trickplay = {
+  width: number
+  height: number
+  tileWidth: number
+  tileHeight: number
+  thumbnailCount: number
+  intervalSeconds: number
+}
 export type ItemTracks = {
   /** Signed HLS URL minted at request time — see ItemTracksDTO on the API side. */
   hlsUrl: string
@@ -99,6 +108,8 @@ export type ItemTracks = {
   creditsStartSeconds: number | null
   introStartSeconds: number | null
   introEndSeconds: number | null
+  /** Null until Jellyfin has generated trickplay tiles for the item. */
+  trickplay: Trickplay | null
   /** False when the video itself must be transcoded (HEVC/10-bit) — see the API DTO. */
   videoDirect: boolean
   videoCodec: string | null

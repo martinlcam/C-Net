@@ -9,6 +9,7 @@ export type {
   JellyfinLibraryOpts,
   JellyfinMediaStream,
   JellyfinMediaType,
+  JellyfinTrickplayInfo,
   JellyfinUser,
   JellyfinUserData,
 } from "./jellyfin/types"

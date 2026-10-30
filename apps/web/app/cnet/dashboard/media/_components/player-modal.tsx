@@ -29,6 +29,7 @@ import {
   type SubtitleTrack,
   setWatched,
   TICKS_PER_SECOND,
+  type Trickplay,
 } from "@/lib/media-api"
 import { cn } from "@/lib/utils"
 import { EpisodePanel } from "./episode-panel"
@@ -72,6 +73,230 @@ function fmtTime(input: number): string {
   const sec = Math.floor(s % 60)
   const mm = h > 0 ? String(m).padStart(2, "0") : String(m)
   return `${h > 0 ? `${h}:` : ""}${mm}:${String(sec).padStart(2, "0")}`
+}
+
+// Rendered width of a scrub-preview thumbnail; Jellyfin's tiles are 320px wide, so this
+// is a downscale on both and never a blurry upscale.
+const PREVIEW_W = { phone: 128, desktop: 192 } as const
+
+/**
+ * Where the thumbnail for time `t` lives. Sheets are `tileWidth × tileHeight` grids of
+ * consecutive thumbnails `intervalSeconds` apart, so a frame is addressed by sheet
+ * number, then row and column within the sheet.
+ */
+function frameFor(t: number, trickplay: Trickplay) {
+  const perSheet = trickplay.tileWidth * trickplay.tileHeight
+  const idx = Math.min(
+    Math.max(0, trickplay.thumbnailCount - 1),
+    Math.max(0, Math.floor(t / trickplay.intervalSeconds))
+  )
+  const within = idx % perSheet
+  return {
+    sheet: Math.floor(idx / perSheet),
+    col: within % trickplay.tileWidth,
+    row: Math.floor(within / trickplay.tileWidth),
+  }
+}
+
+function ScrubThumb({
+  t,
+  trickplay,
+  sheetUrl,
+  width,
+}: {
+  t: number
+  trickplay: Trickplay
+  sheetUrl: string
+  width: number
+}) {
+  const height = Math.round((trickplay.height * width) / trickplay.width)
+  const { col, row } = frameFor(t, trickplay)
+  return (
+    <div
+      aria-hidden
+      style={{
+        width,
+        height,
+        backgroundImage: `url("${sheetUrl}")`,
+        backgroundPosition: `-${col * width}px -${row * height}px`,
+        backgroundSize: `${trickplay.tileWidth * width}px ${trickplay.tileHeight * height}px`,
+      }}
+      className="rounded bg-neutral-800 bg-no-repeat"
+    />
+  )
+}
+
+type SheetState = "loading" | "ok" | "missing"
+
+/**
+ * Loads trickplay sheets ahead of the preview and remembers which ones exist. Jellyfin
+ * advertises an item's grid as soon as the library has trickplay switched on, hours
+ * before its extraction task has actually written the JPEGs — so the picture is shown
+ * only once a sheet has really loaded, and never as a grey box over a 404.
+ */
+function useSheets() {
+  const states = useRef(new Map<string, SheetState>())
+  const [, bump] = useState(0)
+  const ensure = useCallback((url: string): SheetState => {
+    const known = states.current.get(url)
+    if (known) return known
+    states.current.set(url, "loading")
+    const img = new Image()
+    img.onload = () => {
+      states.current.set(url, "ok")
+      bump((n) => n + 1)
+    }
+    img.onerror = () => {
+      states.current.set(url, "missing")
+      bump((n) => n + 1)
+    }
+    img.src = url
+    return "loading"
+  }, [])
+  return ensure
+}
+
+/**
+ * Scrubber with a seek preview. Hovering (mouse) or holding (touch) over the bar floats
+ * a bubble above the pointer with the thumbnail and time you would land on; while
+ * dragging, the seek itself is deferred to release so a long drag doesn't start a
+ * transcode at every pixel along the way.
+ */
+function SeekBar({
+  current,
+  duration,
+  trickplay,
+  sheetUrl,
+  mobile,
+  onSeek,
+  onScrubbing,
+}: {
+  current: number
+  duration: number
+  trickplay: Trickplay | null
+  sheetUrl: (sheet: number) => string
+  mobile: boolean
+  onSeek: (t: number) => void
+  onScrubbing: (active: boolean) => void
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  // Time under the pointer while hovering or dragging; null when neither.
+  const [preview, setPreview] = useState<number | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const draggingRef = useRef(false)
+  const pendingRef = useRef<number | null>(null)
+
+  const timeAtX = useCallback(
+    (clientX: number) => {
+      const el = wrapRef.current
+      if (!el || duration <= 0) return 0
+      const r = el.getBoundingClientRect()
+      return Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * duration
+    },
+    [duration]
+  )
+
+  const endDrag = useCallback(() => {
+    if (!draggingRef.current) return
+    draggingRef.current = false
+    setDragging(false)
+    onScrubbing(false)
+    if (pendingRef.current != null) onSeek(pendingRef.current)
+    pendingRef.current = null
+    // A finger lifts off; a mouse stays and keeps hovering.
+    if (mobile) setPreview(null)
+  }, [mobile, onSeek, onScrubbing])
+
+  // Release can land anywhere on the page, so the drag ends on the window, not the
+  // input. The slider is `touch-none` so the browser never turns a finger drag into a
+  // scroll (which would cancel the pointer mid-hold and drop the preview).
+  useEffect(() => {
+    if (!dragging) return
+    const evts = ["pointerup", "touchend", "touchcancel"] as const
+    for (const e of evts) window.addEventListener(e, endDrag)
+    return () => {
+      for (const e of evts) window.removeEventListener(e, endDrag)
+    }
+  }, [dragging, endDrag])
+
+  const sheetState = useSheets()
+  // Warm the first sheet so the very first hover shows a picture straight away.
+  const firstSheet = trickplay ? sheetUrl(0) : null
+  useEffect(() => {
+    if (firstSheet) sheetState(firstSheet)
+  }, [firstSheet, sheetState])
+
+  const shown = dragging && preview != null ? preview : current
+  const frac = duration > 0 && preview != null ? preview / duration : 0
+  const thumbW = mobile ? PREVIEW_W.phone : PREVIEW_W.desktop
+  const previewSheet =
+    trickplay && preview != null ? sheetUrl(frameFor(preview, trickplay).sheet) : null
+  const showThumb = previewSheet != null && sheetState(previewSheet) === "ok"
+
+  return (
+    <div className="flex items-center gap-3 text-xs tabular-nums">
+      <span>{fmtTime(shown)}</span>
+      <div
+        ref={wrapRef}
+        data-seek
+        className="relative flex flex-1 items-center py-2"
+        onPointerMove={(e) => {
+          if (e.pointerType === "mouse" && !draggingRef.current) setPreview(timeAtX(e.clientX))
+        }}
+        onPointerLeave={() => {
+          if (!draggingRef.current) setPreview(null)
+        }}
+      >
+        {preview != null && duration > 0 ? (
+          <div
+            className="pointer-events-none absolute bottom-full z-10 mb-2 flex -translate-x-1/2 flex-col items-center gap-1"
+            style={{
+              left: `clamp(${thumbW / 2}px, ${frac * 100}%, calc(100% - ${thumbW / 2}px))`,
+            }}
+          >
+            {trickplay && previewSheet && showThumb ? (
+              <div className="rounded-md p-0.5 shadow-xl ring-1 ring-white/30">
+                <ScrubThumb
+                  t={preview}
+                  trickplay={trickplay}
+                  sheetUrl={previewSheet}
+                  width={thumbW}
+                />
+              </div>
+            ) : null}
+            <span className="rounded bg-black/80 px-1.5 py-0.5 font-medium text-white text-xs ring-1 ring-white/20">
+              {fmtTime(preview)}
+            </span>
+          </div>
+        ) : null}
+        <input
+          type="range"
+          min={0}
+          max={duration || 0}
+          step={0.1}
+          value={shown}
+          onPointerDown={() => {
+            draggingRef.current = true
+            pendingRef.current = null
+            setDragging(true)
+            onScrubbing(true)
+          }}
+          onChange={(e) => {
+            const t = Number(e.target.value)
+            if (draggingRef.current) {
+              pendingRef.current = t
+              setPreview(t)
+            } else {
+              onSeek(t) // keyboard nudge on the focused slider
+            }
+          }}
+          aria-label="Seek"
+          className="h-1 w-full cursor-pointer touch-none accent-red-600"
+        />
+      </div>
+      <span>{fmtTime(duration)}</span>
+    </div>
+  )
 }
 
 function displayTitle(item: Playable): string {
@@ -155,6 +380,8 @@ export function PlayerModal({
   const [creditsStart, setCreditsStart] = useState<number | null>(null)
   // Intro/OP [start, end) seconds (from chapters) for the "Skip Intro" button.
   const [intro, setIntro] = useState<{ start: number; end: number } | null>(null)
+  // Scrub-preview tile grid, when Jellyfin has generated one for this item.
+  const [trickplay, setTrickplay] = useState<Trickplay | null>(null)
   // Playback speed. The media element resets playbackRate to 1 on every (re)load, so we
   // stash it in a ref and re-apply after each load (audio switch / episode).
   const [speed, setSpeed] = useState(1)
@@ -176,6 +403,9 @@ export function PlayerModal({
   // On touch, a tap on a hidden-controls picture only reveals the controls; the
   // click that follows must not also pause. Set at touchstart, consumed by the click.
   const tapWasReveal = useRef(false)
+  // What pressed the picture last. A finger tap on visible controls dismisses them, the
+  // way phone players do; a mouse click still toggles playback.
+  const lastPointerType = useRef("mouse")
   const mobile = useIsMobile()
 
   // The set of audio streams to keep warm (all of them, capped), plus a stable signature
@@ -257,6 +487,7 @@ export function PlayerModal({
     setSubTracks([])
     setCreditsStart(null)
     setIntro(null)
+    setTrickplay(null)
     setSettingsOpen(false)
     setCurSub(-1)
     setStreamUrl(null)
@@ -275,6 +506,7 @@ export function PlayerModal({
         setVideoDirect(t.videoDirect)
         setSubTracks(t.subtitles)
         setCreditsStart(t.creditsStartSeconds)
+        setTrickplay(t.trickplay)
         setIntro(
           t.introStartSeconds != null && t.introEndSeconds != null
             ? { start: t.introStartSeconds, end: t.introEndSeconds }
@@ -302,6 +534,13 @@ export function PlayerModal({
     `${mediaUrl(signed)}&path=${encodeURIComponent(`${item.id}/Subtitles/${streamIndex}/0/Stream.vtt`)}`
   const srcFor = (ai: number) =>
     mediaUrl(signed) + (ai !== AUDIO_DEFAULT ? `&audioStreamIndex=${ai}` : "")
+  // Trickplay sheet `n`, through the same signed proxy (Jellyfin serves them under the
+  // item's Videos/ path, so no extra route is needed).
+  const sheetUrl = useCallback(
+    (sheet: number) =>
+      `${mediaUrl(signed)}&path=${encodeURIComponent(`Trickplay/${trickplay?.width ?? 0}/${sheet}.jpg`)}`,
+    [signed, trickplay?.width]
+  )
 
   /**
    * Tear the stream down and build it again from the current position, on a freshly
@@ -669,18 +908,47 @@ export function PlayerModal({
     }
   }, [getActive])
 
-  // Keep the controls up while a menu is open: on a phone nothing moves the mouse
-  // while you read the settings sheet, and hiding would close it under you.
+  // Keep the controls up while a menu is open or a finger is on the scrubber: on a
+  // phone nothing moves the mouse while you read the settings sheet or hold a drag,
+  // and hiding would close it under you.
   const menuOpenRef = useRef(false)
   menuOpenRef.current = settingsOpen || episodesOpen
+  const scrubbingRef = useRef(false)
 
   const revealUi = useCallback(() => {
     setUiVisible(true)
     if (hideTimer.current) clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => {
-      if (!getActive()?.paused && !menuOpenRef.current) setUiVisible(false)
+      if (!getActive()?.paused && !menuOpenRef.current && !scrubbingRef.current) setUiVisible(false)
     }, 3000)
   }, [getActive])
+
+  const hideUi = useCallback(() => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    setUiVisible(false)
+  }, [])
+
+  const onScrubbing = useCallback(
+    (active: boolean) => {
+      scrubbingRef.current = active
+      // Letting go re-arms the hide timer, which may have fired (and done nothing) mid-drag.
+      if (!active) revealUi()
+    },
+    [revealUi]
+  )
+
+  // A press on the picture — or on empty overlay space beside the buttons, which is
+  // still "the picture" to a thumb. With the controls hidden a tap only reveals them
+  // (handled at touchstart). With them up, a tap puts them away, the way any phone
+  // player does, and pause lives on the button; a mouse click keeps toggling playback.
+  const onPictureTap = useCallback(() => {
+    if (tapWasReveal.current) {
+      tapWasReveal.current = false
+      return
+    }
+    if (lastPointerType.current === "touch") hideUi()
+    else togglePlay()
+  }, [hideUi, togglePlay])
 
   // Closing a menu re-arms the hide timer, which may have fired (and done nothing)
   // while the menu was open.
@@ -837,13 +1105,10 @@ export function PlayerModal({
             key={`${item.id}-${ai}`}
             ref={registerMedia(ai)}
             playsInline
-            onClick={() => {
-              if (tapWasReveal.current) {
-                tapWasReveal.current = false
-                return
-              }
-              togglePlay()
+            onPointerDown={(e) => {
+              lastPointerType.current = e.pointerType
             }}
+            onClick={onPictureTap}
             className={`absolute inset-0 h-full w-full bg-black transition-opacity duration-200 ${
               isActive ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
@@ -870,11 +1135,22 @@ export function PlayerModal({
         </div>
       ) : null}
 
-      {/* Controls overlay */}
+      {/* Controls overlay. Its rows span the full width, so a press that lands on a row
+          but not on a control bubbles up here and counts as a press on the picture. */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: forwards presses on empty overlay space to the picture */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard playback control is the window keydown handler */}
       <div
         className={`pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/70 via-transparent to-black/80 transition-[opacity,visibility] duration-300 ${
           uiVisible ? "visible opacity-100" : "invisible opacity-0"
         }`}
+        onPointerDown={(e) => {
+          lastPointerType.current = e.pointerType
+        }}
+        onClick={(e) => {
+          const target = e.target as Element | null
+          if (target?.closest("button, input, [data-player-menu], [data-seek]")) return
+          onPictureTap()
+        }}
       >
         {/* Top bar */}
         <div className="pointer-events-auto flex items-start justify-between gap-3 p-4 text-white">
@@ -925,20 +1201,15 @@ export function PlayerModal({
 
         {/* Bottom bar */}
         <div className="pointer-events-auto flex flex-col gap-2 p-4 text-white">
-          <div className="flex items-center gap-3 text-xs tabular-nums">
-            <span>{fmtTime(current)}</span>
-            <input
-              type="range"
-              min={0}
-              max={duration || 0}
-              step={0.1}
-              value={current}
-              onChange={(e) => seekTo(Number(e.target.value))}
-              aria-label="Seek"
-              className="h-1 flex-1 cursor-pointer accent-red-600"
-            />
-            <span>{fmtTime(duration)}</span>
-          </div>
+          <SeekBar
+            current={current}
+            duration={duration}
+            trickplay={trickplay}
+            sheetUrl={sheetUrl}
+            mobile={mobile}
+            onSeek={seekTo}
+            onScrubbing={onScrubbing}
+          />
 
           <div className="flex items-center gap-3 sm:gap-4">
             <button

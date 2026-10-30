@@ -1,8 +1,10 @@
 import { db } from "@cnet/db"
 import { partyEvents, partyGuests, users, vaultFiles, vaultUploads } from "@cnet/db/schema"
+import type { JellyfinItem } from "@cnet/engine"
 import { setWorldConstructor, World } from "@cucumber/cucumber"
 import { eq, inArray } from "drizzle-orm"
 import jwt from "jsonwebtoken"
+import type { ItemTracksDTO } from "../../src/controllers/media.controller"
 
 export type HttpResult = { status: number; body: unknown }
 
@@ -27,6 +29,9 @@ export class InviteWorld extends World {
   uploadId: string | undefined
   uploadChunkSize = 0
   existingFileId: string | undefined
+  // Media scenarios map a Jellyfin item straight through the tracks builder.
+  jellyfinItem: JellyfinItem | undefined
+  tracks: ItemTracksDTO | undefined
 
   headers(): Record<string, string> {
     const h: Record<string, string> = { "Content-Type": "application/json" }

@@ -58,6 +58,18 @@ export interface SubtitleTrackDTO {
   forced: boolean
 }
 
+export interface TrickplayDTO {
+  /** Pixel size of one thumbnail. */
+  width: number
+  height: number
+  /** Thumbnails per sheet, as columns × rows. */
+  tileWidth: number
+  tileHeight: number
+  thumbnailCount: number
+  /** Seconds between consecutive thumbnails. */
+  intervalSeconds: number
+}
+
 export interface ItemTracksDTO {
   /**
    * Freshly signed HLS URL for this item. The player loads *this* rather than the
@@ -91,6 +103,12 @@ export interface ItemTracksDTO {
    */
   introStartSeconds: number | null
   introEndSeconds: number | null
+  /**
+   * Scrub-preview thumbnails, if Jellyfin has generated trickplay tiles for this
+   * item. Sheet `n` is fetched through the HLS proxy as `path=Trickplay/{width}/{n}.jpg`
+   * on the signed `hlsUrl`. Null until the library's trickplay task has run.
+   */
+  trickplay: TrickplayDTO | null
   /**
    * True when the video stream can be remuxed to the browser as-is (H.264, 8-bit).
    * False means Jellyfin must CPU-transcode the video (HEVC, 10-bit, etc.) — the
@@ -182,6 +200,30 @@ function isVideoDirect(video: JellyfinMediaStream | undefined): boolean {
   return (video.Codec ?? "").toLowerCase() === "h264" && (video.BitDepth ?? 8) <= 8
 }
 
+/**
+ * Pick the trickplay grid for the item's own media source (the one the HLS stream
+ * plays), at the largest width available — Jellyfin keys the grids by width.
+ */
+export function trickplayInfo(item: JellyfinItem): TrickplayDTO | null {
+  const bySource = item.Trickplay ?? {}
+  const grids = bySource[item.Id] ?? Object.values(bySource)[0]
+  if (!grids) return null
+  const widths = Object.keys(grids)
+    .map(Number)
+    .filter((w) => Number.isFinite(w) && w > 0)
+    .sort((a, b) => b - a)
+  const info = widths.length > 0 ? grids[String(widths[0])] : undefined
+  if (!info || info.Interval <= 0 || info.TileWidth <= 0 || info.TileHeight <= 0) return null
+  return {
+    width: info.Width,
+    height: info.Height,
+    tileWidth: info.TileWidth,
+    tileHeight: info.TileHeight,
+    thumbnailCount: info.ThumbnailCount,
+    intervalSeconds: info.Interval / 1000,
+  }
+}
+
 export function buildItemTracks(userId: string, item: JellyfinItem): ItemTracksDTO {
   const video = (item.MediaStreams ?? []).find((s) => s.Type === "Video")
   const audioStreams = (item.MediaStreams ?? []).filter((s) => s.Type === "Audio")
@@ -211,6 +253,7 @@ export function buildItemTracks(userId: string, item: JellyfinItem): ItemTracksD
     creditsStartSeconds: creditsStartSeconds(item),
     introStartSeconds: intro?.start ?? null,
     introEndSeconds: intro?.end ?? null,
+    trickplay: trickplayInfo(item),
     videoDirect: isVideoDirect(video),
     videoCodec: video?.Codec?.toLowerCase() ?? null,
   }
