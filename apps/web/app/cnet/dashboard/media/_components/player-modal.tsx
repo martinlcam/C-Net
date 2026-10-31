@@ -1,6 +1,6 @@
 "use client"
 
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, type Variants } from "framer-motion"
 import Hls from "hls.js"
 import {
   Check,
@@ -126,6 +126,31 @@ function ScrubThumb({
   )
 }
 
+// The preview bubble grows out of the bar (transform origin is its bottom edge), swells
+// a touch more while a finger or button is held on the scrubber, and shrinks back into
+// the bar on release. Centering on the pointer is part of the motion transform (`x`)
+// because framer owns `transform` here, so a Tailwind translate class would be lost.
+const bubbleSpring = { type: "spring", stiffness: 640, damping: 26, mass: 0.6 } as const
+const bubbleVariants: Variants = {
+  hidden: { opacity: 0, y: 10, x: "-50%", scale: 0.35 },
+  show: { opacity: 1, y: 0, x: "-50%", scale: 1, transition: bubbleSpring },
+  held: { opacity: 1, y: -4, x: "-50%", scale: 1.08, transition: bubbleSpring },
+  exit: {
+    opacity: 0,
+    y: 10,
+    x: "-50%",
+    scale: 0.35,
+    transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
+  },
+}
+// A thumbnail arrives a beat after the bubble (its sheet has to load), so it fades in
+// on its own rather than popping in and shoving the time label down.
+const thumbVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.96 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.18 } },
+  exit: { opacity: 0, transition: { duration: 0.1 } },
+}
+
 type SheetState = "loading" | "ok" | "missing"
 
 /**
@@ -247,28 +272,45 @@ function SeekBar({
           if (!draggingRef.current) setPreview(null)
         }}
       >
-        {preview != null && duration > 0 ? (
-          <div
-            className="pointer-events-none absolute bottom-full z-10 mb-2 flex -translate-x-1/2 flex-col items-center gap-1"
-            style={{
-              left: `clamp(${thumbW / 2}px, ${frac * 100}%, calc(100% - ${thumbW / 2}px))`,
-            }}
-          >
-            {trickplay && previewSheet && showThumb ? (
-              <div className="rounded-md p-0.5 shadow-xl ring-1 ring-white/30">
-                <ScrubThumb
-                  t={preview}
-                  trickplay={trickplay}
-                  sheetUrl={previewSheet}
-                  width={thumbW}
-                />
-              </div>
-            ) : null}
-            <span className="rounded bg-black/80 px-1.5 py-0.5 font-medium text-white text-xs ring-1 ring-white/20">
-              {fmtTime(preview)}
-            </span>
-          </div>
-        ) : null}
+        <AnimatePresence>
+          {preview != null && duration > 0 ? (
+            <motion.div
+              key="scrub-preview"
+              variants={bubbleVariants}
+              initial="hidden"
+              animate={dragging ? "held" : "show"}
+              exit="exit"
+              className="pointer-events-none absolute bottom-full z-10 mb-2 flex flex-col items-center gap-1"
+              style={{
+                left: `clamp(${thumbW / 2}px, ${frac * 100}%, calc(100% - ${thumbW / 2}px))`,
+                transformOrigin: "bottom center",
+              }}
+            >
+              <AnimatePresence initial={false}>
+                {trickplay && previewSheet && showThumb ? (
+                  <motion.div
+                    key="thumb"
+                    variants={thumbVariants}
+                    initial="hidden"
+                    animate="show"
+                    exit="exit"
+                    className="rounded-md p-0.5 shadow-xl ring-1 ring-white/30"
+                  >
+                    <ScrubThumb
+                      t={preview}
+                      trickplay={trickplay}
+                      sheetUrl={previewSheet}
+                      width={thumbW}
+                    />
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+              <span className="rounded bg-black/80 px-1.5 py-0.5 font-medium text-white text-xs ring-1 ring-white/20">
+                {fmtTime(preview)}
+              </span>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
         <input
           type="range"
           min={0}
