@@ -58,6 +58,31 @@ export interface HostLiveNode {
   /** Cumulative bytes on the host uplink; the UI differences frames for a rate. */
   netin?: number
   netout?: number
+  /** Mean core clock right now. */
+  cpuMhz?: number
+  /** PSI "some" 10 s averages: share of time something was stalled on cpu, io, memory (0..100). */
+  psi?: { cpu: number; io: number; mem: number }
+}
+
+export interface HostLiveTemp {
+  label: string
+  c: number
+}
+
+/** A fan with whichever of tachometer (rpm) and duty (percent) the driver exposes. */
+export interface HostLiveFan {
+  label: string
+  rpm: number | null
+  percent: number | null
+}
+
+/** Cumulative IO of one imported pool; the UI differences frames for a rate. */
+export interface HostLiveZfs {
+  pool: string
+  reads: number
+  writes: number
+  nread: number
+  nwritten: number
 }
 
 export interface HostLiveFrame {
@@ -67,4 +92,7 @@ export interface HostLiveFrame {
   node: HostLiveNode
   guests: HostLiveGuest[]
   ups: HostLiveUps | null
+  // Present on frames from agents newer than 2026-11-02.
+  sensors?: { temps: HostLiveTemp[]; fans: HostLiveFan[] }
+  zfs?: HostLiveZfs[]
 }

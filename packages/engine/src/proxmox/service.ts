@@ -1,5 +1,17 @@
 import https from "node:https"
 import axios, { type AxiosInstance } from "axios"
+import {
+  mapNodeService,
+  mapNodeTask,
+  mapRrdPoint,
+  type NodeService,
+  type NodeTask,
+  type PveRrdRaw,
+  type PveServiceRaw,
+  type PveTaskRaw,
+  type RrdPoint,
+  type RrdTimeframe,
+} from "./activity"
 import type { BayInventoryEntry } from "./bay-map"
 import { mapNodeStatus } from "./node-status"
 import { type RetiredBay, withRetiredPools } from "./retired"
@@ -325,5 +337,48 @@ export class ProxmoxService {
     }
     const raw = await this.getDiskSmart(node, disk.devpath)
     return mapSmart(serial, raw)
+  }
+
+  /** The node's most recent tasks, newest first, running ones included. */
+  async getNodeTasks(node: string, limit = 20): Promise<NodeTask[]> {
+    try {
+      const response = await this.client.get(`/nodes/${node}/tasks`, {
+        params: { limit, source: "all" },
+      })
+      return ((response.data.data || []) as PveTaskRaw[]).map(mapNodeTask)
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch node tasks: ${error instanceof Error ? error.message : "Unknown error"}`
+      )
+    }
+  }
+
+  async getNodeServices(node: string): Promise<NodeService[]> {
+    try {
+      const response = await this.client.get(`/nodes/${node}/services`)
+      return ((response.data.data || []) as PveServiceRaw[])
+        .map(mapNodeService)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch node services: ${error instanceof Error ? error.message : "Unknown error"}`
+      )
+    }
+  }
+
+  /** RRD history for the node: a minute per point over an hour, half an hour per point over a day. */
+  async getNodeRrd(node: string, timeframe: RrdTimeframe): Promise<RrdPoint[]> {
+    try {
+      const response = await this.client.get(`/nodes/${node}/rrddata`, {
+        params: { timeframe, cf: "AVERAGE" },
+      })
+      return ((response.data.data || []) as PveRrdRaw[])
+        .map(mapRrdPoint)
+        .filter((p): p is RrdPoint => p !== null)
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch node history: ${error instanceof Error ? error.message : "Unknown error"}`
+      )
+    }
   }
 }

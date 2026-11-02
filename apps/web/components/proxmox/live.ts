@@ -27,6 +27,11 @@ export type LiveGuest = {
   netin: number
   netout: number
   uptimeSeconds: number
+  cpus?: number
+  disk?: number
+  maxdisk?: number
+  diskread?: number
+  diskwrite?: number
 }
 
 export type LiveNode = {
@@ -41,6 +46,19 @@ export type LiveNode = {
   maxswap?: number
   netin?: number
   netout?: number
+  cpuMhz?: number
+  /** PSI "some" 10 s averages, percent of time something waited on cpu, io, memory. */
+  psi?: { cpu: number; io: number; mem: number }
+}
+
+export type LiveTemp = { label: string; c: number }
+export type LiveFan = { label: string; rpm: number | null; percent: number | null }
+export type LiveZfs = {
+  pool: string
+  reads: number
+  writes: number
+  nread: number
+  nwritten: number
 }
 
 export type LiveFrame = {
@@ -49,6 +67,8 @@ export type LiveFrame = {
   node: LiveNode
   guests: LiveGuest[]
   ups: LiveUps | null
+  sensors?: { temps: LiveTemp[]; fans: LiveFan[] }
+  zfs?: LiveZfs[]
 }
 
 export type GuestEvent =
@@ -106,6 +126,179 @@ export function netRate(
   return {
     inBps: Math.max(0, (b.netin - a.netin) / dt),
     outBps: Math.max(0, (b.netout - a.netout) / dt),
+  }
+}
+
+/** Bytes per second between two cumulative counters; a reset or missing counter reads as zero. */
+function perSecond(prev: number | undefined, next: number | undefined, dtSeconds: number): number {
+  if (prev === undefined || next === undefined || dtSeconds <= 0) return 0
+  return Math.max(0, (next - prev) / dtSeconds)
+}
+
+/** Disk read and write rates for one guest between two frames. */
+export function diskRate(
+  prev: LiveFrame,
+  next: LiveFrame,
+  vmid: number
+): { readBps: number; writeBps: number } {
+  const a = prev.guests.find((g) => g.vmid === vmid)
+  const b = next.guests.find((g) => g.vmid === vmid)
+  const dt = (next.ts - prev.ts) / 1000
+  if (!a || !b) return { readBps: 0, writeBps: 0 }
+  return {
+    readBps: perSecond(a.diskread, b.diskread, dt),
+    writeBps: perSecond(a.diskwrite, b.diskwrite, dt),
+  }
+}
+
+/** The host uplink's rates between two frames, from the node's cumulative counters. */
+export function nodeNetRate(prev: LiveFrame, next: LiveFrame): { inBps: number; outBps: number } {
+  const dt = (next.ts - prev.ts) / 1000
+  return {
+    inBps: perSecond(prev.node.netin, next.node.netin, dt),
+    outBps: perSecond(prev.node.netout, next.node.netout, dt),
+  }
+}
+
+/** Read and write rates for one ZFS pool between two frames. */
+export function zfsRate(
+  prev: LiveFrame,
+  next: LiveFrame,
+  pool: string
+): { readBps: number; writeBps: number } {
+  const a = prev.zfs?.find((z) => z.pool === pool)
+  const b = next.zfs?.find((z) => z.pool === pool)
+  const dt = (next.ts - prev.ts) / 1000
+  return {
+    readBps: perSecond(a?.nread, b?.nread, dt),
+    writeBps: perSecond(a?.nwritten, b?.nwritten, dt),
+  }
+}
+
+/** One value per interval of a chronological buffer: n frames give n-1 points. */
+export function rateSeries<T>(
+  frames: LiveFrame[],
+  rate: (prev: LiveFrame, next: LiveFrame) => T
+): T[] {
+  const out: T[] = []
+  for (let i = 1; i < frames.length; i++) out.push(rate(frames[i - 1], frames[i]))
+  return out
+}
+
+/** One entry of the activity feed, whichever source it came from. */
+export type ActivityItem = {
+  key: string
+  ts: number
+  text: string
+  state: "ok" | "failed" | "running" | "info"
+}
+
+export type TaskLike = {
+  upid: string
+  type: string
+  id: string | null
+  startedAt: number
+  endedAt: number | null
+  running: boolean
+  ok: boolean | null
+}
+
+const TASK_VERBS: Record<string, { past: string; now: string }> = {
+  vzstart: { past: "started", now: "starting" },
+  qmstart: { past: "started", now: "starting" },
+  vzstop: { past: "stopped", now: "stopping" },
+  qmstop: { past: "stopped", now: "stopping" },
+  vzshutdown: { past: "shut down", now: "shutting down" },
+  qmshutdown: { past: "shut down", now: "shutting down" },
+  vzreboot: { past: "rebooted", now: "rebooting" },
+  qmreboot: { past: "rebooted", now: "rebooting" },
+  vzdump: { past: "backed up", now: "backing up" },
+  vzcreate: { past: "created", now: "creating" },
+  qmcreate: { past: "created", now: "creating" },
+  vzdestroy: { past: "destroyed", now: "destroying" },
+  qmdestroy: { past: "destroyed", now: "destroying" },
+  vzsnapshot: { past: "snapshotted", now: "snapshotting" },
+  qmsnapshot: { past: "snapshotted", now: "snapshotting" },
+  vzmigrate: { past: "migrated", now: "migrating" },
+  qmigrate: { past: "migrated", now: "migrating" },
+  vzrestore: { past: "restored", now: "restoring" },
+  qmrestore: { past: "restored", now: "restoring" },
+  vzclone: { past: "cloned", now: "cloning" },
+  qmclone: { past: "cloned", now: "cloning" },
+  push_file: { past: "received a file", now: "receiving a file" },
+  pull_file: { past: "sent a file", now: "sending a file" },
+  vncproxy: { past: "console opened", now: "console open" },
+  vncshell: { past: "shell opened", now: "shell open" },
+  spiceproxy: { past: "console opened", now: "console open" },
+}
+
+const NODE_TASKS: Record<string, { past: string; now: string }> = {
+  aptupdate: { past: "package lists refreshed", now: "refreshing package lists" },
+  startall: { past: "all guests started", now: "starting all guests" },
+  stopall: { past: "all guests stopped", now: "stopping all guests" },
+  srvstart: { past: "service started", now: "starting a service" },
+  srvstop: { past: "service stopped", now: "stopping a service" },
+  srvrestart: { past: "service restarted", now: "restarting a service" },
+  download: { past: "download finished", now: "downloading" },
+  imgcopy: { past: "image copied", now: "copying an image" },
+}
+
+/** A Proxmox task as one plain phrase: "jellyfin backed up", "backing up jellyfin", "arr start failed". */
+export function describeTask(task: TaskLike, names: Map<number, string>): string {
+  const subject = task.id ? (names.get(Number(task.id)) ?? task.id) : null
+  const guestVerb = TASK_VERBS[task.type]
+  if (guestVerb && subject) {
+    if (task.running) return `${guestVerb.now} ${subject}`
+    if (task.ok === false) return `${subject} ${guestVerb.past.split(" ")[0]} failed`
+    return `${subject} ${guestVerb.past}`
+  }
+  const nodeVerb = NODE_TASKS[task.type]
+  if (nodeVerb) {
+    if (task.running) return nodeVerb.now
+    return task.ok === false ? `${nodeVerb.past}, failed` : nodeVerb.past
+  }
+  const raw = subject ? `${task.type} ${subject}` : task.type
+  if (task.running) return `${raw} running`
+  return task.ok === false ? `${raw} failed` : raw
+}
+
+/**
+ * Live guest events and the node's task log as one feed, newest first. Tasks that are
+ * running sort to the top; a live event and the task that caused it both appear, which
+ * is honest about what was seen.
+ */
+export function mergeActivity(
+  events: GuestEvent[],
+  tasks: TaskLike[],
+  names: Map<number, string>,
+  max = 8
+): ActivityItem[] {
+  const fromEvents: ActivityItem[] = events.map((e) => ({
+    key: `event-${e.vmid}-${e.ts}-${e.kind}`,
+    ts: e.ts,
+    text: describeEvent(e),
+    state: e.kind === "status" && e.to !== "running" ? "info" : "ok",
+  }))
+  const fromTasks: ActivityItem[] = tasks.map((t) => ({
+    key: `task-${t.upid}`,
+    ts: t.endedAt ?? t.startedAt,
+    text: describeTask(t, names),
+    state: t.running ? "running" : t.ok === false ? "failed" : "ok",
+  }))
+  return [...fromEvents, ...fromTasks]
+    .sort((a, b) => Number(b.state === "running") - Number(a.state === "running") || b.ts - a.ts)
+    .slice(0, max)
+}
+
+function describeEvent(e: GuestEvent): string {
+  const who = e.name || String(e.vmid)
+  switch (e.kind) {
+    case "status":
+      return `${who} ${e.to === "running" ? "came up" : e.to}`
+    case "appeared":
+      return `${who} appeared`
+    case "gone":
+      return `${who} disappeared`
   }
 }
 

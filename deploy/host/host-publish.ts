@@ -11,9 +11,10 @@
  *
  * Self-contained on purpose (Bun's built-in Redis client, no node_modules): the host is
  * not part of the deploy loop. Installed by deploy/systemd/cnet-host-publish.service
- * together with cpu-rates.ts.
+ * together with cpu-rates.ts and sensors.ts.
  */
 
+import { readdir } from "node:fs/promises"
 import { cpus as osCpus } from "node:os"
 import { RedisClient } from "bun"
 import {
@@ -22,6 +23,18 @@ import {
   parseProcStatCpu,
   procStatCpuRates,
 } from "./cpu-rates"
+import {
+  DEFAULT_SENSOR_LABELS,
+  type FanReading,
+  meanKhzToMhz,
+  milliToC,
+  parsePsiSome,
+  parseSensorLabels,
+  pwmToPercent,
+  sumObjsetCounters,
+  type TempReading,
+  type ZfsCounters,
+} from "./sensors"
 
 const CHANNEL = "host:status"
 const HISTORY_KEY = "host:history"
@@ -34,6 +47,9 @@ const INTERVAL_MS = Number(process.env.HOST_PUBLISH_INTERVAL_MS || 2000)
 const UPS_SNAPSHOT_EVERY = 5
 const UPS_TTL_SECONDS = Math.ceil((INTERVAL_MS * UPS_SNAPSHOT_EVERY * 6) / 1000)
 const CORES = osCpus().length
+const SENSOR_LABELS = parseSensorLabels(process.env.HOST_SENSOR_LABELS || DEFAULT_SENSOR_LABELS)
+const HWMON = "/sys/class/hwmon"
+const ZFS_KSTAT = "/proc/spl/kstat/zfs"
 
 const url = process.env.REDIS_URL
 if (!url) {
@@ -135,6 +151,89 @@ async function nicCounters(): Promise<{ netin: number; netout: number }> {
   return { netin: num(rx?.trim()) ?? 0, netout: num(tx?.trim()) ?? 0 }
 }
 
+async function listDir(path: string): Promise<string[]> {
+  try {
+    return await readdir(path)
+  } catch {
+    return []
+  }
+}
+
+/*
+ * Temperatures and fans from hwmon. Only inputs named in SENSOR_LABELS are published as
+ * temperatures (a board exposes a dozen, most unlabelled); every fan tachometer is, with
+ * pwm duty standing in when a driver has no tachometer (nouveau's GPU fan).
+ */
+async function sensors(): Promise<{ temps: TempReading[]; fans: FanReading[] }> {
+  const temps: TempReading[] = []
+  const fans: FanReading[] = []
+  for (const dir of await listDir(HWMON)) {
+    const base = `${HWMON}/${dir}`
+    const driver = (await readText(`${base}/name`))?.trim()
+    if (!driver) continue
+    const files = await listDir(base)
+    for (const file of files) {
+      const temp = file.match(/^(temp\d+)_input$/)
+      if (temp) {
+        const label = SENSOR_LABELS.get(`${driver}:${temp[1]}`)
+        const c = label ? milliToC(await readText(`${base}/${file}`)) : null
+        if (label && c !== null) temps.push({ label, c })
+        continue
+      }
+      const fan = file.match(/^(fan\d+)_input$/)
+      if (fan) {
+        const rpm = num((await readText(`${base}/${file}`))?.trim())
+        const name = (await readText(`${base}/${fan[1]}_label`))?.trim()
+        const label = SENSOR_LABELS.get(`${driver}:${fan[1]}`) ?? name ?? `${driver} ${fan[1]}`
+        if (rpm !== null) fans.push({ label, rpm, percent: null })
+        continue
+      }
+      const pwm = file.match(/^(pwm\d+)$/)
+      if (pwm && !files.includes(`fan${pwm[1].slice(3)}_input`)) {
+        const percent = pwmToPercent(await readText(`${base}/${file}`))
+        const label = SENSOR_LABELS.get(`${driver}:${pwm[1]}`) ?? `${driver} fan`
+        if (percent !== null) fans.push({ label, rpm: null, percent })
+      }
+    }
+  }
+  temps.sort((a, b) => a.label.localeCompare(b.label))
+  return { temps, fans }
+}
+
+/** Cumulative IO per imported pool, summed over its datasets' objset kstats. */
+async function zfsCounters(): Promise<ZfsCounters[]> {
+  const out: ZfsCounters[] = []
+  for (const pool of await listDir(ZFS_KSTAT)) {
+    const files = (await listDir(`${ZFS_KSTAT}/${pool}`)).filter((f) => f.startsWith("objset-"))
+    if (files.length === 0) continue
+    const texts = await Promise.all(files.map((f) => readText(`${ZFS_KSTAT}/${pool}/${f}`)))
+    out.push(
+      sumObjsetCounters(
+        pool,
+        texts.filter((t): t is string => t !== null)
+      )
+    )
+  }
+  return out.sort((a, b) => a.pool.localeCompare(b.pool))
+}
+
+async function pressure(): Promise<{ cpu: number; io: number; mem: number } | undefined> {
+  const [cpu, io, mem] = await Promise.all(
+    ["cpu", "io", "memory"].map(async (k) => parsePsiSome(await readText(`/proc/pressure/${k}`)))
+  )
+  if (cpu === null && io === null && mem === null) return undefined
+  return { cpu: cpu ?? 0, io: io ?? 0, mem: mem ?? 0 }
+}
+
+async function cpuMhz(): Promise<number | null> {
+  const values = await Promise.all(
+    Array.from({ length: CORES }, (_, i) =>
+      readText(`/sys/devices/system/cpu/cpu${i}/cpufreq/scaling_cur_freq`)
+    )
+  )
+  return meanKhzToMhz(values)
+}
+
 type PveGuest = Record<string, unknown>
 
 async function guests(at: number) {
@@ -176,18 +275,21 @@ async function guests(at: number) {
   return all.sort((a, b) => a.vmid - b.vmid)
 }
 
-async function nodeStatus(at: number) {
-  const [s, cpu, load, net] = await Promise.all([
+async function nodeStatus() {
+  const [s, cpu, load, net, mhz, psi] = await Promise.all([
     run(["pvesh", "get", `/nodes/${NODE}/status`, "--output-format", "json"]).then(JSON.parse),
     nodeCpu(),
     loadavg(),
     nicCounters(),
+    cpuMhz(),
+    pressure(),
   ])
-  void at
   return {
     cpu: cpu.cpu,
     iowait: cpu.iowait,
     cores: CORES,
+    cpuMhz: mhz ?? undefined,
+    psi,
     loadavg: load,
     mem: num(s.memory?.used) ?? 0,
     maxmem: num(s.memory?.total) ?? 0,
@@ -202,18 +304,28 @@ let tickNo = 0
 async function tick(): Promise<void> {
   tickNo++
   const at = Date.now()
-  const [upsVars, node, gs] = await Promise.all([
+  const [upsVars, node, gs, sens, zfs] = await Promise.all([
     run(["upsc", UPS])
       .then(parseUpsc)
       .catch((e) => {
         console.error("[host-publish]", (e as Error).message)
         return null
       }),
-    nodeStatus(at),
+    nodeStatus(),
     guests(at),
+    sensors(),
+    zfsCounters(),
   ])
   const ts = Date.now()
-  const frame = { t: "host", ts, node, guests: gs, ups: upsVars ? upsFrom(upsVars) : null }
+  const frame = {
+    t: "host",
+    ts,
+    node,
+    guests: gs,
+    ups: upsVars ? upsFrom(upsVars) : null,
+    sensors: sens,
+    zfs,
+  }
   const json = JSON.stringify(frame)
   await redis.publish(CHANNEL, json)
   await redis.send("LPUSH", [HISTORY_KEY, json])

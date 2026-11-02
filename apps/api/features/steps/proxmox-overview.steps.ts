@@ -17,3 +17,10 @@ Then("the error message mentions {string}", function (this: InviteWorld, needle:
   const text = `${body.error ?? ""} ${body.message ?? ""}`
   assert.ok(text.includes(needle), `expected "${needle}" in: ${text}`)
 })
+
+When(
+  "I request the Proxmox node history for the last {string}",
+  async function (this: InviteWorld, timeframe: string) {
+    await this.get(`/proxmox/overview/rrd?timeframe=${timeframe}`)
+  }
+)

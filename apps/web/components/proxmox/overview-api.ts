@@ -42,6 +42,26 @@ export type OverviewUps = {
   outputVoltage: number | null
 }
 
+export type OverviewTask = {
+  upid: string
+  type: string
+  id: string | null
+  user: string
+  startedAt: number
+  endedAt: number | null
+  running: boolean
+  ok: boolean | null
+  status: string | null
+}
+
+export type OverviewService = {
+  name: string
+  description: string
+  state: string
+  running: boolean
+  enabled: boolean
+}
+
 export type ProxmoxOverview = {
   fetchedAt: string
   node: {
@@ -57,6 +77,32 @@ export type ProxmoxOverview = {
   guests: OverviewGuest[]
   storages: OverviewStorage[]
   ups: OverviewUps | null
+  tasks: OverviewTask[]
+  services: OverviewService[]
+}
+
+export type RrdTimeframe = "hour" | "day"
+
+/** One point of the node's RRD history: time in ms, cpu and iowait as fractions, rates in B/s. */
+export type RrdPoint = {
+  time: number
+  cpu: number
+  iowait: number
+  loadavg: number
+  memused: number
+  memtotal: number
+  swapused: number
+  netin: number
+  netout: number
+  arcsize: number
+}
+
+export async function fetchRrd(timeframe: RrdTimeframe): Promise<RrdPoint[]> {
+  const res = await fetch(`${API_BASE}/proxmox/overview/rrd?timeframe=${timeframe}`, {
+    credentials: "include",
+  })
+  if (!res.ok) throw new OverviewError(res.status, `History request failed (${res.status})`)
+  return res.json() as Promise<RrdPoint[]>
 }
 
 export class OverviewError extends Error {

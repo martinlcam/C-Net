@@ -20,6 +20,34 @@ export function poolTone(state: string): Tone {
   }
 }
 
+/** Silicon is happy to 75, warm to 85, and throttling territory beyond. */
+export function tempTone(c: number): Tone {
+  if (c >= 85) return "bad"
+  if (c >= 75) return "warn"
+  return "ok"
+}
+
+/** A fan's speed as 0..1 for the spin rate: duty when known, else rpm against a 2000 rpm fan. */
+export function fanSpeed(fan: { rpm: number | null; percent: number | null }): number {
+  if (fan.percent !== null) return Math.max(0, Math.min(1, fan.percent / 100))
+  if (fan.rpm !== null) return Math.max(0, Math.min(1, fan.rpm / 2000))
+  return 0
+}
+
+export function fanText(fan: { rpm: number | null; percent: number | null }): string {
+  if (fan.rpm !== null) return `${fan.rpm} rpm`
+  if (fan.percent !== null) return `${fan.percent}%`
+  return "—"
+}
+
+/** Bytes per second with a short unit, for rate labels that sit next to a sparkline. */
+export function rate(bps: number): string {
+  if (bps < 1024) return `${Math.round(bps)} B/s`
+  if (bps < 1024 * 1024) return `${(bps / 1024).toFixed(bps < 10 * 1024 ? 1 : 0)} KiB/s`
+  if (bps < 1024 * 1024 * 1024) return `${(bps / 1024 / 1024).toFixed(1)} MiB/s`
+  return `${(bps / 1024 / 1024 / 1024).toFixed(2)} GiB/s`
+}
+
 export function fmtRuntime(seconds: number | null): string {
   if (seconds === null) return "unknown runtime"
   if (seconds < 60) return "under a minute"

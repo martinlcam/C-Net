@@ -12,7 +12,7 @@ import {
 } from "@cnet/engine"
 import { eq } from "drizzle-orm"
 import type { Request as ExpressRequest } from "express"
-import { Controller, Get, Path, Post, Request, Response, Route, Security } from "tsoa"
+import { Controller, Get, Path, Post, Query, Request, Response, Route, Security } from "tsoa"
 import { getRedis } from "../lib/redis-client"
 import { getUpsSummary } from "../lib/ups-status"
 import { HttpError } from "../middleware/error.middleware"
@@ -71,6 +71,27 @@ export type OverviewStorage = {
   pool: { state: string; raid: string; scan: string; errors: string } | null
 }
 
+/** One of the node's recent tasks (backup, start, file push), newest first. */
+export type OverviewTask = {
+  upid: string
+  type: string
+  id: string | null
+  user: string
+  startedAt: number
+  endedAt: number | null
+  running: boolean
+  ok: boolean | null
+  status: string | null
+}
+
+export type OverviewService = {
+  name: string
+  description: string
+  state: string
+  running: boolean
+  enabled: boolean
+}
+
 /**
  * Everything the dashboard's read-only environment panel shows, in one call.
  * Host-global (the proxbox node), so it uses the host token and is superuser-only.
@@ -90,6 +111,25 @@ export type ProxmoxOverviewDTO = {
   guests: OverviewGuest[]
   storages: OverviewStorage[]
   ups: OverviewUps | null
+  tasks: OverviewTask[]
+  services: OverviewService[]
+}
+
+/** Declared here rather than imported so tsoa can put it in the OpenAPI spec. */
+export type RrdTimeframe = "hour" | "day"
+
+/** One point of the node's RRD history; time in ms, cpu and iowait as fractions. */
+export type RrdPointDTO = {
+  time: number
+  cpu: number
+  iowait: number
+  loadavg: number
+  memused: number
+  memtotal: number
+  swapused: number
+  netin: number
+  netout: number
+  arcsize: number
 }
 
 // The panel polls every 15 s and PVE answers a dozen calls per overview; one short
@@ -97,6 +137,23 @@ export type ProxmoxOverviewDTO = {
 const OVERVIEW_TTL_MS = 10_000
 let overviewCache: { at: number; value: ProxmoxOverviewDTO } | null = null
 let overviewInFlight: Promise<ProxmoxOverviewDTO> | null = null
+// RRD points are a minute apart at best, so a half-minute cache loses nothing.
+const RRD_TTL_MS = 30_000
+const rrdCache = new Map<RrdTimeframe, { at: number; value: RrdPointDTO[] }>()
+
+/** The host-global PVE token the overview reads with, or a 503 that says what to set. */
+function hostProxmox(): ProxmoxService {
+  const host = process.env.CNET_STORAGE_PVE_HOST
+  const user = process.env.CNET_STORAGE_PVE_USER
+  const token = process.env.CNET_STORAGE_PVE_TOKEN
+  if (!host || !user || !token) {
+    throw new HttpError(
+      503,
+      "Proxmox connection not configured: set CNET_STORAGE_PVE_HOST, CNET_STORAGE_PVE_USER and CNET_STORAGE_PVE_TOKEN"
+    )
+  }
+  return new ProxmoxService(host, user, token)
+}
 
 /**
  * Audit action name per power verb. `satisfies` keeps the values as literals so
@@ -193,23 +250,31 @@ export class ProxmoxController extends Controller {
   @Get("overview")
   @Response<ProxmoxErrorResponse>(503, "Not configured")
   public async getOverview(): Promise<ProxmoxOverviewDTO> {
-    const host = process.env.CNET_STORAGE_PVE_HOST
-    const user = process.env.CNET_STORAGE_PVE_USER
-    const token = process.env.CNET_STORAGE_PVE_TOKEN
-    if (!host || !user || !token) {
-      throw new HttpError(
-        503,
-        "Proxmox connection not configured: set CNET_STORAGE_PVE_HOST, CNET_STORAGE_PVE_USER and CNET_STORAGE_PVE_TOKEN"
-      )
-    }
+    const proxmox = hostProxmox()
     if (overviewCache && Date.now() - overviewCache.at < OVERVIEW_TTL_MS) return overviewCache.value
     if (!overviewInFlight) {
-      overviewInFlight = buildOverview(new ProxmoxService(host, user, token)).finally(() => {
+      overviewInFlight = buildOverview(proxmox).finally(() => {
         overviewInFlight = null
       })
     }
     const value = await overviewInFlight
     overviewCache = { at: Date.now(), value }
+    return value
+  }
+
+  /*
+   * GET /proxmox/overview/rrd?timeframe=hour|day — the node's RRD history, oldest first, so
+   * the panel can show more than the agent's three-minute buffer.
+   */
+  @Get("overview/rrd")
+  @Response<ProxmoxErrorResponse>(503, "Not configured")
+  public async getOverviewRrd(@Query() timeframe: RrdTimeframe = "hour"): Promise<RrdPointDTO[]> {
+    const proxmox = hostProxmox()
+    const cached = rrdCache.get(timeframe)
+    if (cached && Date.now() - cached.at < RRD_TTL_MS) return cached.value
+    const node = process.env.CNET_STORAGE_PVE_NODE || "proxbox"
+    const value = await proxmox.getNodeRrd(node, timeframe)
+    rrdCache.set(timeframe, { at: Date.now(), value })
     return value
   }
 
@@ -335,12 +400,17 @@ export class ProxmoxController extends Controller {
 
 async function buildOverview(proxmox: ProxmoxService): Promise<ProxmoxOverviewDTO> {
   const node = process.env.CNET_STORAGE_PVE_NODE || "proxbox"
-  const [status, guests, storages, pools, ups] = await Promise.all([
+  const [status, guests, storages, pools, ups, tasks, services] = await Promise.all([
     proxmox.getNodeStatus(node),
     proxmox.getAllVMs(),
     proxmox.getNodeStorages(node),
     proxmox.getPoolStatuses(node).catch((): PoolStatus[] => []),
     getUpsSummary(),
+    // Activity is a nicety: the panel still stands when either call fails.
+    proxmox
+      .getNodeTasks(node, 20)
+      .catch((): OverviewTask[] => []),
+    proxmox.getNodeServices(node).catch((): OverviewService[] => []),
   ])
   const withIps: OverviewGuest[] = await Promise.all(
     guests.map(async (g): Promise<OverviewGuest> => {
@@ -396,5 +466,7 @@ async function buildOverview(proxmox: ProxmoxService): Promise<ProxmoxOverviewDT
       })
       .sort((a, b) => a.storage.localeCompare(b.storage)),
     ups,
+    tasks,
+    services,
   }
 }

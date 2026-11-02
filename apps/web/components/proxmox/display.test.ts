@@ -1,5 +1,16 @@
 import { describe, expect, it } from "bun:test"
-import { fmtRuntime, poolTone, powerLine, scanSummary, storageState, usageTone } from "./display"
+import {
+  fanSpeed,
+  fanText,
+  fmtRuntime,
+  poolTone,
+  powerLine,
+  rate,
+  scanSummary,
+  storageState,
+  tempTone,
+  usageTone,
+} from "./display"
 import type { OverviewUps } from "./overview-api"
 
 describe("usageTone", () => {
@@ -122,5 +133,31 @@ describe("storageState", () => {
         pool: { state: "ONLINE", raid: "raidz3", scan: "", errors: "2 data errors" },
       })
     ).toBe("raidz3, online, data errors")
+  })
+})
+
+describe("tempTone", () => {
+  it("is calm to 75, warm to 85, hot beyond", () => {
+    expect(tempTone(65.1)).toBe("ok")
+    expect(tempTone(75)).toBe("warn")
+    expect(tempTone(85)).toBe("bad")
+  })
+})
+
+describe("fans", () => {
+  it("spins by duty when known, else by rpm, and prints whichever exists", () => {
+    expect(fanSpeed({ rpm: null, percent: 7 })).toBeCloseTo(0.07)
+    expect(fanSpeed({ rpm: 1000, percent: null })).toBe(0.5)
+    expect(fanSpeed({ rpm: null, percent: null })).toBe(0)
+    expect(fanText({ rpm: 1200, percent: 40 })).toBe("1200 rpm")
+    expect(fanText({ rpm: null, percent: 7 })).toBe("7%")
+  })
+})
+
+describe("rate", () => {
+  it("picks a unit that keeps the number short", () => {
+    expect(rate(0)).toBe("0 B/s")
+    expect(rate(1536)).toBe("1.5 KiB/s")
+    expect(rate(2.5 * 1024 * 1024)).toBe("2.5 MiB/s")
   })
 })
