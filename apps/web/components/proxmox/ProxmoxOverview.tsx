@@ -25,6 +25,7 @@ import {
   type LiveUps,
   mergeActivity,
   netRate,
+  newestWith,
   nodeNetRate,
   rateSeries,
   zfsRate,
@@ -277,6 +278,8 @@ function NodeStrip({
   const nominal = ups?.nominalWatts ?? 900
   const tone = BATTERY_TONE[battery.mode]
   const series = useMemo(() => nodeSeries(range, frames, rrd), [range, frames, rrd])
+  // Frames older than the agent that added sensors lack them; show the newest reading we have.
+  const sensors = newestWith(frames, (f) => f.sensors)
   const netNow =
     frames.length > 1 ? nodeNetRate(frames[frames.length - 2], frames[frames.length - 1]) : null
 
@@ -372,9 +375,9 @@ function NodeStrip({
         </div>
       </div>
 
-      {latest?.sensors ? (
+      {sensors ? (
         <div className="mt-4">
-          <Thermals temps={latest.sensors.temps} fans={latest.sensors.fans} />
+          <Thermals temps={sensors.temps} fans={sensors.fans} />
         </div>
       ) : null}
     </div>
@@ -628,8 +631,9 @@ function StorageRow({ storage, frames }: { storage: OverviewStorage; frames: Liv
   const pool = storage.pool
   const tone: Tone = !storage.active ? "none" : pool ? poolTone(pool.state) : usageTone(used)
   const state = storageState(storage)
-  const latest = frames[frames.length - 1]
-  const hasIo = storage.type === "zfspool" && latest?.zfs?.some((z) => z.pool === storage.storage)
+  const hasIo =
+    storage.type === "zfspool" &&
+    newestWith(frames, (f) => f.zfs?.find((z) => z.pool === storage.storage)) !== undefined
   const io = useMemo(
     () => (hasIo ? rateSeries(frames, (p, n) => zfsRate(p, n, storage.storage)) : []),
     [frames, storage.storage, hasIo]

@@ -20,7 +20,7 @@ export function RangeToggle({ value, onChange }: { value: Range; onChange: (r: R
               key={r}
               type="button"
               aria-pressed={active}
-              aria-label={`Show the  of history`}
+              aria-label={`Show the ${LABELS[r]} of history`}
               onClick={() => onChange(r)}
               className={`relative rounded-full px-2.5 py-0.5 tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-purple-60 ${active ? "text-white" : "text-neutral-70 hover:text-neutral-100"}`}
             >

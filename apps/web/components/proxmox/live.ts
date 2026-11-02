@@ -337,3 +337,15 @@ export function dialAngle(watts: number | null, nominal: number): number {
   const fraction = Math.max(0, Math.min(1, watts / nominal))
   return -120 + fraction * 240
 }
+
+/** The newest frame's value for `pick`, falling back through older frames that have one. */
+export function newestWith<T>(
+  frames: LiveFrame[],
+  pick: (f: LiveFrame) => T | undefined
+): T | undefined {
+  for (let i = frames.length - 1; i >= 0; i--) {
+    const v = pick(frames[i])
+    if (v !== undefined) return v
+  }
+  return undefined
+}
