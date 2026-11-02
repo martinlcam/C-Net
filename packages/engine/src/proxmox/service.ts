@@ -1,6 +1,7 @@
 import https from "node:https"
 import axios, { type AxiosInstance } from "axios"
 import type { BayInventoryEntry } from "./bay-map"
+import { mapNodeStatus } from "./node-status"
 import { type RetiredBay, withRetiredPools } from "./retired"
 import { assembleBays, mapPool, mapSmart } from "./storage"
 import type {
@@ -104,26 +105,7 @@ export class ProxmoxService {
   async getNodeStatus(node: string): Promise<NodeMetrics> {
     try {
       const response = await this.client.get(`/nodes/${node}/status`)
-      const data = response.data.data
-
-      return {
-        node,
-        uptime: data.uptime,
-        cpu: {
-          usage: (data.cpu || 0) * 100, // Convert to percentage
-          cores: data.cpus || 0,
-        },
-        memory: {
-          used: data.memory?.used || 0,
-          total: data.memory?.total || 0,
-          percent: data.memory?.total ? ((data.memory.used || 0) / data.memory.total) * 100 : 0,
-        },
-        disk: {
-          used: data.rootfs?.used || 0,
-          total: data.rootfs?.total || 0,
-          percent: data.rootfs?.total ? ((data.rootfs.used || 0) / data.rootfs.total) * 100 : 0,
-        },
-      }
+      return mapNodeStatus(node, response.data.data ?? {})
     } catch (error) {
       throw new Error(
         `Failed to fetch node status: ${error instanceof Error ? error.message : "Unknown error"}`

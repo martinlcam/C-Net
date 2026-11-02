@@ -270,7 +270,7 @@ Nothing new listens on the network.
 
 ```bash
 install -d /opt/cnet-host
-install -m 644 deploy/host/host-publish.ts /opt/cnet-host/host-publish.ts
+install -m 644 deploy/host/host-publish.ts deploy/host/cpu-rates.ts /opt/cnet-host/
 install -m 644 deploy/systemd/cnet-host-publish.service /etc/systemd/system/
 systemctl daemon-reload && systemctl enable --now cnet-host-publish
 upsc cyberpower            # what the agent publishes

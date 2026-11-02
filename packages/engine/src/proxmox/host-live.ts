@@ -36,13 +36,35 @@ export interface HostLiveGuest {
   netin: number
   netout: number
   uptimeSeconds: number
+  cpus?: number
+  disk?: number
+  maxdisk?: number
+  diskread?: number
+  diskwrite?: number
+}
+
+export interface HostLiveNode {
+  /** Busy fraction of all cores (0..1). */
+  cpu: number
+  mem: number
+  maxmem: number
+  uptimeSeconds: number
+  // Present on frames from agents newer than 2026-11-02; older history frames lack them.
+  cores?: number
+  iowait?: number
+  loadavg?: number[]
+  swap?: number
+  maxswap?: number
+  /** Cumulative bytes on the host uplink; the UI differences frames for a rate. */
+  netin?: number
+  netout?: number
 }
 
 export interface HostLiveFrame {
   /** Discriminator so apps/realtime and the browser can route it like bd/bay frames. */
   t: "host"
   ts: number
-  node: { cpu: number; mem: number; maxmem: number; uptimeSeconds: number }
+  node: HostLiveNode
   guests: HostLiveGuest[]
   ups: HostLiveUps | null
 }

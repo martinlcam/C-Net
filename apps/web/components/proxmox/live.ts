@@ -29,10 +29,24 @@ export type LiveGuest = {
   uptimeSeconds: number
 }
 
+export type LiveNode = {
+  cpu: number
+  mem: number
+  maxmem: number
+  uptimeSeconds: number
+  cores?: number
+  iowait?: number
+  loadavg?: number[]
+  swap?: number
+  maxswap?: number
+  netin?: number
+  netout?: number
+}
+
 export type LiveFrame = {
   t: "host"
   ts: number
-  node: { cpu: number; mem: number; maxmem: number; uptimeSeconds: number }
+  node: LiveNode
   guests: LiveGuest[]
   ups: LiveUps | null
 }
