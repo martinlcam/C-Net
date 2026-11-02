@@ -18,6 +18,8 @@
     "@cnet/core": "workspace:*",
     "@cnet/db": "workspace:*",
     "@cnet/engine": "workspace:*",
+    "@fontsource-variable/space-grotesk": "5.2.8",
+    "@fontsource/ibm-plex-mono": "5.2.7",
     "@radix-ui/react-avatar": "1.1.11",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-dropdown-menu": "2.1.16",

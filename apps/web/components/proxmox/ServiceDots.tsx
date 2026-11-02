@@ -2,10 +2,13 @@
 
 import type { OverviewService } from "./overview-api"
 
+/** Only meaningful in a cluster; on a single node they stay stopped and that is fine. */
+const CLUSTER_ONLY = new Set(["corosync", "pve-ha-crm", "pve-ha-lrm"])
+
 /**
- * The pve daemons as a row of dots: green when running, hollow when stopped. On a
- * single node the cluster services (corosync, HA) are expected to be off, so a stopped
- * service is only amber when systemd says it should have started.
+ * The pve daemons as a row of dots: green when running, hollow when stopped. A stopped
+ * service is only amber when systemd says it should have started and it is not one of
+ * the cluster services a lone node never runs.
  */
 export function ServiceDots({ services }: { services: OverviewService[] }) {
   if (services.length === 0) return null
@@ -18,7 +21,7 @@ export function ServiceDots({ services }: { services: OverviewService[] }) {
       {services.map((s) => {
         const dot = s.running
           ? "bg-accent-green-60 border-accent-green-60"
-          : s.enabled
+          : s.enabled && !CLUSTER_ONLY.has(s.name)
             ? "border-yellow-500"
             : "border-neutral-40"
         return (
