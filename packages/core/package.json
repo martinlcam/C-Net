@@ -15,7 +15,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "bullmq": "5.66.5",
+    "bullmq": "5.81.5",
     "dotenv": "16.6.1",
     "ioredis": "5.9.2",
     "jsonwebtoken": "9.0.3"
