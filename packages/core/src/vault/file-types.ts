@@ -60,7 +60,9 @@ const OFFICE_EXT = new Set([
   ".rtf",
 ])
 
-const VIDEO_EXT = new Set([".mp4", ".webm", ".ogv", ".mov", ".m4v"])
+// Insta360 writes its photos as plain JPEGs (.insp) and its low-res video proxies as MP4 (.lrv).
+const IMAGE_EXT = new Set([".insp"])
+const VIDEO_EXT = new Set([".mp4", ".webm", ".ogv", ".mov", ".m4v", ".lrv"])
 const AUDIO_EXT = new Set([".mp3", ".wav", ".ogg", ".oga", ".m4a", ".flac", ".aac"])
 const HTML_MIME = new Set(["text/html", "application/xhtml+xml"])
 const HTML_EXT = new Set([".html", ".htm", ".xhtml"])
@@ -171,7 +173,7 @@ export function classifyFile(contentType: string | null, filename: string): File
   const e = ext(filename)
 
   if (HEIC_MIME.has(mime) || HEIC_EXT.has(e)) return "heic"
-  if (mime.startsWith("image/")) return "image"
+  if (mime.startsWith("image/") || IMAGE_EXT.has(e)) return "image"
   if (mime === "application/pdf" || e === ".pdf") return "pdf"
   if (OFFICE_MIME.has(mime) || OFFICE_EXT.has(e)) return "office"
   if (EPUB_MIME.has(mime) || e === ".epub") return "epub"

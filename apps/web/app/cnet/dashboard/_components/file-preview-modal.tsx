@@ -8,8 +8,11 @@ import { Button } from "@/stories/button/button"
 import { previewKind } from "./file-preview"
 import { formatBytes } from "./format"
 import { MediaPlayer, type SubtitleSource } from "./media-player"
+import { PanoramaPhoto } from "./PanoramaPhoto"
+import { insvProxyName, panoramaLayout } from "./panorama"
 import { findSubtitleSiblings, subtitleLabel } from "./subtitles"
 import { SyntaxCodePreview } from "./syntax-code-preview"
+import { useInstaCalibration } from "./use-insta-calibration"
 
 /** Fetches a text/code file's contents for inline display. */
 function TextPreview({ url }: { url: string }) {
@@ -395,6 +398,8 @@ function MediaPreview({
       })),
     [file.filename, siblings]
   )
+  const panorama = kind === "video" && panoramaLayout(file.filename) !== null
+  const calibration = useInstaCalibration(panorama ? file : null)
 
   return (
     <MediaPlayer
@@ -403,13 +408,53 @@ function MediaPreview({
       src={vaultUrl(file.previewUrl)}
       title={file.filename}
       subtitles={subtitles}
+      panorama={panorama}
+      calibration={calibration}
     />
   )
 }
 
-function PreviewBody({ file, siblings }: { file: VaultFile; siblings: VaultFile[] }) {
+/** An Insta360 8K original can't be decoded by a browser; point at its proxy when it's here. */
+function OriginalNotice({ file, siblings, onOpen }: PreviewBodyProps) {
+  const proxyName = insvProxyName(file.filename)
+  const proxy = proxyName
+    ? siblings.find((s) => s.filename.toLowerCase() === proxyName.toLowerCase())
+    : undefined
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-neutral-60">
+      <CloudAlert className="h-8 w-8" />
+      <p className="text-sm">This is the camera's 8K original, which browsers can't decode.</p>
+      {proxy ? (
+        <>
+          <p className="text-xs">
+            The same clip is here as a low-res proxy you can look around in.
+          </p>
+          <Button type="button" variant="secondary" size="sm" onClick={() => onOpen(proxy)}>
+            Open the proxy
+          </Button>
+        </>
+      ) : (
+        <p className="text-xs">Upload the matching .lrv file to look around in it here.</p>
+      )}
+    </div>
+  )
+}
+
+type PreviewBodyProps = {
+  file: VaultFile
+  siblings: VaultFile[]
+  /** Show a different file in this modal (used to jump from an original to its proxy). */
+  onOpen: (file: VaultFile) => void
+}
+
+function PreviewBody({ file, siblings, onOpen }: PreviewBodyProps) {
   const url = vaultUrl(file.previewUrl)
   const kind = previewKind(file.contentType, file.filename)
+
+  if (kind === "image" && panoramaLayout(file.filename)) return <PanoramaPhoto url={url} />
+  if (kind === "none" && insvProxyName(file.filename)) {
+    return <OriginalNotice file={file} siblings={siblings} onOpen={onOpen} />
+  }
 
   switch (kind) {
     case "image":
@@ -459,6 +504,11 @@ export function FilePreviewModal({
   siblings?: VaultFile[]
   onClose: () => void
 }) {
+  // A preview can hand over to a sibling (an 8K original opening its proxy) without the
+  // caller's selection changing; a new selection always wins.
+  const [swap, setSwap] = useState<{ from: string; to: VaultFile } | null>(null)
+  const shown = file && swap?.from === file.id ? swap.to : file
+
   return (
     <DialogPrimitive.Root open={file !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogPrimitive.Portal>
@@ -467,17 +517,17 @@ export function FilePreviewModal({
           className="-translate-x-1/2 -translate-y-1/2 fixed top-1/2 left-1/2 z-50 flex h-[88vh] w-[92vw] max-w-6xl flex-col overflow-hidden rounded-xl border border-neutral-30 bg-white shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {file ? (
+          {shown ? (
             <>
               <div className="flex shrink-0 items-center justify-between gap-3 border-neutral-20 border-b px-4 py-3">
                 <div className="min-w-0">
                   <DialogPrimitive.Title className="truncate font-semibold text-neutral-100 text-sm">
-                    {file.filename}
+                    {shown.filename}
                   </DialogPrimitive.Title>
-                  <p className="text-neutral-60 text-xs">{formatBytes(file.size)}</p>
+                  <p className="text-neutral-60 text-xs">{formatBytes(shown.size)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <a href={vaultUrl(file.downloadUrl)} download={file.filename}>
+                  <a href={vaultUrl(shown.downloadUrl)} download={shown.filename}>
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="Download">
                       <Download className="h-4 w-4" />
                     </Button>
@@ -490,7 +540,11 @@ export function FilePreviewModal({
                 </div>
               </div>
               <div className="min-h-0 flex-1 overflow-hidden bg-neutral-10">
-                <PreviewBody file={file} siblings={siblings} />
+                <PreviewBody
+                  file={shown}
+                  siblings={siblings}
+                  onOpen={(to) => setSwap({ from: shown.id, to })}
+                />
               </div>
             </>
           ) : null}

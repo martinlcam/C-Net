@@ -32,6 +32,10 @@ describe("classifyFile", () => {
     // av
     ["video/mp4", "clip.mp4", "video"],
     [null, "clip.mov", "video"],
+    // Insta360 proxies and photos arrive as octet-stream
+    ["application/octet-stream", "LRV_20260506_115652_01_030.lrv", "video"],
+    ["application/octet-stream", "IMG_20260227_193318_00_049.insp", "image"],
+    [null, "VID_20260506_115652_00_030.insv", "none"],
     ["audio/mpeg", "song.mp3", "audio"],
     [null, "song.flac", "audio"],
     // csv before text

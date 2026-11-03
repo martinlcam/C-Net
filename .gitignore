@@ -67,3 +67,6 @@ __pycache__/
 
 # Throwaway diagnostic scripts
 _diag_*.py
+
+# written by `next dev` on every start
+apps/web/AGENTS.md

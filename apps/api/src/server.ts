@@ -37,7 +37,7 @@ function parseAllowlist(): string[] {
 const corsOptions: CorsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "Range"],
 }
 
 function corsOriginCallback(

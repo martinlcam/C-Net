@@ -5,6 +5,7 @@ import {
   CaptionsOff,
   Check,
   Gauge,
+  LocateFixed,
   Maximize,
   Minimize,
   Music,
@@ -13,11 +14,14 @@ import {
   Play,
   RotateCcw,
   RotateCw,
+  Smartphone,
   Volume1,
   Volume2,
   VolumeX,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { PanoramaView, type PanoramaViewHandle, useGyroSupport } from "./PanoramaView"
+import type { Calibration } from "./panorama"
 import { srtToVtt } from "./subtitles"
 
 /** A subtitle file to offer in the captions menu; fetched and converted to WebVTT lazily. */
@@ -160,16 +164,24 @@ export function MediaPlayer({
   src,
   title,
   subtitles,
+  panorama = false,
+  calibration,
 }: {
   kind: "video" | "audio"
   src: string
   title: string
   subtitles: SubtitleSource[]
+  /** Dual-fisheye 360 video: draw through the stitcher instead of showing the flat frame. */
+  panorama?: boolean
+  calibration?: Calibration
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mediaRef = useRef<HTMLVideoElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const panoRef = useRef<PanoramaViewHandle>(null)
+  const [gyro, setGyro] = useState(false)
+  const gyroSupported = useGyroSupport()
 
   const { tracks, addLocal } = useSubtitleTracks(subtitles)
 
@@ -338,6 +350,10 @@ export function MediaPlayer({
         case "c":
           toggleCaptions()
           break
+        case "r":
+          if (panorama) panoRef.current?.recenter()
+          else handled = false
+          break
         case ",":
           media.playbackRate = Math.max(SPEEDS[0], media.playbackRate - 0.25)
           break
@@ -375,6 +391,7 @@ export function MediaPlayer({
       showControls,
       isVideo,
       pipSupported,
+      panorama,
     ]
   )
 
@@ -435,10 +452,13 @@ export function MediaPlayer({
         ref={mediaRef}
         src={src}
         playsInline
-        preload="metadata"
+        // A 360 clip should show its scene before play is pressed, so fetch the first frame.
+        preload={panorama ? "auto" : "metadata"}
         title={title}
-        onClick={togglePlay}
-        onDoubleClick={isVideo ? toggleFullscreen : undefined}
+        // The stitcher reads frames into WebGL, which needs a CORS-clean source.
+        crossOrigin={panorama ? "anonymous" : undefined}
+        onClick={panorama ? undefined : togglePlay}
+        onDoubleClick={isVideo && !panorama ? toggleFullscreen : undefined}
         onPlay={() => {
           setPlaying(true)
           showControls()
@@ -463,12 +483,32 @@ export function MediaPlayer({
           setMuted(e.currentTarget.muted)
         }}
         onRateChange={(e) => setRate(e.currentTarget.playbackRate)}
-        className={isVideo ? "absolute inset-0 h-full w-full" : "hidden"}
+        className={
+          panorama
+            ? "pointer-events-none absolute h-px w-px opacity-0"
+            : isVideo
+              ? "absolute inset-0 h-full w-full"
+              : "hidden"
+        }
       >
         {tracks.map((t) => (
           <track key={t.id} kind="subtitles" label={t.label} src={t.vttUrl} />
         ))}
       </video>
+
+      {panorama ? (
+        <div className="absolute inset-0">
+          <PanoramaView
+            ref={panoRef}
+            sourceRef={mediaRef}
+            live={playing}
+            calibration={calibration}
+            onTap={togglePlay}
+            onDoubleTap={toggleFullscreen}
+            onGyroChange={setGyro}
+          />
+        </div>
+      ) : null}
 
       {isVideo ? null : (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-white">
@@ -601,7 +641,26 @@ export function MediaPlayer({
             ) : null}
           </div>
 
-          {pipSupported ? (
+          {panorama && gyroSupported ? (
+            <ControlButton
+              label={gyro ? "Stop following the phone" : "Look around by moving the phone"}
+              active={gyro}
+              onClick={() => panoRef.current?.setGyro(!gyro)}
+            >
+              <Smartphone className="h-4 w-4" />
+            </ControlButton>
+          ) : null}
+
+          {panorama ? (
+            <ControlButton
+              label="Look straight ahead (r)"
+              onClick={() => panoRef.current?.recenter()}
+            >
+              <LocateFixed className="h-4 w-4" />
+            </ControlButton>
+          ) : null}
+
+          {pipSupported && !panorama ? (
             <ControlButton label="Picture in picture (p)" onClick={togglePip}>
               <PictureInPicture2 className="h-4 w-4" />
             </ControlButton>
