@@ -16,6 +16,9 @@ set +a
 
 echo "==> Fetching $REF"
 git fetch origin
+# Builds rewrite generated files (apps/web prebuild); a dirty tracked file would abort the
+# fast-forward below. Box edits are never the source of truth, so discard them first.
+git checkout -- .
 git checkout "$REF"
 # Fast-forward only when on a branch; a detached SHA (rollback to an old commit) has nothing to pull.
 if git symbolic-ref -q HEAD >/dev/null; then
