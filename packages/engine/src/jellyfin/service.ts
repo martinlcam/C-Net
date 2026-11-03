@@ -11,6 +11,17 @@ import type {
 const ITEM_FIELDS =
   "Overview,Genres,RunTimeTicks,CommunityRating,OfficialRating,MediaSources,ProductionYear,ProviderIds"
 
+const CLIENT_IDENTITY = 'Client="cnet", Device="cnet-web", Version="1.0.0"'
+
+/**
+ * Jellyfin's `Authorization: MediaBrowser ...` scheme. The legacy `X-Emby-Token` /
+ * `X-Emby-Authorization` headers are rejected since the server disabled legacy
+ * authorization (12.x default; removed outright in the following release).
+ */
+function authHeader(token: string): string {
+  return `MediaBrowser Token="${token}"`
+}
+
 /**
  * Thin client for a single Jellyfin server, authenticated with the server-wide
  * admin API key. Catalog reads pass an explicit Jellyfin userId so per-user
@@ -27,7 +38,7 @@ export class JellyfinService {
     this.adminKey = adminApiKey
     this.client = axios.create({
       baseURL: this.baseURL,
-      headers: { "X-Emby-Token": adminApiKey, "Content-Type": "application/json" },
+      headers: { Authorization: authHeader(adminApiKey), "Content-Type": "application/json" },
       timeout: 15000,
     })
   }
@@ -56,7 +67,7 @@ export class JellyfinService {
       { Username: name, Pw: "" },
       {
         headers: {
-          "X-Emby-Authorization": `MediaBrowser Client="cnet", Device="cnet-web", DeviceId="${deviceId}", Version="1.0.0"`,
+          Authorization: `MediaBrowser ${CLIENT_IDENTITY}, DeviceId="${deviceId}"`,
         },
       }
     )
@@ -169,7 +180,7 @@ export class JellyfinService {
     await this.client.post(
       "/Sessions/Playing/Progress",
       { ItemId: itemId, PositionTicks: positionTicks, IsPaused: paused, PlayMethod: "DirectPlay" },
-      { headers: { "X-Emby-Token": userToken } }
+      { headers: { Authorization: authHeader(userToken) } }
     )
   }
 
@@ -177,7 +188,7 @@ export class JellyfinService {
     await this.client.post(
       "/Sessions/Playing/Stopped",
       { ItemId: itemId, PositionTicks: positionTicks },
-      { headers: { "X-Emby-Token": userToken } }
+      { headers: { Authorization: authHeader(userToken) } }
     )
   }
 
@@ -199,7 +210,7 @@ export class JellyfinService {
    * critical because library files can be many GB and CT110 has little RAM.
    */
   videoFetch(itemId: string, range?: string, signal?: AbortSignal): Promise<Response> {
-    const headers: Record<string, string> = { "X-Emby-Token": this.adminKey }
+    const headers: Record<string, string> = { Authorization: authHeader(this.adminKey) }
     if (range) headers.Range = range
     return fetch(`${this.baseURL}/Videos/${itemId}/stream?static=true`, { headers, signal })
   }
@@ -210,7 +221,7 @@ export class JellyfinService {
    */
   streamFetch(relpath: string, signal?: AbortSignal): Promise<Response> {
     return fetch(`${this.baseURL}/${relpath}`, {
-      headers: { "X-Emby-Token": this.adminKey },
+      headers: { Authorization: authHeader(this.adminKey) },
       signal,
     })
   }
