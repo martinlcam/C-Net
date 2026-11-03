@@ -65,7 +65,7 @@ export function TransferStatus() {
       <button
         type="button"
         onClick={() => setMinimized(false)}
-        className="fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-full bg-white px-4 py-2 font-medium text-neutral-90 text-sm shadow-xl ring-1 ring-neutral-30"
+        className="fixed right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 flex items-center gap-2 rounded-full bg-white px-4 py-2 font-medium text-neutral-90 text-sm shadow-xl ring-1 ring-neutral-30 sm:right-4 sm:bottom-4"
       >
         {activeCount > 0 ? (
           <Loader2 className="h-4 w-4 animate-spin text-neutral-60" />
@@ -79,7 +79,8 @@ export function TransferStatus() {
   }
 
   return (
-    <div className="fixed right-4 bottom-4 z-50 w-80 max-w-[90vw] rounded-lg bg-white shadow-xl ring-1 ring-neutral-30">
+    // Spans the phone's width above the home bar; a corner card on wider screens.
+    <div className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 rounded-lg bg-white shadow-xl ring-1 ring-neutral-30 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-80">
       <div className="flex items-center justify-between border-neutral-10 border-b px-3 py-2">
         <span className="font-semibold text-neutral-90 text-sm">Transfers</span>
         <div className="flex items-center gap-1">

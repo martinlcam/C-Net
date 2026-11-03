@@ -513,13 +513,14 @@ export function FilePreviewModal({
     <DialogPrimitive.Root open={file !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        {/* The whole screen on a phone; a centred window from the `sm` breakpoint up. */}
         <DialogPrimitive.Content
-          className="-translate-x-1/2 -translate-y-1/2 fixed top-1/2 left-1/2 z-50 flex h-[88vh] w-[92vw] max-w-6xl flex-col overflow-hidden rounded-xl border border-neutral-30 bg-white shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden bg-white outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-[88vh] sm:w-[92vw] sm:max-w-6xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:border-neutral-30 sm:shadow-2xl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           {shown ? (
             <>
-              <div className="flex shrink-0 items-center justify-between gap-3 border-neutral-20 border-b px-4 py-3">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-neutral-20 border-b px-3 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:px-4 sm:py-3 sm:pt-3">
                 <div className="min-w-0">
                   <DialogPrimitive.Title className="truncate font-semibold text-neutral-100 text-sm">
                     {shown.filename}
@@ -528,12 +529,22 @@ export function FilePreviewModal({
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <a href={vaultUrl(shown.downloadUrl)} download={shown.filename}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Download">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 sm:h-8 sm:w-8"
+                      title="Download"
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   </a>
                   <DialogPrimitive.Close asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Close">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 sm:h-8 sm:w-8"
+                      title="Close"
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </DialogPrimitive.Close>

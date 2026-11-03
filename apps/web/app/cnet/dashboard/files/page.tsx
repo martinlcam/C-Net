@@ -207,9 +207,10 @@ export default function FilesPage() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Files</h1>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           <Button
             variant="outline"
+            className="flex-1 sm:flex-none"
             onClick={() =>
               setPrompt({
                 title: "New folder",
@@ -225,7 +226,7 @@ export default function FilesPage() {
               loose files or a directory, never both, so the choice lives in the menu. */}
           <DropdownMenu open={uploadMenuOpen} onOpenChange={setUploadMenuOpen}>
             <DropdownMenuTrigger asChild>
-              <Button>
+              <Button className="flex-1 sm:flex-none">
                 <Upload className="mr-2 h-4 w-4" />
                 Upload
               </Button>
@@ -280,14 +281,15 @@ export default function FilesPage() {
       </div>
 
       {!searching && data ? (
-        <div className="mb-4 flex flex-wrap items-center gap-1 text-neutral-70 text-sm">
+        // A deep path scrolls sideways on a phone instead of wrapping into a block.
+        <div className="mb-4 flex items-center gap-1 overflow-x-auto whitespace-nowrap py-1 text-neutral-70 text-sm">
           {data.breadcrumbs.map((b, i) => (
-            <span key={b.directoryId ?? "root"} className="flex items-center gap-1">
+            <span key={b.directoryId ?? "root"} className="flex shrink-0 items-center gap-1">
               {i > 0 && <ChevronRight className="h-3 w-3" />}
               <button
                 type="button"
                 onClick={() => setDirId(b.directoryId)}
-                className="hover:text-neutral-100 hover:underline"
+                className="py-1 hover:text-neutral-100 hover:underline"
               >
                 {b.label}
               </button>

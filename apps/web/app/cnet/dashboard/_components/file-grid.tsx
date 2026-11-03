@@ -14,14 +14,15 @@ import type { FileViewMode } from "./view-mode-toggle"
 
 export type { FileActions, FolderActions } from "./file-actions"
 
+// On phones the star lives in the item sheet; the card only shows the state.
 function StarButton({ file, onStar }: { file: VaultFile; onStar: (f: VaultFile) => void }) {
   return (
     <Button
       variant="ghost"
       size="icon"
-      className="h-8 w-8 shrink-0"
+      className="hidden h-8 w-8 shrink-0 sm:inline-flex"
       onClick={() => onStar(file)}
-      title="Star"
+      title={file.starred ? "Remove star" : "Star"}
     >
       <Star
         className={`h-4 w-4 ${file.starred ? "fill-yellow-400 text-yellow-400" : "text-neutral-50"}`}
@@ -29,6 +30,14 @@ function StarButton({ file, onStar }: { file: VaultFile; onStar: (f: VaultFile) 
     </Button>
   )
 }
+
+function StarMark({ file }: { file: VaultFile }) {
+  if (!file.starred) return null
+  return <Star aria-label="Starred" className="h-3 w-3 fill-yellow-400 text-yellow-400 sm:hidden" />
+}
+
+// Two columns on a phone, as many 200px cards as fit above that.
+const GRID = "grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] sm:gap-3"
 
 function FolderGridCard({
   dir,
@@ -130,7 +139,7 @@ function FileGridCard({
   return (
     <div className="relative overflow-hidden rounded-xl border border-neutral-30 bg-white hover:border-neutral-50 hover:shadow-sm">
       {stripe ? <div className="h-1 w-full" style={{ backgroundColor: stripe }} /> : null}
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex items-center gap-1 px-2 py-1 sm:gap-2 sm:px-3 sm:py-2">
         {renaming ? (
           <InlineNameEdit
             initial={file.filename}
@@ -144,7 +153,7 @@ function FileGridCard({
           <button
             type="button"
             onClick={onOpen}
-            className="min-w-0 flex-1 truncate text-left font-medium text-neutral-100 text-sm hover:underline"
+            className="min-w-0 flex-1 truncate text-left font-medium text-neutral-100 text-xs hover:underline sm:text-sm"
             title={file.filename}
           >
             {file.filename}
@@ -157,12 +166,15 @@ function FileGridCard({
       <button
         type="button"
         onClick={onOpen}
-        className="block aspect-[4/3] w-full cursor-pointer border-neutral-20 border-t bg-neutral-10"
+        className="block aspect-square w-full cursor-pointer border-neutral-20 border-t bg-neutral-10 sm:aspect-[4/3]"
         title={`Preview ${file.filename}`}
       >
         <FileThumb file={file} />
       </button>
-      <div className="px-3 py-1.5 text-neutral-60 text-xs">{formatBytes(file.size)}</div>
+      <div className="flex items-center gap-1.5 px-2 py-1.5 text-neutral-60 text-xs sm:px-3">
+        <StarMark file={file} />
+        {formatBytes(file.size)}
+      </div>
     </div>
   )
 }
@@ -192,7 +204,7 @@ function FileListRow({
       <button
         type="button"
         onClick={onOpen}
-        className="h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-md border border-neutral-20 bg-neutral-10"
+        className="h-12 w-12 shrink-0 cursor-pointer overflow-hidden rounded-md border border-neutral-20 bg-neutral-10 sm:h-10 sm:w-10"
         title={`Preview ${file.filename}`}
       >
         <FileThumb file={file} />
@@ -218,7 +230,10 @@ function FileListRow({
             >
               {file.filename}
             </button>
-            <div className="text-neutral-60 text-xs">{formatBytes(file.size)}</div>
+            <div className="flex items-center gap-1.5 text-neutral-60 text-xs">
+              <StarMark file={file} />
+              {formatBytes(file.size)}
+            </div>
           </>
         )}
       </div>
@@ -277,7 +292,7 @@ export function FileGrid({
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+            <div className={GRID}>
               {directories.map((d) => (
                 <FolderGridCard
                   key={d.id}
@@ -318,7 +333,7 @@ export function FileGrid({
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+            <div className={GRID}>
               {files.map((f) => (
                 <FileGridCard
                   key={f.id}
