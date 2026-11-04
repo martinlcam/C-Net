@@ -157,6 +157,23 @@ export function SeekBar({
   const [dragging, setDragging] = useState(false)
   const draggingRef = useRef(false)
   const pendingRef = useRef<number | null>(null)
+  // The time just committed by a release, held on the slider until playback catches up.
+  // Without it React would snap the slider back to the stale `current` the instant the
+  // drag ends, and the trailing native `change` event would read that stale value and
+  // seek straight back to where the video was.
+  const [committed, setCommitted] = useState<number | null>(null)
+  const releasedAt = useRef(0)
+
+  useEffect(() => {
+    if (committed === null) return
+    if (Math.abs(current - committed) < 1.5) {
+      setCommitted(null)
+      return
+    }
+    // A seek the element refused (or a stalled stream) must not pin the slider forever.
+    const t = setTimeout(() => setCommitted(null), 2500)
+    return () => clearTimeout(t)
+  }, [current, committed])
 
   const timeAtX = useCallback(
     (clientX: number) => {
@@ -173,7 +190,11 @@ export function SeekBar({
     draggingRef.current = false
     setDragging(false)
     onScrubbing(false)
-    if (pendingRef.current != null) onSeek(pendingRef.current)
+    releasedAt.current = performance.now()
+    if (pendingRef.current != null) {
+      setCommitted(pendingRef.current)
+      onSeek(pendingRef.current)
+    }
     pendingRef.current = null
     // A finger lifts off; a mouse stays and keeps hovering.
     if (mobile) setPreview(null)
@@ -198,7 +219,7 @@ export function SeekBar({
     if (firstSheet) sheetState(firstSheet)
   }, [firstSheet, sheetState])
 
-  const shown = dragging && preview != null ? preview : current
+  const shown = dragging && preview != null ? preview : (committed ?? current)
   const frac = duration > 0 && preview != null ? preview / duration : 0
   const thumbW = mobile ? PREVIEW_W.phone : PREVIEW_W.desktop
   const previewSheet =
@@ -275,8 +296,8 @@ export function SeekBar({
             if (draggingRef.current) {
               pendingRef.current = t
               setPreview(t)
-            } else {
-              onSeek(t) // keyboard nudge on the focused slider
+            } else if (performance.now() - releasedAt.current > 150) {
+              onSeek(t) // keyboard nudge on the focused slider; not the echo of a release
             }
           }}
           aria-label="Seek"

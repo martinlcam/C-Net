@@ -187,16 +187,22 @@ export function MediaPlayer({
     else media.pause()
   }, [])
 
-  const skip = useCallback((delta: number) => {
-    const media = mediaRef.current
-    if (!media) return
-    media.currentTime = Math.min(Math.max(0, media.currentTime + delta), media.duration || 0)
-  }, [])
-
+  // Reflect a seek in the controls at once rather than on the next timeupdate.
   const seekTo = useCallback((time: number) => {
     const media = mediaRef.current
-    if (media) media.currentTime = time
+    if (!media) return
+    const clamped = Math.min(Math.max(0, time), media.duration || time)
+    media.currentTime = clamped
+    setCurrentTime(clamped)
   }, [])
+
+  const skip = useCallback(
+    (delta: number) => {
+      const media = mediaRef.current
+      if (media) seekTo(media.currentTime + delta)
+    },
+    [seekTo]
+  )
 
   const setVolumeClamped = useCallback((v: number) => {
     const media = mediaRef.current
