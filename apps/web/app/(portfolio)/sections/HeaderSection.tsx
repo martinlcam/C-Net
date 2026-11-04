@@ -294,7 +294,7 @@ export function HeaderSection() {
             </Button>
           ) : (
             <Button
-              onClick={openModal}
+              onClick={() => openModal()}
               variant="outline"
               className={`rounded-[12px] px-7 py-3.5 h-12 text-lg font-medium ${
                 isBd
