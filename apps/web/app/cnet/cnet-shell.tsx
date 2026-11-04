@@ -69,7 +69,8 @@ export function CnetShell({ role, children }: { role?: string; children: React.R
       ) : null}
 
       <div className="flex">
-        <aside className="hidden min-h-screen w-64 shrink-0 flex-col border-neutral-30 border-r bg-white p-4 md:flex">
+        {/* Pinned to the viewport so Sign out stays bottom-left while the files scroll. */}
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-neutral-30 border-r bg-white p-4 md:flex">
           {sidebar}
         </aside>
         <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
