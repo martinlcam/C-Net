@@ -40,7 +40,7 @@ export function CnetShell({ role, children }: { role?: string; children: React.R
   )
 
   return (
-    <div className="min-h-screen bg-[#faf6f1] font-satoshi">
+    <div className="flex min-h-screen flex-col bg-[#faf6f1] font-satoshi md:h-screen md:overflow-hidden">
       <header className="sticky top-0 z-40 flex items-center justify-between border-neutral-30 border-b bg-white px-4 py-3 md:hidden">
         <h2 className="font-bold text-xl text-neutral-100">C-Net</h2>
         <button
@@ -68,12 +68,13 @@ export function CnetShell({ role, children }: { role?: string; children: React.R
         </>
       ) : null}
 
-      <div className="flex">
-        {/* Pinned to the viewport so Sign out stays bottom-left while the files scroll. */}
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-neutral-30 border-r bg-white p-4 md:flex">
+      {/* On the desk the shell is exactly one viewport tall: the sidebar never moves and only
+          the main pane scrolls. Phones keep the plain page scroll under the sticky header. */}
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-neutral-30 border-r bg-white p-4 md:flex">
           {sidebar}
         </aside>
-        <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 md:overflow-y-auto md:p-8">{children}</main>
       </div>
 
       <TransferStatus />
