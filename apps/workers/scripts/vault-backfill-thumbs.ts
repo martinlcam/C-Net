@@ -6,11 +6,12 @@
  * server-supported. Thumbnails are otherwise produced only at upload time, so files
  * uploaded before a type gained support never got one.
  *
- * Run from the repo root, against the same DATABASE_URL / Redis the workers use:
+ * Lives in the workers app so the workspace packages resolve; run it from apps/workers (on
+ * the box: `cd /opt/cnet/apps/workers` as `cnet` with the .env loaded):
  *
- *     bun run scripts/vault-backfill-thumbs.ts          # enqueue
- *     bun run scripts/vault-backfill-thumbs.ts --dry    # report only, enqueue nothing
- *     bun run scripts/vault-backfill-thumbs.ts --force --path "2026-11-06 marty party"
+ *     bun run backfill:thumbs          # enqueue
+ *     bun run backfill:thumbs --dry    # report only, enqueue nothing
+ *     bun run backfill:thumbs --force --path "2026-11-06 marty party"
  *         # regenerate thumbnails that already exist, for files in folders under that path
  *
  * Requires the workers to be running (with LibreOffice/libheif/poppler/ffmpeg) to

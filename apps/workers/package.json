@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun run src/worker.ts --watch",
     "build": "tsc",
-    "start": "bun dist/worker.js"
+    "start": "bun dist/worker.js",
+    "backfill:thumbs": "bun run scripts/vault-backfill-thumbs.ts"
   },
   "dependencies": {
     "@cnet/core": "workspace:*",
