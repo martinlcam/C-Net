@@ -32,7 +32,7 @@ export function AdminVault() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Vault Admin</h1>
         <Link

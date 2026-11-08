@@ -134,7 +134,8 @@ function ThumbImage({ file, fileClass }: { file: VaultFile; fileClass: FileClass
     <img
       src={src}
       alt={file.filename}
-      className="h-full w-full object-cover"
+      // Whole photo in the tile; a portrait shot would lose its top and bottom to a crop.
+      className="h-full w-full object-contain"
       loading="lazy"
       onError={() => setIdx((i) => i + 1)}
     />

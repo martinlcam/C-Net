@@ -16,7 +16,7 @@ export default function TrashPage() {
   const files = data?.files ?? []
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <h1 className="mb-2 font-bold text-3xl text-neutral-100">Trash</h1>
       <p className="mb-6 text-neutral-60 text-sm">
         Deleted files are kept here until purged. Restoring returns them to their original folder.

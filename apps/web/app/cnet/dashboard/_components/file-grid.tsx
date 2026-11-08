@@ -36,8 +36,10 @@ function StarMark({ file }: { file: VaultFile }) {
   return <Star aria-label="Starred" className="h-3 w-3 fill-yellow-400 text-yellow-400 sm:hidden" />
 }
 
-// Two columns on a phone, as many 200px cards as fit above that.
-const GRID = "grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] sm:gap-3"
+// Two columns on a phone; above that as many cards as fit, so a wide screen gets more and
+// larger tiles rather than a capped column in the middle.
+const GRID =
+  "grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] sm:gap-3 2xl:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] 2xl:gap-4"
 
 function FolderGridCard({
   dir,

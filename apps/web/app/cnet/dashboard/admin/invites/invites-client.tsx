@@ -79,7 +79,7 @@ export function InvitesAdmin() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <h1 className="mb-6 font-bold text-2xl text-neutral-100 md:text-3xl">Party invites</h1>
       {body}
     </div>

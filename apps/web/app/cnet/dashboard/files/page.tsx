@@ -204,7 +204,7 @@ export default function FilesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Files</h1>
         <div className="flex gap-2">
