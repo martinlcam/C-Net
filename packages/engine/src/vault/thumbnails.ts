@@ -20,7 +20,8 @@ export function pickGenerator(contentType: string, filename: string): ThumbnailK
 const THUMB_SIZE = 256
 
 async function toWebp(input: Buffer): Promise<Buffer> {
-  return sharp(input).resize(THUMB_SIZE, THUMB_SIZE, { fit: "inside" }).webp().toBuffer()
+  // rotate() with no angle applies the EXIF orientation, so portrait shots stay upright.
+  return sharp(input).rotate().resize(THUMB_SIZE, THUMB_SIZE, { fit: "inside" }).webp().toBuffer()
 }
 
 /** Run a binary, return its stdout buffer, or null if it is missing or fails. */
@@ -63,6 +64,7 @@ export async function generateThumbnail(
   try {
     if (kind === "image") {
       const thumb = await sharp(sourcePath)
+        .rotate()
         .resize(THUMB_SIZE, THUMB_SIZE, { fit: "inside" })
         .webp()
         .toBuffer()
