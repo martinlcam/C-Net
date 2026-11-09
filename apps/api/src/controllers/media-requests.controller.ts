@@ -1,3 +1,9 @@
+import {
+  describeHealth,
+  describeMissingEpisodes,
+  describeMissingMovie,
+  describeQueueItem,
+} from "@cnet/engine"
 import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Post, Query, Request, Response, Route, Security } from "tsoa"
 import { getRadarr, getSonarr } from "../media/clients"
@@ -37,12 +43,36 @@ export interface RequestResult {
   message?: string
 }
 
-export interface QueueItemDTO {
+export type RequestPhaseDTO =
+  | "waiting"
+  | "searching"
+  | "queued"
+  | "downloading"
+  | "paused"
+  | "stalled"
+  | "importing"
+  | "failed"
+
+/** One requested title and where it is: waiting for release, searching, downloading, stuck… */
+export interface RequestStatusDTO {
   id: number
   title: string
-  status: string
-  state?: string
-  progress: number
+  phase: RequestPhaseDTO
+  label: string
+  detail: string | null
+  progress: number | null
+  etaSeconds: number | null
+}
+
+export interface HealthNoticeDTO {
+  level: "warning" | "error"
+  message: string
+}
+
+export interface RequestsStatusResponse {
+  items: RequestStatusDTO[]
+  /** Indexer or download-client problems that explain why nothing moves. */
+  health: HealthNoticeDTO[]
 }
 
 function libraryCapBytes(): number {
@@ -58,12 +88,6 @@ async function totalLibraryBytes(): Promise<number> {
     getSonarr().getLibrarySize(),
   ])
   return movies + tv
-}
-
-function queueProgress(size?: number, left?: number): number {
-  const s = size ?? 0
-  const l = left ?? 0
-  return s > 0 ? Math.round(((s - l) / s) * 100) : 0
 }
 
 @Route("media/requests")
@@ -112,19 +136,25 @@ export class MediaRequestsController extends Controller {
     }
   }
 
+  /** Every outstanding movie request: in the download queue, or still wanted and why. */
   @Get("queue")
-  public async queue(@Request() req: ExpressRequest): Promise<{ items: QueueItemDTO[] }> {
+  public async queue(@Request() req: ExpressRequest): Promise<RequestsStatusResponse> {
     actorFrom(req)
-    const q = await getRadarr().getQueue()
-    return {
-      items: q.map((it) => ({
-        id: it.movieId,
-        title: it.title,
-        status: it.status,
-        state: it.trackedDownloadState,
-        progress: queueProgress(it.size, it.sizeleft),
-      })),
-    }
+    const radarr = getRadarr()
+    const [queue, wanted, health] = await Promise.all([
+      radarr.getQueue(),
+      radarr.getWantedMissing().catch(() => []),
+      radarr.getHealth().catch(() => []),
+    ])
+    const queued = new Set(queue.map((it) => it.movieId))
+    const items = [
+      ...queue.map((it) => describeQueueItem(it.movieId, it)),
+      ...wanted
+        .filter((m) => !queued.has(m.id) && !m.hasFile)
+        .sort((a, b) => String(b.added ?? "").localeCompare(String(a.added ?? "")))
+        .map((m) => describeMissingMovie(m)),
+    ]
+    return { items, health: describeHealth(health) }
   }
 
   // --- TV ---
@@ -170,18 +200,21 @@ export class MediaRequestsController extends Controller {
     }
   }
 
+  /** Every outstanding TV download plus series with missing episodes and why. */
   @Get("tv-queue")
-  public async tvQueue(@Request() req: ExpressRequest): Promise<{ items: QueueItemDTO[] }> {
+  public async tvQueue(@Request() req: ExpressRequest): Promise<RequestsStatusResponse> {
     actorFrom(req)
-    const q = await getSonarr().getQueue()
-    return {
-      items: q.map((it) => ({
-        id: it.seriesId,
-        title: it.title,
-        status: it.status,
-        state: it.trackedDownloadState,
-        progress: queueProgress(it.size, it.sizeleft),
-      })),
-    }
+    const sonarr = getSonarr()
+    const [queue, missing, health] = await Promise.all([
+      sonarr.getQueue(),
+      sonarr.getMissingEpisodes().catch(() => []),
+      sonarr.getHealth().catch(() => []),
+    ])
+    const queued = new Set(queue.map((it) => it.seriesId))
+    const items = [
+      ...queue.map((it) => describeQueueItem(it.seriesId, it)),
+      ...describeMissingEpisodes(missing).filter((s) => !queued.has(s.id)),
+    ]
+    return { items, health: describeHealth(health) }
   }
 }

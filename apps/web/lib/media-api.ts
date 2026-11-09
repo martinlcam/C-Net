@@ -135,13 +135,30 @@ export type DiscoverTv = {
   inLibrary: boolean
 }
 
-export type QueueItem = {
+export type RequestPhase =
+  | "waiting"
+  | "searching"
+  | "queued"
+  | "downloading"
+  | "paused"
+  | "stalled"
+  | "importing"
+  | "failed"
+
+/** One requested title and where it is, in words (see the API's RequestStatusDTO). */
+export type RequestStatus = {
   id: number
   title: string
-  status: string
-  state?: string
-  progress: number
+  phase: RequestPhase
+  label: string
+  detail: string | null
+  progress: number | null
+  etaSeconds: number | null
 }
+
+export type HealthNotice = { level: "warning" | "error"; message: string }
+
+export type RequestsStatus = { items: RequestStatus[]; health: HealthNotice[] }
 
 export const TICKS_PER_SECOND = 10_000_000
 
@@ -222,8 +239,7 @@ export const requestMovie = (tmdbId: number) =>
     method: "POST",
     body: JSON.stringify({ tmdbId }),
   })
-export const getQueue = () =>
-  req<{ items: QueueItem[] }>("/media/requests/queue").then((r) => r.items)
+export const getQueue = () => req<RequestsStatus>("/media/requests/queue")
 
 export const discoverTv = (q: string) =>
   req<{ results: DiscoverTv[] }>(`/media/requests/discover-tv?q=${encodeURIComponent(q)}`).then(
@@ -234,5 +250,4 @@ export const requestSeries = (tvdbId: number) =>
     method: "POST",
     body: JSON.stringify({ tvdbId }),
   })
-export const getTvQueue = () =>
-  req<{ items: QueueItem[] }>("/media/requests/tv-queue").then((r) => r.items)
+export const getTvQueue = () => req<RequestsStatus>("/media/requests/tv-queue")

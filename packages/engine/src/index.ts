@@ -1,3 +1,16 @@
+export {
+  type ArrHealthRecord,
+  type ArrMissingEpisode,
+  type ArrMovieRecord,
+  type ArrQueueRecord,
+  describeHealth,
+  describeMissingEpisodes,
+  describeMissingMovie,
+  describeQueueItem,
+  type HealthNotice,
+  type RequestPhase,
+  type RequestStatus,
+} from "./arr/request-status"
 export { logAuditAction } from "./audit/logger"
 export { getResendClient, type SendEmailOptions, sendEmail } from "./email/resend"
 export { ContactEmailTemplate } from "./email/templates/contact"
@@ -96,6 +109,7 @@ export {
 } from "./proxmox/ups"
 export { RadarrService } from "./radarr/service"
 export type {
+  ArrHealthItem,
   RadarrImage,
   RadarrLookupResult,
   RadarrMovie,
@@ -128,6 +142,7 @@ export { SonarrService } from "./sonarr/service"
 export type {
   SonarrImage,
   SonarrLookupResult,
+  SonarrMissingEpisode,
   SonarrQueueItem,
   SonarrSeries,
   SonarrStatistics,

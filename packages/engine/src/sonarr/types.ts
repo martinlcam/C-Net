@@ -41,7 +41,24 @@ export type SonarrQueueItem = {
   seriesId: number
   title: string
   status: string
+  trackedDownloadStatus?: string
   trackedDownloadState?: string
+  statusMessages?: Array<{ title?: string; messages?: string[] }>
+  errorMessage?: string
   sizeleft?: number
   size?: number
+  timeleft?: string
+  indexer?: string
+  downloadClient?: string
+}
+
+/** A monitored episode Sonarr has no file for (`/wanted/missing` with includeSeries). */
+export type SonarrMissingEpisode = {
+  id: number
+  seriesId: number
+  seasonNumber: number
+  episodeNumber: number
+  title?: string
+  airDateUtc?: string
+  series?: { id: number; title: string }
 }

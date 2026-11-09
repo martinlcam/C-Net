@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from "axios"
-import type { RadarrLookupResult, RadarrMovie, RadarrQueueItem } from "./types"
+import type { ArrHealthItem, RadarrLookupResult, RadarrMovie, RadarrQueueItem } from "./types"
 
 /** Thin client for Radarr's v3 API (discovery via TMDB-backed lookup + add/auto-search). */
 export class RadarrService {
@@ -62,6 +62,19 @@ export class RadarrService {
       params: { pageSize: 200, includeMovie: false },
     })
     return data.records ?? []
+  }
+
+  /** Monitored movies without a file, newest first: what people are still waiting on. */
+  async getWantedMissing(): Promise<RadarrMovie[]> {
+    const { data } = await this.client.get<{ records: RadarrMovie[] }>("/wanted/missing", {
+      params: { pageSize: 200, monitored: true, sortKey: "movieMetadata.sortTitle" },
+    })
+    return data.records ?? []
+  }
+
+  async getHealth(): Promise<ArrHealthItem[]> {
+    const { data } = await this.client.get<ArrHealthItem[]>("/health")
+    return data
   }
 
   /** Total bytes used by the movie library (sum of per-movie sizeOnDisk). */

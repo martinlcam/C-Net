@@ -21,7 +21,16 @@ export type RadarrMovie = {
   hasFile: boolean
   sizeOnDisk?: number
   monitored: boolean
+  /** announced | inCinemas | released | deleted | tba */
   status?: string
+  /** True once the movie meets its minimumAvailability, i.e. Radarr will search for it. */
+  isAvailable?: boolean
+  minimumAvailability?: string
+  inCinemas?: string
+  digitalRelease?: string
+  physicalRelease?: string
+  added?: string
+  lastSearchTime?: string
 }
 
 export type RadarrQueueItem = {
@@ -31,7 +40,13 @@ export type RadarrQueueItem = {
   status: string
   trackedDownloadStatus?: string
   trackedDownloadState?: string
+  statusMessages?: Array<{ title?: string; messages?: string[] }>
+  errorMessage?: string
   sizeleft?: number
   size?: number
   timeleft?: string
+  indexer?: string
+  downloadClient?: string
 }
+
+export type ArrHealthItem = { type?: string; source?: string; message?: string }

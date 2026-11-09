@@ -2,17 +2,25 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { useEffect } from "react"
-import { getQueue, getTvQueue, type QueueItem } from "@/lib/media-api"
+import { getQueue, getTvQueue, type RequestStatus } from "@/lib/media-api"
 import { type TransferItem, useTransferStore } from "@/lib/stores/transfers"
 
-function toTransfers(source: string, items: QueueItem[]): TransferItem[] {
-  return items.map((q) => ({
-    id: `${source}:${q.id}-${q.title}`,
-    label: q.title,
-    kind: "download" as const,
-    progress: q.progress,
-    status: "active" as const,
-  }))
+// Only things that are actually moving (or broke while moving) belong in the transfer panel;
+// a title still waiting for its release or being searched for is shown in the Add dialog.
+function toTransfers(source: string, items: RequestStatus[]): TransferItem[] {
+  const out: TransferItem[] = []
+  for (const q of items) {
+    if (q.phase === "waiting" || q.phase === "searching") continue
+    out.push({
+      id: `${source}:${q.id}-${q.title}`,
+      label: q.phase === "downloading" ? q.title : `${q.title} · ${q.label}`,
+      kind: "download" as const,
+      progress: q.progress ?? 0,
+      status: q.phase === "failed" ? ("error" as const) : ("active" as const),
+      error: q.phase === "failed" ? (q.detail ?? q.label) : undefined,
+    })
+  }
+  return out
 }
 
 /**
@@ -37,10 +45,10 @@ export function MediaDownloadsWatcher() {
   })
 
   useEffect(() => {
-    if (movies.data) syncSource("radarr", toTransfers("radarr", movies.data))
+    if (movies.data) syncSource("radarr", toTransfers("radarr", movies.data.items))
   }, [movies.data, syncSource])
   useEffect(() => {
-    if (tv.data) syncSource("sonarr", toTransfers("sonarr", tv.data))
+    if (tv.data) syncSource("sonarr", toTransfers("sonarr", tv.data.items))
   }, [tv.data, syncSource])
 
   return null

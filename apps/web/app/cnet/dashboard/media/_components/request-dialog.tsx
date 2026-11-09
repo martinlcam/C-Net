@@ -9,6 +9,8 @@ import {
   discoverTv,
   getQueue,
   getTvQueue,
+  type RequestPhase,
+  type RequestStatus,
   requestMovie,
   requestSeries,
 } from "@/lib/media-api"
@@ -27,6 +29,62 @@ type Row = {
   posterUrl?: string
   already: boolean
   add: () => Promise<{ ok: boolean; message?: string }>
+}
+
+const PHASE_STYLE: Record<RequestPhase, { badge: string; text: string }> = {
+  waiting: { badge: "bg-neutral-10 text-neutral-70", text: "Waiting" },
+  searching: { badge: "bg-sky-50 text-sky-700", text: "Searching" },
+  queued: { badge: "bg-sky-50 text-sky-700", text: "Queued" },
+  downloading: { badge: "bg-green-50 text-green-700", text: "Downloading" },
+  paused: { badge: "bg-yellow-50 text-yellow-800", text: "Paused" },
+  stalled: { badge: "bg-yellow-50 text-yellow-800", text: "Stuck" },
+  importing: { badge: "bg-green-50 text-green-700", text: "Importing" },
+  failed: { badge: "bg-accent-red-10 text-accent-red-70", text: "Failed" },
+}
+
+function fmtEta(seconds: number): string {
+  if (seconds < 60) return "under a minute left"
+  if (seconds < 3600) return `${Math.round(seconds / 60)} min left`
+  const h = Math.floor(seconds / 3600)
+  const m = Math.round((seconds % 3600) / 60)
+  return `${h} h ${m} min left`
+}
+
+/** One requested title: a phase badge, what is happening, why, and progress when it moves. */
+function RequestStatusRow({ item }: { item: RequestStatus }) {
+  const style = PHASE_STYLE[item.phase]
+  const moving = item.phase === "downloading" || item.phase === "stalled"
+  return (
+    <li className="py-2">
+      <div className="flex items-start gap-2">
+        <span
+          className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 font-medium text-[11px] ${style.badge}`}
+        >
+          {style.text}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-neutral-90 text-sm">{item.title}</p>
+          <p className="text-neutral-70 text-xs">
+            {item.label}
+            {item.etaSeconds !== null && item.phase === "downloading"
+              ? ` · ${fmtEta(item.etaSeconds)}`
+              : ""}
+          </p>
+          {item.detail ? <p className="text-neutral-60 text-xs">{item.detail}</p> : null}
+        </div>
+      </div>
+      {moving && item.progress !== null ? (
+        <div className="mt-1.5 h-1 overflow-hidden rounded bg-neutral-10">
+          <motion.div
+            className={`h-full ${item.phase === "stalled" ? "bg-yellow-500" : "bg-green-600"}`}
+            initial={false}
+            animate={{ width: `${item.progress}%` }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
+        </div>
+      ) : null}
+    </li>
+  )
 }
 
 function ResultRow({ row, index }: { row: Row; index: number }) {
@@ -228,18 +286,31 @@ export function RequestDialog({
           ) : null}
         </AnimatePresence>
 
-        {queue.data && queue.data.length > 0 ? (
-          <div className="mt-4">
-            <p className="mb-1 font-semibold text-neutral-70 text-xs uppercase">Downloading</p>
-            {queue.data.map((q) => (
-              <div
-                key={`${q.id}-${q.title}`}
-                className="flex justify-between py-1 text-neutral-90 text-sm"
+        {queue.data && queue.data.health.length > 0 ? (
+          <div className="mt-4 space-y-1">
+            {queue.data.health.map((h) => (
+              <p
+                key={h.message}
+                className={`rounded-md px-3 py-2 text-xs ${
+                  h.level === "error"
+                    ? "bg-accent-red-10 text-accent-red-70"
+                    : "bg-yellow-50 text-yellow-800"
+                }`}
               >
-                <span className="truncate">{q.title}</span>
-                <span className="shrink-0 text-neutral-60">{q.progress}%</span>
-              </div>
+                {h.message}
+              </p>
             ))}
+          </div>
+        ) : null}
+
+        {queue.data && queue.data.items.length > 0 ? (
+          <div className="mt-4">
+            <p className="mb-1 font-semibold text-neutral-70 text-xs uppercase">Requests</p>
+            <ul className="divide-y divide-neutral-10">
+              {queue.data.items.map((q) => (
+                <RequestStatusRow key={`${q.phase}-${q.id}-${q.title}`} item={q} />
+              ))}
+            </ul>
           </div>
         ) : null}
       </div>

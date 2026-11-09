@@ -1,5 +1,10 @@
 import axios, { type AxiosInstance } from "axios"
-import type { SonarrLookupResult, SonarrQueueItem, SonarrSeries } from "./types"
+import type {
+  SonarrLookupResult,
+  SonarrMissingEpisode,
+  SonarrQueueItem,
+  SonarrSeries,
+} from "./types"
 
 /** Thin client for Sonarr's v3 API (TVDB-backed lookup + add/auto-search). */
 export class SonarrService {
@@ -63,6 +68,19 @@ export class SonarrService {
       params: { pageSize: 200, includeSeries: false },
     })
     return data.records ?? []
+  }
+
+  async getMissingEpisodes(): Promise<SonarrMissingEpisode[]> {
+    const { data } = await this.client.get<{ records: SonarrMissingEpisode[] }>("/wanted/missing", {
+      params: { pageSize: 200, monitored: true, includeSeries: true, sortKey: "airDateUtc" },
+    })
+    return data.records ?? []
+  }
+
+  async getHealth(): Promise<Array<{ type?: string; source?: string; message?: string }>> {
+    const { data } =
+      await this.client.get<Array<{ type?: string; source?: string; message?: string }>>("/health")
+    return data
   }
 
   /** Total bytes used by the TV library (sum of per-series sizeOnDisk). */
