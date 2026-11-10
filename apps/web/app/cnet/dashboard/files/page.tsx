@@ -7,14 +7,9 @@ import { type TransferItem, useTransferStore } from "@/lib/stores/transfers"
 import {
   createDir,
   deleteDir,
-  deleteFile,
   listDir,
   renameDir,
-  renameFile,
   search as searchApi,
-  setFileColor,
-  starFile,
-  unstarFile,
   uploadFile,
   uploadFolder,
   type VaultDir,
@@ -31,6 +26,7 @@ import { FileGrid } from "../_components/file-grid"
 import { formatBytes } from "../_components/format"
 import { TextDialog, type TextPrompt } from "../_components/text-dialog"
 import { useFileViewMode } from "../_components/use-file-view-mode"
+import { useVaultFileActions } from "../_components/use-vault-file-actions"
 import { ViewModeToggle } from "../_components/view-mode-toggle"
 
 export default function FilesPage() {
@@ -69,17 +65,7 @@ export default function FilesPage() {
     onSuccess,
   })
   const removeFolder = useMutation({ mutationFn: deleteDir, onSuccess })
-  const renameF = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => renameFile(id, name),
-    onSuccess,
-  })
-  const removeF = useMutation({ mutationFn: deleteFile, onSuccess })
-  const star = useMutation({ mutationFn: starFile, onSuccess })
-  const unstar = useMutation({ mutationFn: unstarFile, onSuccess })
-  const color = useMutation({
-    mutationFn: ({ id, c }: { id: string; c: string | null }) => setFileColor(id, c),
-    onSuccess,
-  })
+  const fileActions = useVaultFileActions()
 
   async function handleFiles(files: FileList | null) {
     if (!files) return
@@ -191,16 +177,20 @@ export default function FilesPage() {
   const files: VaultFile[] = searching ? (searchResults.data?.files ?? []) : (data?.files ?? [])
   const directories: VaultDir[] = searching ? [] : (data?.directories ?? [])
 
-  const fileActions = {
-    onStar: (f: VaultFile) => (f.starred ? unstar.mutate(f.id) : star.mutate(f.id)),
-    onRename: (f: VaultFile, name: string) => renameF.mutate({ id: f.id, name }),
-    onDelete: (f: VaultFile) => removeF.mutate(f.id),
-    onColor: (f: VaultFile, c: string | null) => color.mutate({ id: f.id, c }),
-  }
   const folderActions = {
     onOpen: (d: VaultDir) => setDirId(d.id),
     onRename: (d: VaultDir, name: string) => renameFolder.mutate({ id: d.id, name }),
     onDelete: (d: VaultDir) => removeFolder.mutate(d.id),
+  }
+  const newFolder = () =>
+    setPrompt({
+      title: "New folder",
+      initial: "",
+      onSubmit: (name) => name.trim() && createFolder.mutate(name.trim()),
+    })
+  const spaceActions = {
+    onNewFolder: newFolder,
+    onUpload: () => fileInputRef.current?.click(),
   }
 
   return (
@@ -208,17 +198,7 @@ export default function FilesPage() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Files</h1>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 sm:flex-none"
-            onClick={() =>
-              setPrompt({
-                title: "New folder",
-                initial: "",
-                onSubmit: (name) => name.trim() && createFolder.mutate(name.trim()),
-              })
-            }
-          >
+          <Button variant="outline" className="flex-1 sm:flex-none" onClick={newFolder}>
             <FolderPlus className="mr-2 h-4 w-4" />
             New folder
           </Button>
@@ -310,6 +290,8 @@ export default function FilesPage() {
           files={files}
           fileActions={fileActions}
           folderActions={folderActions}
+          spaceActions={spaceActions}
+          currentDirId={dirId}
           empty={searching ? "No matching files" : "This folder is empty"}
           viewMode={viewMode}
         />

@@ -1,19 +1,13 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
-import {
-  deleteFile,
-  renameFile,
-  setFileColor,
-  starFile,
-  unstarFile,
-  type VaultFile,
-} from "@/lib/vault-api"
+import type { VaultFile } from "@/lib/vault-api"
 import { ColorFilterBar } from "./color-filter-bar"
 import { FileGrid } from "./file-grid"
 import { VAULT_COLORS } from "./format"
 import { useFileViewMode } from "./use-file-view-mode"
+import { useVaultFileActions } from "./use-vault-file-actions"
 import { ViewModeToggle } from "./view-mode-toggle"
 
 /** A read-only listing (starred/colored) with the standard per-file actions. */
@@ -31,30 +25,10 @@ export function FileView({
   /** When true, show color chips above the grid to filter by tag color. */
   colorFilter?: boolean
 }) {
-  const qc = useQueryClient()
   const [viewMode, setViewMode] = useFileViewMode()
   const [colorKey, setColorKey] = useState<string | null>(null)
   const { data, isLoading, error } = useQuery({ queryKey: ["vault", queryKey], queryFn: fetcher })
-  const onSuccess = () => qc.invalidateQueries({ queryKey: ["vault"] })
-
-  const star = useMutation({ mutationFn: starFile, onSuccess })
-  const unstar = useMutation({ mutationFn: unstarFile, onSuccess })
-  const removeF = useMutation({ mutationFn: deleteFile, onSuccess })
-  const renameF = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => renameFile(id, name),
-    onSuccess,
-  })
-  const color = useMutation({
-    mutationFn: ({ id, c }: { id: string; c: string | null }) => setFileColor(id, c),
-    onSuccess,
-  })
-
-  const fileActions = {
-    onStar: (f: VaultFile) => (f.starred ? unstar.mutate(f.id) : star.mutate(f.id)),
-    onRename: (f: VaultFile, name: string) => renameF.mutate({ id: f.id, name }),
-    onDelete: (f: VaultFile) => removeF.mutate(f.id),
-    onColor: (f: VaultFile, c: string | null) => color.mutate({ id: f.id, c }),
-  }
+  const fileActions = useVaultFileActions()
 
   const allFiles = data?.files ?? []
   const files = useMemo(
