@@ -24,3 +24,27 @@ export function resolveCollision(name: string, taken: Set<string>, label?: strin
   while (taken.has(candidate)) candidate = `${base} (${++n})${ext}`
   return candidate
 }
+
+/**
+ * Entry names for a zip of many files: duplicates get " (2)", " (3)"… before the extension,
+ * the way a desktop does, so nothing silently overwrites inside the archive.
+ */
+export function uniqueZipNames(filenames: string[]): string[] {
+  const taken = new Set<string>()
+  return filenames.map((name) => {
+    if (!taken.has(name.toLowerCase())) {
+      taken.add(name.toLowerCase())
+      return name
+    }
+    const dot = name.lastIndexOf(".")
+    const stem = dot > 0 ? name.slice(0, dot) : name
+    const ext = dot > 0 ? name.slice(dot) : ""
+    for (let n = 2; ; n++) {
+      const candidate = `${stem} (${n})${ext}`
+      if (!taken.has(candidate.toLowerCase())) {
+        taken.add(candidate.toLowerCase())
+        return candidate
+      }
+    }
+  })
+}

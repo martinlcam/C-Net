@@ -5,6 +5,7 @@ import { RegisterRoutes } from "./generated/routes"
 import { registerMediaStream } from "./media/stream"
 import { errorHandler } from "./middleware/error.middleware"
 import { registerVaultDownload } from "./vault/download"
+import { registerVaultZip } from "./vault/zip"
 
 const defaultDevOrigins = ["http://localhost:3001", "http://127.0.0.1:3001"]
 
@@ -79,6 +80,7 @@ export function createApp(): express.Express {
   // Signed binary download/stream routes (auth is the URL signature, not a session).
   // Registered before tsoa so the raw streaming handlers own these paths.
   registerVaultDownload(app)
+  registerVaultZip(app)
   registerMediaStream(app)
 
   RegisterRoutes(app)

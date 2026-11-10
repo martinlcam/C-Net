@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { resolveCollision } from "./naming"
+import { resolveCollision, uniqueZipNames } from "./naming"
 
 describe("resolveCollision", () => {
   const taken = new Set(["file.txt", "file (1).txt", "report.pdf"])
@@ -18,5 +18,21 @@ describe("resolveCollision", () => {
     expect(resolveCollision("a.txt", t, "restored")).toBe("a (restored).txt")
     t.add("a (restored).txt")
     expect(resolveCollision("a.txt", t, "restored")).toBe("a (restored 2).txt")
+  })
+})
+
+describe("uniqueZipNames", () => {
+  it("numbers repeats before the extension and leaves the first alone", () => {
+    expect(uniqueZipNames(["a.jpg", "b.jpg", "a.jpg", "a.jpg", "README"])).toEqual([
+      "a.jpg",
+      "b.jpg",
+      "a (2).jpg",
+      "a (3).jpg",
+      "README",
+    ])
+  })
+
+  it("treats names that differ only by case as the same file", () => {
+    expect(uniqueZipNames(["Photo.JPG", "photo.jpg"])).toEqual(["Photo.JPG", "photo (2).jpg"])
   })
 })

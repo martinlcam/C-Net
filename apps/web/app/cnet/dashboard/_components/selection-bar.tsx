@@ -1,7 +1,7 @@
 "use client"
 
 import { AnimatePresence, motion } from "framer-motion"
-import { FolderInput, Loader2, Palette, Star, Trash2, X } from "lucide-react"
+import { Download, FolderInput, Loader2, Palette, Star, Trash2, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import type { VaultFile } from "@/lib/vault-api"
 import type { BulkOp } from "./file-actions"
@@ -17,12 +17,14 @@ export function SelectionBar({
   busy,
   onBulk,
   onMove,
+  onDownload,
   onClear,
 }: {
   files: VaultFile[]
   busy: boolean
   onBulk: (op: BulkOp) => void
   onMove: () => void
+  onDownload: () => void
   onClear: () => void
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -78,6 +80,10 @@ export function SelectionBar({
             </>
           ) : (
             <>
+              <button type="button" disabled={busy} onClick={onDownload} className={item}>
+                <Download className="h-4 w-4" />
+                Download
+              </button>
               <button
                 type="button"
                 disabled={busy}

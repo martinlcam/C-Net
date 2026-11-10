@@ -474,3 +474,26 @@ export async function uploadFolder(
   })
   return summary
 }
+
+/**
+ * Download many files as one zip. A real form submission (not fetch) so the browser shows
+ * its normal download, streams it, and never holds the archive in memory.
+ */
+export function downloadZip(ids: string[], name: string): void {
+  const form = document.createElement("form")
+  form.method = "POST"
+  form.action = `${API_BASE}/vault/zip`
+  form.style.display = "none"
+  const add = (key: string, value: string) => {
+    const input = document.createElement("input")
+    input.type = "hidden"
+    input.name = key
+    input.value = value
+    form.appendChild(input)
+  }
+  add("ids", JSON.stringify(ids))
+  add("name", name)
+  document.body.appendChild(form)
+  form.submit()
+  form.remove()
+}

@@ -340,6 +340,7 @@ export default function FilesPage() {
           folderActions={folderActions}
           spaceActions={spaceActions}
           currentDirId={dirId}
+          folderName={data?.directory?.name ?? "My Vault"}
           empty={searching ? "No matching files" : "This folder is empty"}
           viewMode={viewMode}
         />

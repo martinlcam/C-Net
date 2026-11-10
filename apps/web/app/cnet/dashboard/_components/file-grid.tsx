@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react"
-import type { VaultDir, VaultFile } from "@/lib/vault-api"
+import { downloadZip, type VaultDir, type VaultFile, vaultUrl } from "@/lib/vault-api"
 import type { BulkOp, FileActions, FolderActions, RenameTarget, SpaceActions } from "./file-actions"
 import { FilePreviewModal } from "./file-preview-modal"
 import { FileThumb } from "./file-thumb"
@@ -319,12 +319,22 @@ type Props = {
   spaceActions?: SpaceActions
   /** Folder being viewed; the move picker opens there. */
   currentDirId?: string | null
+  /** Its name, for the zip a multi-file download is given. */
+  folderName?: string | null
   empty?: string
   viewMode?: FileViewMode
 }
 
 export function FileGrid(props: Props) {
-  const { directories = [], files, fileActions, folderActions, spaceActions, currentDirId } = props
+  const {
+    directories = [],
+    files,
+    fileActions,
+    folderActions,
+    spaceActions,
+    currentDirId,
+    folderName,
+  } = props
   const [renameTarget, setRenameTarget] = useState<RenameTarget>(null)
   const [previewFile, setPreviewFile] = useState<VaultFile | null>(null)
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
@@ -452,6 +462,16 @@ export function FileGrid(props: Props) {
         busy={busy}
         onBulk={(op) => void runBulk(op)}
         onMove={() => setMoveFiles(selectedFiles)}
+        onDownload={() => {
+          if (selectedFiles.length === 1) {
+            window.location.assign(vaultUrl(selectedFiles[0].downloadUrl))
+          } else {
+            downloadZip(
+              selectedFiles.map((f) => f.id),
+              folderName ?? "files"
+            )
+          }
+        }}
         onClear={clearSelection}
       />
       <FolderPickerDialog

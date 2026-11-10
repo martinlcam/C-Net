@@ -15,7 +15,7 @@ import {
   Upload,
 } from "lucide-react"
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react"
-import { type VaultDir, type VaultFile, vaultUrl } from "@/lib/vault-api"
+import { downloadZip, type VaultDir, type VaultFile, vaultUrl } from "@/lib/vault-api"
 import { Button } from "@/stories/button/button"
 import {
   DropdownMenu,
@@ -205,6 +205,17 @@ function entriesFor(target: MenuTarget, h: MenuHandlers): { title: string; entri
       return {
         title: `${n} files selected`,
         entries: [
+          {
+            type: "item",
+            key: "download",
+            label: `Download ${n} as zip`,
+            icon: <Download className="h-4 w-4" />,
+            onSelect: () =>
+              downloadZip(
+                files.map((f) => f.id),
+                "files"
+              ),
+          },
           {
             type: "item",
             key: "star",

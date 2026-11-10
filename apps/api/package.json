@@ -15,6 +15,7 @@
     "@cnet/db": "workspace:*",
     "@cnet/engine": "workspace:*",
     "@tsoa/runtime": "7.0.0-alpha.0",
+    "archiver": "7.0.1",
     "bullmq": "5.81.5",
     "cookie-parser": "1.4.7",
     "cors": "2.8.6",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@cucumber/cucumber": "13.3.0",
+    "@types/archiver": "6.0.3",
     "@types/cookie-parser": "1.4.10",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",

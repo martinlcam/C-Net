@@ -36,7 +36,7 @@ export {
   type FileClass,
   isServerThumbClass,
 } from "./vault/file-types"
-export { resolveCollision } from "./vault/naming"
+export { resolveCollision, uniqueZipNames } from "./vault/naming"
 export {
   type Disposition,
   type DownloadClaims,
