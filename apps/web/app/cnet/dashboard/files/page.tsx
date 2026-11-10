@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/stories/dropdown-menu/dropdown-menu"
+import { collectDroppedFiles, hasDesktopFiles } from "../_components/dropped-files"
 import { FileGrid } from "../_components/file-grid"
 import { formatBytes } from "../_components/format"
 import { TextDialog, type TextPrompt } from "../_components/text-dialog"
@@ -38,6 +39,7 @@ export default function FilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [uploadMenuOpen, setUploadMenuOpen] = useState(false)
+  const [dropping, setDropping] = useState(false)
   const searchId = useId()
 
   const searching = query.trim().length > 0
@@ -67,7 +69,7 @@ export default function FilesPage() {
   const removeFolder = useMutation({ mutationFn: deleteDir, onSuccess })
   const fileActions = useVaultFileActions()
 
-  async function handleFiles(files: FileList | null) {
+  async function handleFiles(files: FileList | File[] | null) {
     if (!files) return
     const transfers = useTransferStore.getState()
     for (const file of Array.from(files)) {
@@ -90,17 +92,20 @@ export default function FilesPage() {
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
-  async function handleFolder(fileList: FileList | null) {
+  async function handleFolder(
+    fileList: FileList | File[] | null,
+    relativePath?: (f: File) => string | undefined
+  ) {
     if (!fileList || fileList.length === 0) return
     const files = Array.from(fileList)
+    const relOf = (f: File) => relativePath?.(f) || f.webkitRelativePath || f.name
     const transfers = useTransferStore.getState()
     const ids = new WeakMap<File, string>()
     const stamp = Date.now()
     files.forEach((file, i) => {
-      const id = `upload:${file.webkitRelativePath || file.name}-${file.size}-${stamp}-${i}`
+      const id = `upload:${relOf(file)}-${file.size}-${stamp}-${i}`
       ids.set(file, id)
-      const label = file.webkitRelativePath || file.name
-      transfers.upsert({ id, label, kind: "upload", progress: 0, status: "active" })
+      transfers.upsert({ id, label: relOf(file), kind: "upload", progress: 0, status: "active" })
     })
     const patch = (file: File, p: Partial<TransferItem>) => {
       const id = ids.get(file)
@@ -128,8 +133,8 @@ export default function FilesPage() {
           const id = ids.get(file)
           if (id) useTransferStore.getState().remove(id)
         },
-        onResume: (file) =>
-          patch(file, { label: `${file.webkitRelativePath || file.name} (resumed)` }),
+        onResume: (file) => patch(file, { label: `${relOf(file)} (resumed)` }),
+        relativePath,
         onBytes: (sent, planned) =>
           useTransferStore.getState().update(summaryId, {
             label: `Folder sync: ${formatBytes(sent)} of ${formatBytes(planned)} sent`,
@@ -193,8 +198,50 @@ export default function FilesPage() {
     onUpload: () => fileInputRef.current?.click(),
   }
 
+  // Files dragged in from the desktop. dragenter/dragleave fire for every child the
+  // pointer crosses, so a depth counter tells a real leave from an internal one.
+  const dropDepth = useRef(0)
+  const onDragEnter = (e: React.DragEvent) => {
+    if (!hasDesktopFiles(e.dataTransfer) || searching) return
+    e.preventDefault()
+    dropDepth.current += 1
+    setDropping(true)
+  }
+  const onDragLeave = () => {
+    dropDepth.current = Math.max(0, dropDepth.current - 1)
+    if (dropDepth.current === 0) setDropping(false)
+  }
+  const onDrop = async (e: React.DragEvent) => {
+    if (!hasDesktopFiles(e.dataTransfer)) return
+    e.preventDefault()
+    dropDepth.current = 0
+    setDropping(false)
+    const dropped = await collectDroppedFiles(e.dataTransfer)
+    if (dropped.files.length === 0) return
+    if (dropped.hasDirectories) await handleFolder(dropped.files, (f) => dropped.paths.get(f))
+    else await handleFiles(dropped.files)
+  }
+  const hereLabel = data?.breadcrumbs[data.breadcrumbs.length - 1]?.label ?? "My Vault"
+
   return (
-    <div className="w-full">
+    // biome-ignore lint/a11y/noStaticElementInteractions: the page is a drop zone for files from the desktop; the buttons inside remain the keyboard path
+    <div
+      className="relative w-full"
+      onDragEnter={onDragEnter}
+      onDragOver={(e) => {
+        if (hasDesktopFiles(e.dataTransfer) && !searching) e.preventDefault()
+      }}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {dropping ? (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl border-2 border-neutral-90 border-dashed bg-[#faf6f1]/80 backdrop-blur-[2px]">
+          <div className="flex items-center gap-3 rounded-xl bg-neutral-90 px-5 py-3 text-white shadow-xl">
+            <Upload className="h-5 w-5" />
+            <span className="font-medium text-sm">Drop to upload into “{hereLabel}”</span>
+          </div>
+        </div>
+      ) : null}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-bold text-2xl text-neutral-100 md:text-3xl">Files</h1>
         <div className="flex gap-2">
@@ -268,8 +315,9 @@ export default function FilesPage() {
               {i > 0 && <ChevronRight className="h-3 w-3" />}
               <button
                 type="button"
+                data-drop-dir={b.directoryId ?? "root"}
                 onClick={() => setDirId(b.directoryId)}
-                className="py-1 hover:text-neutral-100 hover:underline"
+                className="rounded px-1 py-1 hover:text-neutral-100 hover:underline data-[drop-active]:bg-neutral-90 data-[drop-active]:text-white"
               >
                 {b.label}
               </button>

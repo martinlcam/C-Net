@@ -307,6 +307,8 @@ export type FolderUploadHandlers = {
   onResume?: (file: File) => void
   /** Running total of bytes acknowledged by the server, and the bytes this drop will send. */
   onBytes?: (sent: number, planned: number) => void
+  /** Path of a file inside the dropped folder, for files that lack webkitRelativePath. */
+  relativePath?: (file: File) => string | undefined
 }
 
 export type FolderUploadSummary = {
@@ -332,7 +334,7 @@ export async function uploadFolder(
   handlers: FolderUploadHandlers
 ): Promise<FolderUploadSummary> {
   // Map a file's relative path to "directory part" + "filename".
-  const relOf = (f: File) => f.webkitRelativePath || f.name
+  const relOf = (f: File) => handlers.relativePath?.(f) || f.webkitRelativePath || f.name
   const dirPartOf = (rel: string) => {
     const i = rel.lastIndexOf("/")
     return i === -1 ? "" : rel.slice(0, i)

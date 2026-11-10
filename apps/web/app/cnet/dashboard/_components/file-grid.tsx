@@ -100,8 +100,9 @@ const FolderGridCard = memo(function FolderGridCard({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: the card forwards a right-click to the shared menu; its controls are buttons
     <div
+      data-drop-dir={dir.id}
       onContextMenu={(e) => onContext({ kind: "folder", dir }, e)}
-      className="flex items-center gap-3 rounded-xl border border-neutral-30 bg-white px-4 py-3 hover:border-neutral-50 hover:shadow-sm"
+      className="flex items-center gap-3 rounded-xl border border-neutral-30 bg-white px-4 py-3 hover:border-neutral-50 hover:shadow-sm data-[drop-active]:border-neutral-90 data-[drop-active]:bg-neutral-10 data-[drop-active]:shadow-[0_0_0_2px_rgb(23_23_23)]"
     >
       <Folder className="h-6 w-6 shrink-0 text-neutral-70" />
       {renaming ? (
@@ -143,8 +144,9 @@ const FolderListRow = memo(function FolderListRow({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: the row forwards a right-click to the shared menu; its controls are buttons
     <div
+      data-drop-dir={dir.id}
       onContextMenu={(e) => onContext({ kind: "folder", dir }, e)}
-      className="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-10"
+      className="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-10 data-[drop-active]:bg-neutral-30"
     >
       <Folder className="h-5 w-5 shrink-0 text-neutral-70" />
       {renaming ? (
@@ -440,6 +442,10 @@ export function FileGrid(props: Props) {
         onCancelRename={() => setRenameTarget(null)}
         onSelectionChange={setSelected}
         events={{ onOpen: open, onPrimary: primary, onToggle: toggle }}
+        onDropMove={(fs, dirId) => {
+          if (fs.length === 1) fileActions.onMove(fs[0], dirId)
+          else void runBulk({ kind: "move", directoryId: dirId }, fs)
+        }}
       />
       <SelectionBar
         files={selectedFiles}
@@ -478,26 +484,40 @@ type ListingProps = Props & {
   onCancelRename: () => void
   onSelectionChange: (next: Set<string>) => void
   events: Omit<FileCardEvents, "onContext">
+  /** Files dragged onto a folder (or a breadcrumb) and let go. */
+  onDropMove: (files: VaultFile[], directoryId: string | null) => void
 }
 
-/** The cards themselves, plus the rubber band and right-click routing over them. */
+type DropGhost = { x: number; y: number; label: string }
+
+/** Where a dragged file may be let go: folder cards, rows and breadcrumbs carry it. */
+const DROP_TARGET = "[data-drop-dir]"
+
+/** The cards themselves, plus the rubber band, file dragging and right-click routing. */
 function Listing({
   directories,
   files,
   fileActions,
   folderActions,
   viewMode = "grid",
+  currentDirId = null,
   selected,
   selectedFiles,
   renameTarget,
   onCancelRename,
   onSelectionChange,
   events,
+  onDropMove,
 }: ListingProps) {
   const { open: openMenu } = useItemMenu()
   const rootRef = useRef<HTMLDivElement>(null)
   const [band, setBand] = useState<Rect | null>(null)
+  const [ghost, setGhost] = useState<DropGhost | null>(null)
   const drag = useRef<{
+    /** A band drawn from empty space, or a file (plus its selection) being carried. */
+    mode: "band" | "item"
+    item: VaultFile | null
+    dropEl: HTMLElement | null
     startX: number
     startY: number
     additive: boolean
@@ -512,6 +532,28 @@ function Listing({
     lastY: number
   } | null>(null)
   const suppressClick = useRef(false)
+
+  const carried = useCallback(
+    (item: VaultFile) => (selected.has(item.id) ? selectedFiles : [item]),
+    [selected, selectedFiles]
+  )
+
+  // Highlight whichever drop target sits under the pointer, if it is somewhere else.
+  const trackDropTarget = useCallback(
+    (clientX: number, clientY: number) => {
+      const d = drag.current
+      if (!d || d.mode !== "item") return
+      const under = document.elementFromPoint(clientX, clientY)
+      let el = (under?.closest(DROP_TARGET) as HTMLElement | null) ?? null
+      const dir = el?.dataset.dropDir
+      if (el && (dir === "root" ? null : dir) === currentDirId) el = null
+      if (el === d.dropEl) return
+      d.dropEl?.removeAttribute("data-drop-active")
+      el?.setAttribute("data-drop-active", "")
+      d.dropEl = el
+    },
+    [currentDirId]
+  )
 
   const onContext = useCallback(
     (target: MenuTarget, e: React.MouseEvent) => {
@@ -566,15 +608,23 @@ function Listing({
     if (target.closest("a, input, textarea, [data-no-marquee]")) return
     const root = rootRef.current
     if (!root) return
-    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-file-id]")).map((el) => {
-      const r = el.getBoundingClientRect()
-      return {
-        id: el.dataset.fileId ?? "",
-        rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom },
-      }
-    })
+    // Pressing on a card carries that card (Finder-style); pressing elsewhere draws a band.
+    const cardId = (target.closest("[data-file-id]") as HTMLElement | null)?.dataset.fileId
+    const item = cardId ? (files.find((f) => f.id === cardId) ?? null) : null
+    const items = item
+      ? []
+      : Array.from(root.querySelectorAll<HTMLElement>("[data-file-id]")).map((el) => {
+          const r = el.getBoundingClientRect()
+          return {
+            id: el.dataset.fileId ?? "",
+            rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom },
+          }
+        })
     const scrollEl = root.closest("main") as HTMLElement | null
     drag.current = {
+      mode: item ? "item" : "band",
+      item,
+      dropEl: null,
       startX: e.clientX,
       startY: e.clientY,
       additive: e.ctrlKey || e.metaKey || e.shiftKey,
@@ -599,6 +649,11 @@ function Listing({
       if (Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < DRAG_THRESHOLD_PX) return
       d.active = true
       e.currentTarget.setPointerCapture(e.pointerId)
+      if (d.mode === "item" && d.item) {
+        // An unselected card becomes the selection the moment it is picked up.
+        if (!selected.has(d.item.id)) onSelectionChange(new Set([d.item.id]))
+        document.body.style.cursor = "grabbing"
+      }
       // Nudge the pane while the pointer sits near its top or bottom edge.
       const step = () => {
         const cur = drag.current
@@ -613,12 +668,23 @@ function Listing({
             delta = Math.ceil((cur.lastY - (r.bottom - edge)) / 4)
           if (delta !== 0) {
             el.scrollTop += delta
-            applyBand(cur.lastX, cur.lastY)
+            if (cur.mode === "band") applyBand(cur.lastX, cur.lastY)
+            else trackDropTarget(cur.lastX, cur.lastY)
           }
         }
         cur.raf = requestAnimationFrame(step)
       }
       d.raf = requestAnimationFrame(step)
+    }
+    if (d.mode === "item" && d.item) {
+      const n = carried(d.item).length
+      setGhost({
+        x: e.clientX,
+        y: e.clientY,
+        label: n === 1 ? d.item.filename : `${n} files`,
+      })
+      trackDropTarget(e.clientX, e.clientY)
+      return
     }
     applyBand(e.clientX, e.clientY)
   }
@@ -632,6 +698,13 @@ function Listing({
       if (e.currentTarget.hasPointerCapture(e.pointerId))
         e.currentTarget.releasePointerCapture(e.pointerId)
       setBand(null)
+      setGhost(null)
+      document.body.style.cursor = ""
+      d.dropEl?.removeAttribute("data-drop-active")
+      if (d.mode === "item" && d.item && d.dropEl) {
+        const dir = d.dropEl.dataset.dropDir
+        onDropMove(carried(d.item), dir === "root" || dir === undefined ? null : dir)
+      }
       // The release lands on whatever is under the pointer; that is not a click on it.
       suppressClick.current = true
       setTimeout(() => {
@@ -663,6 +736,15 @@ function Listing({
       }}
       className="relative min-h-[40vh] select-none space-y-6"
     >
+      {ghost ? (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed z-50 max-w-xs truncate rounded-lg bg-neutral-90 px-3 py-1.5 text-sm text-white shadow-xl"
+          style={{ left: ghost.x + 14, top: ghost.y + 14 }}
+        >
+          {ghost.label}
+        </div>
+      ) : null}
       {band ? (
         <div
           aria-hidden
