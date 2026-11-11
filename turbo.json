@@ -34,7 +34,7 @@
     },
     "build": {
       "dependsOn": ["^build", "api:generate"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "!.next/dev/**"]
     },
     "dev": {
       "persistent": true,
