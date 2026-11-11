@@ -48,7 +48,9 @@ export type JellyfinItem = {
   BackdropImageTags?: string[]
   UserData?: JellyfinUserData
   MediaStreams?: JellyfinMediaStream[]
-  MediaSources?: Array<{ Id: string; Container?: string; Size?: number }>
+  // Server-side file path; only its extension is ever used (download filenames).
+  Path?: string
+  MediaSources?: Array<{ Id: string; Container?: string; Size?: number; Path?: string }>
   Chapters?: Array<{ StartPositionTicks?: number; Name?: string }>
   // Scrub-preview tile grids keyed by media source id, then by tile width. Only present
   // once the library has trickplay extraction on and the item has been processed.

@@ -1,17 +1,21 @@
-import { vaultSigningSecret, verifyDownload, verifyToken } from "@cnet/core"
+import { type Disposition, vaultSigningSecret, verifyDownload, verifyToken } from "@cnet/core"
 import type { Express, Request, Response } from "express"
 import { extractToken } from "../middleware/auth.middleware"
 import { getJellyfin } from "./clients"
+import { safeFilename } from "./urls"
 
 /** Validate a signed media request (itemId stands in for the vault fileId). */
-function verify(req: Request): { userId: string; itemId: string } | null {
+function verify(
+  req: Request,
+  disposition: Disposition = "inline"
+): { userId: string; itemId: string } | null {
   const userId = String(req.params.userId)
   const itemId = String(req.params.itemId)
   const exp = Number(req.query.exp)
   const sig = String(req.query.sig ?? "")
   if (!Number.isFinite(exp)) return null
   const { ok } = verifyDownload(
-    { userId, fileId: itemId, exp, disposition: "inline", sig },
+    { userId, fileId: itemId, exp, disposition, sig },
     vaultSigningSecret(),
     Date.now()
   )
@@ -60,6 +64,41 @@ async function pump(body: ReadableStream<Uint8Array>, res: Response): Promise<vo
     if (!res.write(value)) await whenDrained(res)
   }
   if (!res.writableEnded) res.end()
+}
+
+function drainedOrClosed(res: Response): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      res.off("drain", done)
+      res.off("close", done)
+      resolve()
+    }
+    res.once("drain", done)
+    res.once("close", done)
+  })
+}
+
+/** Copy one upstream body into the response without ending it; returns bytes written. */
+async function copyBody(body: ReadableStream<Uint8Array>, res: Response): Promise<number> {
+  const reader = body.getReader()
+  let written = 0
+  try {
+    while (!res.destroyed) {
+      const { done, value } = await reader.read()
+      if (done) break
+      written += value.byteLength
+      if (!res.write(value)) await drainedOrClosed(res)
+    }
+  } finally {
+    reader.cancel().catch(() => {})
+  }
+  return written
+}
+
+/** `attachment` header with an ASCII fallback plus the real (UTF-8) name. */
+function attachmentHeader(filename: string): string {
+  const ascii = filename.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "")
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`
 }
 
 /** Strip Jellyfin's api key from a URL (we auth upstream via header instead).
@@ -230,6 +269,67 @@ export function registerMediaStream(app: Express): void {
     } catch (_err) {
       if (!res.headersSent && !ac.signal.aborted) res.status(502).end()
       else if (!res.writableEnded) res.end()
+    }
+  })
+
+  // Save the original file. One response for the browser, but fetched from Jellyfin
+  // as consecutive bounded windows (see WINDOW_BYTES) so a 30 GB remux never sits in
+  // memory. `Range: bytes=N-` is honoured so a paused or dropped download can resume.
+  app.get("/media/download/:userId/:itemId", async (req: Request, res: Response) => {
+    const v = verify(req, "attachment")
+    if (!v) {
+      res.status(403).end()
+      return
+    }
+    const requested = typeof req.query.name === "string" ? safeFilename(req.query.name) : ""
+    const filename = requested || `${v.itemId}.mkv`
+    const range = /bytes=(\d+)-/.exec(req.headers.range ?? "")
+    let pos = range ? Number.parseInt(range[1], 10) : 0
+
+    const ac = new AbortController()
+    res.on("close", () => ac.abort())
+    try {
+      let total: number | null = null
+      while (total === null || pos < total) {
+        const upstream = await getJellyfin().videoFetch(
+          v.itemId,
+          `bytes=${pos}-${pos + WINDOW_BYTES - 1}`,
+          ac.signal
+        )
+        if (total === null) {
+          if (upstream.status === 416) {
+            res.status(416).end()
+            return
+          }
+          const size = /\/(\d+)\s*$/.exec(upstream.headers.get("content-range") ?? "")
+          if (upstream.status !== 206 || !size) {
+            res.status(upstream.status === 404 ? 404 : 502).end()
+            return
+          }
+          total = Number.parseInt(size[1], 10)
+          res.status(range ? 206 : 200)
+          res.setHeader("Accept-Ranges", "bytes")
+          res.setHeader("Content-Type", "application/octet-stream")
+          res.setHeader("Content-Length", String(total - pos))
+          res.setHeader("Content-Disposition", attachmentHeader(filename))
+          res.setHeader("Cache-Control", "private, no-store")
+          if (range) res.setHeader("Content-Range", `bytes ${pos}-${total - 1}/${total}`)
+        } else if (upstream.status !== 206) {
+          throw new Error(`upstream answered ${upstream.status} mid-download`)
+        }
+        if (!upstream.body) throw new Error("upstream sent no body")
+        const written = await copyBody(upstream.body, res)
+        if (res.destroyed) return
+        if (written === 0) throw new Error("upstream window was empty")
+        pos += written
+      }
+      if (!res.writableEnded) res.end()
+    } catch (_err) {
+      // Headers already promise a length, so a mid-file failure can only be signalled
+      // by cutting the connection — the browser then shows the download as failed
+      // (and resumable) instead of saving a silently truncated file.
+      if (!res.headersSent && !ac.signal.aborted) res.status(502).end()
+      else res.destroy()
     }
   })
 

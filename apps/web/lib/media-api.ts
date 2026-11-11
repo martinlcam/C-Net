@@ -198,6 +198,25 @@ export const getGenres = () => req<{ genres: string[] }>("/media/genres").then((
 export const getItemTracks = (itemId: string) =>
   req<ItemTracks>(`/media/item/${encodeURIComponent(itemId)}/tracks`)
 
+export type ItemDownload = { url: string; filename: string; sizeBytes: number | null }
+
+/**
+ * Save an item's original file. The link is signed when asked for (not carried on
+ * the list DTOs, whose signatures go stale in a long-open tab) and handed to the
+ * browser's own download manager, so progress, pause and resume are the browser's.
+ */
+export async function downloadItem(itemId: string): Promise<ItemDownload> {
+  const dl = await req<ItemDownload>(`/media/item/${encodeURIComponent(itemId)}/download`)
+  const a = document.createElement("a")
+  a.href = mediaUrl(dl.url)
+  a.download = dl.filename
+  a.rel = "noopener"
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  return dl
+}
+
 // --- tv ---
 export const getSeries = (params: { genre?: string; search?: string; sort?: string } = {}) =>
   req<{ items: Series[] }>(`/media/series${libraryQuery(params)}`).then((r) => r.items)

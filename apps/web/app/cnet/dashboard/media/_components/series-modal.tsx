@@ -13,6 +13,7 @@ import {
 } from "@/lib/media-api"
 import { airingLine } from "./airing-label"
 import { DialogShell } from "./dialog-shell"
+import { DownloadButton } from "./download-button"
 import { cardVariants, rowVariants, viewVariants } from "./motion"
 import { PosterImage } from "./poster-image"
 import { SeasonPicker } from "./season-picker"
@@ -38,39 +39,47 @@ function EpisodeRow({
 }) {
   const pct = episodeProgress(ep)
   return (
-    <motion.button
-      type="button"
+    <motion.div
       variants={cardVariants}
       custom={index}
-      whileTap={{ scale: 0.99 }}
-      onClick={() => onPlay(ep)}
-      className="group flex w-full gap-3 border-neutral-10 border-b p-2 text-left transition-colors hover:bg-neutral-10"
+      className="group flex items-center gap-1 border-neutral-10 border-b transition-colors hover:bg-neutral-10"
     >
-      <div className="relative aspect-video w-24 shrink-0 overflow-hidden rounded bg-neutral-10 sm:w-32">
-        {ep.posterUrl ? <PosterImage src={ep.posterUrl} alt={ep.title} /> : null}
-        <span className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100">
-          <Play className="h-7 w-7 text-white" />
-        </span>
-        {pct > 0 && pct < 100 ? (
-          <div className="absolute right-0 bottom-0 left-0 h-1 bg-black/50">
-            <div className="h-full bg-red-600" style={{ width: `${pct}%` }} />
-          </div>
-        ) : null}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate font-medium text-neutral-90 text-sm">
-            {ep.episodeNumber != null ? `${ep.episodeNumber}. ` : ""}
-            {ep.title}
-            {ep.played ? <Check className="ml-1 inline h-3 w-3 text-green-600" /> : null}
-          </p>
-          {ep.runtimeMinutes ? (
-            <span className="shrink-0 text-neutral-60 text-xs">{ep.runtimeMinutes}m</span>
+      <button
+        type="button"
+        onClick={() => onPlay(ep)}
+        className="flex min-w-0 flex-1 gap-3 p-2 text-left transition-transform active:scale-[0.99]"
+      >
+        <div className="relative aspect-video w-24 shrink-0 overflow-hidden rounded bg-neutral-10 sm:w-32">
+          {ep.posterUrl ? <PosterImage src={ep.posterUrl} alt={ep.title} /> : null}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100">
+            <Play className="h-7 w-7 text-white" />
+          </span>
+          {pct > 0 && pct < 100 ? (
+            <div className="absolute right-0 bottom-0 left-0 h-1 bg-black/50">
+              <div className="h-full bg-red-600" style={{ width: `${pct}%` }} />
+            </div>
           ) : null}
         </div>
-        <p className="mt-0.5 line-clamp-2 text-neutral-60 text-xs">{ep.overview}</p>
-      </div>
-    </motion.button>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="truncate font-medium text-neutral-90 text-sm">
+              {ep.episodeNumber != null ? `${ep.episodeNumber}. ` : ""}
+              {ep.title}
+              {ep.played ? <Check className="ml-1 inline h-3 w-3 text-green-600" /> : null}
+            </p>
+            {ep.runtimeMinutes ? (
+              <span className="shrink-0 text-neutral-60 text-xs">{ep.runtimeMinutes}m</span>
+            ) : null}
+          </div>
+          <p className="mt-0.5 line-clamp-2 text-neutral-60 text-xs">{ep.overview}</p>
+        </div>
+      </button>
+      <DownloadButton
+        itemIds={[ep.id]}
+        label={`Download ${ep.title}`}
+        className="mr-1 shrink-0 rounded-full p-2 text-neutral-60 hover:bg-neutral-20 hover:text-neutral-90"
+      />
+    </motion.div>
   )
 }
 
@@ -174,6 +183,15 @@ export function SeriesModal({
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="font-semibold text-neutral-90">Episodes</h3>
           <div className="flex items-center gap-2">
+            {epList.length > 0 ? (
+              <DownloadButton
+                itemIds={epList.map((e) => e.id)}
+                label={`Download all ${epList.length} episodes of this season`}
+                className="rounded-md border border-neutral-30 px-2.5 py-1.5 font-medium text-neutral-70 text-xs hover:bg-neutral-10 hover:text-neutral-90"
+              >
+                <span className="hidden sm:inline">Download season</span>
+              </DownloadButton>
+            ) : null}
             {(seasons.data ?? []).length > 0 ? (
               <SeasonPicker seasons={seasons.data ?? []} value={seasonId} onChange={setSeasonId} />
             ) : null}

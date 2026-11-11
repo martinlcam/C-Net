@@ -3,7 +3,7 @@ import type { Request as ExpressRequest } from "express"
 import { Body, Controller, Get, Path, Post, Query, Request, Route, Security } from "tsoa"
 import { getJellyfin } from "../media/clients"
 import { resolveJellyfinUser, withJellyfinToken } from "../media/provision"
-import { signMediaUrls } from "../media/urls"
+import { downloadFilename, signMediaDownloadUrl, signMediaUrls } from "../media/urls"
 import { actorFrom } from "../vault/access"
 
 const TICKS_PER_MINUTE = 600_000_000
@@ -40,6 +40,13 @@ export interface StoppedBody {
 export interface WatchedBody {
   itemId: string
   played: boolean
+}
+
+export interface ItemDownloadDTO {
+  /** Signed, session-bound path on the API that serves the original file as an attachment. */
+  url: string
+  filename: string
+  sizeBytes: number | null
 }
 
 export interface AudioTrackDTO {
@@ -340,6 +347,23 @@ export class MediaController extends Controller {
     const actor = actorFrom(req)
     const { jellyfinUserId } = await resolveJellyfinUser(actor)
     return buildItemTracks(actor.id, await getJellyfin().item(jellyfinUserId, itemId))
+  }
+
+  /** A freshly signed link to save the item's original file, plus the name it saves as. */
+  @Get("item/{itemId}/download")
+  public async getItemDownload(
+    @Request() req: ExpressRequest,
+    @Path() itemId: string
+  ): Promise<ItemDownloadDTO> {
+    const actor = actorFrom(req)
+    const { jellyfinUserId } = await resolveJellyfinUser(actor)
+    const item = await getJellyfin().item(jellyfinUserId, itemId)
+    const filename = downloadFilename(item)
+    return {
+      url: signMediaDownloadUrl(actor.id, item.Id, filename),
+      filename,
+      sizeBytes: item.MediaSources?.[0]?.Size ?? null,
+    }
   }
 
   @Post("progress")

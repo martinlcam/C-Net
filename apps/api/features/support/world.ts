@@ -32,6 +32,8 @@ export class InviteWorld extends World {
   // Media scenarios map a Jellyfin item straight through the tracks builder.
   jellyfinItem: JellyfinItem | undefined
   tracks: ItemTracksDTO | undefined
+  downloadName: string | undefined
+  downloadUrl: string | undefined
 
   headers(): Record<string, string> {
     const h: Record<string, string> = { "Content-Type": "application/json" }
